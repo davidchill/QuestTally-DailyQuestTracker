@@ -1,10 +1,43 @@
 # Changelog
 
-All notable changes to Daily Grind are documented here.
+All notable changes to QuestTally are documented here.
+
+## [0.1.1] - 2026-06-14
+
+Quest-giver locations and a baked-in giver/coordinate database, so dailies are
+ready out of the box without exploring.
+
+### Added
+- **Baked quest-giver database** (`Core/QuestDetails.lua`) — **609 daily quests
+  (TBC–MoP)** ship with their giver name, map, and coordinates, so a fresh
+  install can show live status and set travel waypoints with zero discovery.
+  Data is derived from the [Questie](https://github.com/Questie/Questie) project
+  (MIT-licensed); generated offline and verified against retail UI maps.
+- **Quest-giver tracking** — the giver's name and coordinates are also captured
+  **live** the moment you talk to a quest giver (`GOSSIP_SHOW` / `QUEST_DETAIL`),
+  and live data overrides the baked defaults.
+- **Travel waypoints** — right-click a daily you haven't picked up to drop a map
+  waypoint on its giver (`C_Map.SetUserWaypoint`), so you can fly straight there.
+- **Giver in the tooltip** — hovering a quest now shows `Giver: <name> (x, y)`.
+
+### Changed
+- **Renamed the addon to QuestTally — Daily Quest Tracker** (folder, `.toc`,
+  SavedVariables, and slash commands). Primary command is now **`/qt`**
+  (aliases `/questtally`, `/dailies`).
+- Checklist entries now resolve a **real quest ID from the baked data** even
+  before discovery, so **live status, Wowhead links, and zone placement work
+  out of the box** for the covered dailies (previously only after discovery).
+- Browse / Current Zone use the baked giver's actual zone for covered dailies.
+
+### Notes
+- ~92 dailies are intentionally not baked (holiday/event quests, heroic-dungeon
+  dailies, and heavily-phased war-campaign quests) — these have no fixed giver
+  and still fill in via live capture if encountered.
+- Credit: quest/NPC/coordinate data adapted from Questie.
 
 ## [0.1.0] - 2026-06-14
 
-Initial release of **Daily Grind** — a daily-quest tracker and assistant for
+Initial release of **QuestTally** — a daily-quest tracker and assistant for
 World of Warcraft Retail, organized by expansion and zone.
 
 ### Added

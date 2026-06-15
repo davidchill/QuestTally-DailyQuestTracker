@@ -1,7 +1,7 @@
 -- Database.lua
 -- Thin wrapper around the SavedVariables tables declared in the .toc.
--- DailyGrindDB        -> account-wide (settings shared across all characters)
--- DailyGrindCharDB    -> per-character (this character's tracking state)
+-- QuestTallyDB        -> account-wide (settings shared across all characters)
+-- QuestTallyCharDB    -> per-character (this character's tracking state)
 --
 -- We never touch the global tables directly elsewhere; everything goes through
 -- DT.DB so defaults and migrations live in one place.
@@ -53,11 +53,11 @@ end
 
 -- Called once SavedVariables are loaded (ADDON_LOADED for our addon).
 function DT.DB:Initialize()
-    DailyGrindDB = DailyGrindDB or {}
-    DailyGrindCharDB = DailyGrindCharDB or {}
+    QuestTallyDB = QuestTallyDB or {}
+    QuestTallyCharDB = QuestTallyCharDB or {}
 
-    self.account = applyDefaults(DailyGrindDB, ACCOUNT_DEFAULTS)
-    self.char = applyDefaults(DailyGrindCharDB, CHAR_DEFAULTS)
+    self.account = applyDefaults(QuestTallyDB, ACCOUNT_DEFAULTS)
+    self.char = applyDefaults(QuestTallyCharDB, CHAR_DEFAULTS)
 
     -- Keep the stored version current for future migrations.
     self.account.version = DT.VERSION
@@ -109,6 +109,23 @@ function DT.DB:GetLearnedCount()
     local n = 0
     for _ in pairs(self.account.learned) do n = n + 1 end
     return n
+end
+
+-- Record the quest giver's location, captured live when the player interacts
+-- with the NPC. Stored as learned[questID].giver = { name, mapID, x, y }.
+-- Only overwrites fields we actually have, keeping the best known info.
+function DT.DB:SetQuestGiver(questID, name, mapID, x, y)
+    local e = self.account.learned[questID]
+    if not e then return end
+    e.giver = e.giver or {}
+    if name then e.giver.name = name end
+    if mapID then e.giver.mapID = mapID end
+    if x and y then e.giver.x = x; e.giver.y = y end
+end
+
+function DT.DB:GetQuestGiver(questID)
+    local e = self.account.learned[questID]
+    return e and e.giver or nil
 end
 
 function DT.DB:IsPinned(questID)

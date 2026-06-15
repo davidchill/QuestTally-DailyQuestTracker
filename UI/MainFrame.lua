@@ -17,7 +17,7 @@ local mainFrame
 
 -- Popup that shows a copyable Wowhead URL. Addons can't open a browser directly,
 -- so we present the link pre-selected for Ctrl+C (the standard approach).
-StaticPopupDialogs["DAILYGRIND_WOWHEAD"] = {
+StaticPopupDialogs["QUESTTALLY_WOWHEAD"] = {
     text = "Wowhead link — press Ctrl+C to copy:",
     button1 = OKAY,
     hasEditBox = true,
@@ -49,7 +49,7 @@ StaticPopupDialogs["DAILYGRIND_WOWHEAD"] = {
 function DT.UI:ShowWowheadLink(questID)
     if not questID then return end
     local url = "https://www.wowhead.com/quest=" .. questID
-    StaticPopup_Show("DAILYGRIND_WOWHEAD", nil, nil, url)
+    StaticPopup_Show("QUESTTALLY_WOWHEAD", nil, nil, url)
 end
 
 -- Current view state.
@@ -215,9 +215,19 @@ local function acquireRow(parent)
                 return
             end
             if button == "RightButton" then
-                if C_SuperTrack and C_SuperTrack.SetSuperTrackedQuestID then
+                -- If the quest isn't in the log yet and we know its giver's
+                -- location, point the waypoint at the giver so you can go get it.
+                -- Otherwise super-track the quest (objective / turn-in).
+                local inLog = C_QuestLog.GetLogIndexForQuestID
+                    and C_QuestLog.GetLogIndexForQuestID(e.questID) ~= nil
+                if not inLog and DT.QuestLog:SetGiverWaypoint(e.giver) then
+                    local g = e.giver
+                    print(string.format("|cff33ff99QuestTally|r: waypoint set to %s%s.",
+                        (e.title or "quest"),
+                        (g and g.name) and (" — " .. g.name) or ""))
+                elseif C_SuperTrack and C_SuperTrack.SetSuperTrackedQuestID then
                     C_SuperTrack.SetSuperTrackedQuestID(e.questID)
-                    print("|cff33ff99Daily Grind|r: tracking waypoint for " .. (e.title or e.questID))
+                    print("|cff33ff99QuestTally|r: tracking " .. (e.title or e.questID))
                 end
             else
                 DT.DB:TogglePinned(e.questID)
@@ -234,10 +244,22 @@ local function acquireRow(parent)
             if e.category then GameTooltip:AddLine(e.category, 0.7, 0.7, 0.7) end
             if e.zoneName then GameTooltip:AddLine(e.zoneName, 0.7, 0.7, 0.7) end
             if e.side and e.side ~= "Both" then GameTooltip:AddLine("Faction: " .. e.side, 0.7, 0.7, 0.7) end
+            -- Quest giver, captured live when you visited the NPC.
+            if e.giver and e.giver.name then
+                local coords = ""
+                if e.giver.x and e.giver.y then
+                    coords = string.format("  |cff808080(%.1f, %.1f)|r", e.giver.x * 100, e.giver.y * 100)
+                end
+                GameTooltip:AddLine("Giver: " .. e.giver.name .. coords, 0.9, 0.8, 0.4)
+            end
             GameTooltip:AddLine(" ")
             if e.questID then
                 GameTooltip:AddLine("Left-click: pin/unpin", 0.5, 0.8, 1)
-                GameTooltip:AddLine("Right-click: set waypoint", 0.5, 0.8, 1)
+                if e.giver and e.giver.x then
+                    GameTooltip:AddLine("Right-click: travel to giver / track quest", 0.5, 0.8, 1)
+                else
+                    GameTooltip:AddLine("Right-click: track quest", 0.5, 0.8, 1)
+                end
                 GameTooltip:AddLine("Shift-click: Wowhead link", 0.5, 0.8, 1)
             else
                 GameTooltip:AddLine("Not yet seen in-game; pick it up to track it live.", 0.6, 0.55, 0.7)
@@ -345,7 +367,7 @@ end
 -- Frame creation
 -- ---------------------------------------------------------------------------
 local function createMainFrame()
-    local f = CreateFrame("Frame", "DailyGrindFrame", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "QuestTallyFrame", UIParent, "BackdropTemplate")
     f:SetSize(400, 480)
     f:SetPoint("CENTER")
     f:SetFrameStrata("MEDIUM")
@@ -377,7 +399,7 @@ local function createMainFrame()
 
     f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     f.title:SetPoint("TOP", f.banner, "TOP", 0, -16)
-    f.title:SetText("Daily Grind")
+    f.title:SetText("QuestTally")
 
     -- Portrait icon (border trimmed off via texcoords).
     f.portrait = f:CreateTexture(nil, "ARTWORK")
@@ -410,12 +432,12 @@ local function createMainFrame()
     end
 
     -- Browse dropdowns.
-    f.continentDD = CreateFrame("Frame", "DailyGrindContinentDD", f, "UIDropDownMenuTemplate")
+    f.continentDD = CreateFrame("Frame", "QuestTallyContinentDD", f, "UIDropDownMenuTemplate")
     f.continentDD:SetPoint("TOPLEFT", 0, -84)
     UIDropDownMenu_SetWidth(f.continentDD, 120)
     UIDropDownMenu_Initialize(f.continentDD, initContinentDropdown)
 
-    f.zoneDD = CreateFrame("Frame", "DailyGrindZoneDD", f, "UIDropDownMenuTemplate")
+    f.zoneDD = CreateFrame("Frame", "QuestTallyZoneDD", f, "UIDropDownMenuTemplate")
     f.zoneDD:SetPoint("LEFT", f.continentDD, "RIGHT", 6, 0)
     UIDropDownMenu_SetWidth(f.zoneDD, 120)
     UIDropDownMenu_Initialize(f.zoneDD, initZoneDropdown)
@@ -428,7 +450,7 @@ local function createMainFrame()
     f.divider:SetPoint("TOPRIGHT", -32, -114)
 
     -- Scroll list. Top leaves room for the dropdown row in browse mode.
-    local scroll = CreateFrame("ScrollFrame", "DailyGrindScroll", f, "UIPanelScrollFrameTemplate")
+    local scroll = CreateFrame("ScrollFrame", "QuestTallyScroll", f, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 14, -120)
     scroll:SetPoint("BOTTOMRIGHT", -34, 16)
     local content = CreateFrame("Frame", nil, scroll)

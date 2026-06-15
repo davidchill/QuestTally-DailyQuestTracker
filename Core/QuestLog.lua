@@ -84,6 +84,24 @@ function DT.QuestLog:GetStatus(questID)
     return resolveStatus(questID, inLog)
 end
 
+-- Capture the NPC the player is interacting with (the "npc" unit is valid during
+-- GOSSIP_SHOW / QUEST_DETAIL) plus the player's position, which -- since you're
+-- standing at the giver -- is the giver's location. Returns name, mapID, x, y.
+local function captureGiver()
+    local name
+    if UnitExists then
+        if UnitExists("npc") then name = UnitName("npc")
+        elseif UnitExists("target") then name = UnitName("target") end
+    end
+    local mapID = (C_Map and C_Map.GetBestMapForUnit) and C_Map.GetBestMapForUnit("player") or nil
+    local x, y
+    if mapID and C_Map.GetPlayerMapPosition then
+        local pos = C_Map.GetPlayerMapPosition(mapID, "player")
+        if pos then x, y = pos:GetXY() end
+    end
+    return name, mapID, x, y
+end
+
 -- Learn dailies a quest giver is OFFERING or that are active on it, the moment
 -- the player opens its gossip window -- no need to accept. Called on GOSSIP_SHOW.
 -- The player's current map is used as the quest's zone (the giver's location).
@@ -91,7 +109,8 @@ function DT.QuestLog:ScanGossip()
     if not C_GossipInfo then return false end
     local now = GetServerTime and GetServerTime() or nil
     local faction = UnitFactionGroup and UnitFactionGroup("player") or nil
-    local mapID = (C_Map and C_Map.GetBestMapForUnit) and C_Map.GetBestMapForUnit("player") or nil
+    local gName, gMap, gx, gy = captureGiver()
+    local mapID = gMap
     local learnedNew = false
 
     local function consider(q)
@@ -100,6 +119,7 @@ function DT.QuestLog:ScanGossip()
             if DT.DB:LearnDaily(q.questID, q.title, faction, mapID, now) then
                 learnedNew = true
             end
+            DT.DB:SetQuestGiver(q.questID, gName, mapID, gx, gy)
         end
     end
 
@@ -120,8 +140,25 @@ function DT.QuestLog:ScanQuestDetail()
     if QuestIsDaily and QuestIsDaily() then
         local now = GetServerTime and GetServerTime() or nil
         local faction = UnitFactionGroup and UnitFactionGroup("player") or nil
-        local mapID = (C_Map and C_Map.GetBestMapForUnit) and C_Map.GetBestMapForUnit("player") or nil
-        return DT.DB:LearnDaily(qID, GetTitleText and GetTitleText() or nil, faction, mapID, now)
+        local gName, gMap, gx, gy = captureGiver()
+        local res = DT.DB:LearnDaily(qID, GetTitleText and GetTitleText() or nil, faction, gMap, now)
+        DT.DB:SetQuestGiver(qID, gName, gMap, gx, gy)
+        return res
+    end
+    return false
+end
+
+-- Set an on-screen/map waypoint to a quest giver location, so the player can
+-- travel to pick the quest up. Takes a giver table { mapID, x, y } (from baked
+-- data or live capture). Returns true if a waypoint was set.
+function DT.QuestLog:SetGiverWaypoint(giver)
+    if not giver or not giver.mapID or not giver.x or not giver.y then return false end
+    if C_Map and C_Map.SetUserWaypoint and UiMapPoint and UiMapPoint.CreateFromCoordinates then
+        C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(giver.mapID, giver.x, giver.y))
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+        end
+        return true
     end
     return false
 end

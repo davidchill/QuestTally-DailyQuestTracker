@@ -64,11 +64,18 @@ local function buildResolution()
     return keyToInfo
 end
 
--- Effective location for a checklist entry: the live (learned) zone if we have
--- a discovered mapID, otherwise the pre-mapped default. Returns (continent, zone).
-local function effectiveLocation(entry, resolved)
-    if resolved and resolved.mapID and DT.Zones then
-        local z = DT.Zones:Resolve(resolved.mapID)
+-- Look up baked quest-giver details for an entry (keyed by title@faction).
+local function bakedFor(entry)
+    if not DT.QuestDetails then return nil end
+    return DT.QuestDetails[entry.matchKey .. "@" .. (entry.side or "Both")]
+end
+
+-- Effective location: live (learned) zone if discovered, else the baked giver's
+-- zone, else the pre-mapped default. Returns (continent, zone).
+local function effectiveLocation(entry, resolved, baked)
+    local mapID = (resolved and resolved.mapID) or (baked and baked.m)
+    if mapID and DT.Zones then
+        local z = DT.Zones:Resolve(mapID)
         if z and z.zoneName then
             return z.continentName or entry.defContinent, z.zoneName
         end
@@ -96,14 +103,21 @@ function DT.Checklist:GetEntries(opts)
     local list = {}
     for _, entry in ipairs(DT.ChecklistData.entries) do
         local resolved = resolution[entry.matchKey]
-        local continentName, zoneName = effectiveLocation(entry, resolved)
+        local baked = bakedFor(entry)
+        local continentName, zoneName = effectiveLocation(entry, resolved, baked)
 
         if (not opts.expansion or entry.expansion == opts.expansion)
         and (not opts.type or entry.type == opts.type)
         and (not opts.continentName or continentName == opts.continentName)
         and (not opts.zoneName or zoneName == opts.zoneName) then
-            local questID = resolved and resolved.id or nil
+            -- Quest ID: learned (live) wins; otherwise the baked ID.
+            local questID = (resolved and resolved.id) or (baked and baked.id) or nil
             local status = questID and DT.QuestLog:GetStatus(questID) or DT.STATUS.UNDISCOVERED
+            -- Giver: learned (live) wins; otherwise the baked giver.
+            local giver = questID and DT.DB:GetQuestGiver(questID) or nil
+            if not giver and baked then
+                giver = { name = baked.g, mapID = baked.m, x = baked.x, y = baked.y }
+            end
             if opts.undiscovered ~= false or status ~= DT.STATUS.UNDISCOVERED then
                 list[#list + 1] = {
                     title         = entry.title,
@@ -117,6 +131,7 @@ function DT.Checklist:GetEntries(opts)
                     pinned        = questID and DT.DB:IsPinned(questID) or false,
                     continentName = continentName,
                     zoneName      = zoneName,
+                    giver         = giver,
                 }
             end
         end
