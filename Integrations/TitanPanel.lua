@@ -16,8 +16,8 @@ local addonName, DT = ...
 
 DT.Titan = {}
 
-local PLUGIN_ID    = "DailyGrind"
-local BUTTON_NAME  = "TitanPanelDailyGrindButton"
+local PLUGIN_ID    = "QuestTally"
+local BUTTON_NAME  = "TitanPanelQuestTallyButton"
 local ICON         = "Interface\\Icons\\INV_Misc_Note_01"
 
 local registered = false
@@ -39,7 +39,7 @@ end
 
 -- The text shown on the Titan bar next to the icon.
 -- Titan calls this as buttonTextFunction(id) and expects a display string.
-function DailyGrind_GetButtonText(id)
+function QuestTally_GetButtonText(id)
     local c = getCounts()
     local total = c.total or 0
     local done  = c[DT.STATUS.COMPLETED] or 0
@@ -57,7 +57,7 @@ end
 
 -- The tooltip body. Lines are separated by "\n"; within a line, "\t" splits the
 -- left label from the right-aligned value (Titan renders these as two columns).
-function DailyGrind_GetTooltipText()
+function QuestTally_GetTooltipText()
     local c = getCounts()
     local ready = c[DT.STATUS.READY_TURNIN] or 0
     local prog  = c[DT.STATUS.IN_PROGRESS] or 0
@@ -83,10 +83,10 @@ end
 
 -- Right-click options menu. Titan builds the menu by calling the function named
 -- TitanPanelRightClickMenu_Prepare<ID>Menu.
-function TitanPanelRightClickMenu_PrepareDailyGrindMenu()
+function TitanPanelRightClickMenu_PrepareQuestTallyMenu()
     -- Title.
     if TitanPanelRightClickMenu_AddTitle then
-        TitanPanelRightClickMenu_AddTitle("Daily Grind")
+        TitanPanelRightClickMenu_AddTitle("QuestTally")
     end
 
     -- Toggle the main window.
@@ -139,10 +139,10 @@ local function registerPlugin()
         id = PLUGIN_ID,
         category = "Information",
         version = DT.VERSION,
-        menuText = "Daily Grind",
-        buttonTextFunction = "DailyGrind_GetButtonText",
-        tooltipTitle = "Daily Grind",
-        tooltipTextFunction = "DailyGrind_GetTooltipText",
+        menuText = "QuestTally",
+        buttonTextFunction = "QuestTally_GetButtonText",
+        tooltipTitle = "QuestTally",
+        tooltipTextFunction = "QuestTally_GetTooltipText",
         icon = ICON,
         iconWidth = 16,
         controlVariables = {

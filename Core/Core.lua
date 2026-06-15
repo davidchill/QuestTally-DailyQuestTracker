@@ -50,8 +50,8 @@ local function onAddonLoaded()
         eventFrame:RegisterEvent(event)
     end
 
-    print(string.format("|cff33ff99%s|r v%s loaded. Type |cffffd100/ddt|r to open.",
-        "Daily Grind", DT.VERSION))
+    print(string.format("|cff33ff99%s|r v%s loaded. Type |cffffd100/qt|r to open.",
+        "QuestTally", DT.VERSION))
 end
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
@@ -88,26 +88,26 @@ eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 
 -- ---------------------------------------------------------------------------
--- Slash commands: /ddt and /dailies
+-- Slash commands: /qt and /dailies
 -- ---------------------------------------------------------------------------
-SLASH_DAILYGRIND1 = "/ddt"
-SLASH_DAILYGRIND2 = "/dailies"
-SLASH_DAILYGRIND3 = "/grind"
+SLASH_QUESTTALLY1 = "/qt"
+SLASH_QUESTTALLY2 = "/dailies"
+SLASH_QUESTTALLY3 = "/questtally"
 
 local function printHelp()
-    print("|cff33ff99Daily Grind|r commands:")
-    print("  |cffffd100/ddt|r            - toggle the tracker window")
-    print("  |cffffd100/ddt show|r       - open the window")
-    print("  |cffffd100/ddt hide|r       - close the window")
-    print("  |cffffd100/ddt reset|r      - reset window position")
-    print("  |cffffd100/ddt stats|r      - checklist & discovery summary")
-    print("  |cffffd100/ddt help|r       - show this help")
-    print("  aliases: |cffffd100/grind|r, |cffffd100/dailies|r")
+    print("|cff33ff99QuestTally|r commands:")
+    print("  |cffffd100/qt|r            - toggle the tracker window")
+    print("  |cffffd100/qt show|r       - open the window")
+    print("  |cffffd100/qt hide|r       - close the window")
+    print("  |cffffd100/qt reset|r      - reset window position")
+    print("  |cffffd100/qt stats|r      - checklist & discovery summary")
+    print("  |cffffd100/qt help|r       - show this help")
+    print("  aliases: |cffffd100/questtally|r, |cffffd100/dailies|r")
 end
 
 local function printStats()
     local s = DT.Checklist:GetStats()
-    print(string.format("|cff33ff99Daily Grind|r: |cffffd100%d|r checklist quests, "
+    print(string.format("|cff33ff99QuestTally|r: |cffffd100%d|r checklist quests, "
         .. "|cff66cc66%d discovered|r (IDs learned), %d done today.",
         s.total, s.discovered, s.completed))
     -- Per-expansion breakdown, newest-known first via the Constants order.
@@ -121,7 +121,7 @@ local function printStats()
     print("Discovery grows automatically as you pick up dailies in-game.")
 end
 
-SlashCmdList["DAILYGRIND"] = function(msg)
+SlashCmdList["QUESTTALLY"] = function(msg)
     local cmd = strtrim((msg or ""):lower())
 
     if cmd == "" or cmd == "toggle" then
@@ -133,7 +133,7 @@ SlashCmdList["DAILYGRIND"] = function(msg)
     elseif cmd == "reset" then
         DT.DB.account.framePosition = nil
         if DT.UI and DT.UI.ResetPosition then DT.UI:ResetPosition() end
-        print("|cff33ff99Daily Grind|r: window position reset.")
+        print("|cff33ff99QuestTally|r: window position reset.")
     elseif cmd == "stats" then
         printStats()
     else
