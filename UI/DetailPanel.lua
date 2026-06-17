@@ -117,7 +117,7 @@ local function renderRewards(content, y, questID)
     local rendered = false
 
     local function sectionHeader(label)
-        y = addLine(content, y, { text = label, color = { 1, 0.82, 0 },
+        y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
                                   spacingBefore = rendered and 8 or 4 })
         rendered = true
     end
@@ -202,7 +202,7 @@ end
 local function renderBakedRewards(content, y, rewards)
     local rendered = false
     local function sectionHeader(label)
-        y = addLine(content, y, { text = label, color = { 1, 0.82, 0 },
+        y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
                                   spacingBefore = rendered and 8 or 4 })
         rendered = true
     end
@@ -306,13 +306,13 @@ local function renderBaked(content, y, questID)
     y = addLine(content, y, { text = "Details:",
                               color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
     if details.objectives and #details.objectives > 0 then
-        y = addLine(content, y, { text = "Objectives:", color = { 1, 0.82, 0 }, spacingBefore = 8 })
+        y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
         for _, txt in ipairs(details.objectives) do
             y = addLine(content, y, { text = "- " .. txt, color = { 0.85, 0.85, 0.85 }, indent = 6 })
         end
     end
     if details.rewards then
-        y = addLine(content, y, { text = "Rewards", color = { 1, 0.82, 0 }, spacingBefore = 10 })
+        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
         y = renderBakedRewards(content, y, details.rewards)
     end
     return y
@@ -323,7 +323,7 @@ local function renderObjectives(content, y, questID)
     local objectives = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(questID)
     if not objectives or #objectives == 0 then return y end
 
-    y = addLine(content, y, { text = "Objectives:", color = { 1, 0.82, 0 }, spacingBefore = 8 })
+    y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
     for _, obj in ipairs(objectives) do
         if obj and obj.text and obj.text ~= "" then
             local color = obj.finished and { 0.4, 1, 0.4 } or { 0.85, 0.85, 0.85 }
@@ -347,16 +347,25 @@ local function render(entry)
     panel.title:SetText(entry.title or ("Quest " .. (entry.questID or "?")))
     panel.title:SetTextColor(c[1], c[2], c[3])
 
+    -- Top accent stripe + divider tint follow the quest's expansion color (falling
+    -- back to the status color when the expansion is unknown).
+    local exp = entry.expansion and DT.EXPANSION_BY_KEY[entry.expansion]
+    local accent = (entry.expansion and DT.EXPANSION_COLORS[entry.expansion]) or c
+    panel.accent:SetColorTexture(accent[1], accent[2], accent[3], 0.9)
+    panel.divider:SetColorTexture(accent[1], accent[2], accent[3], 0.28)
+
+    -- Status pill: a tinted chip sized to its label, replacing the old body line.
+    panel.pillText:SetText(DT.STATUS_LABEL[entry.status] or "")
+    panel.pillText:SetTextColor(math.min(1, c[1] + 0.25), math.min(1, c[2] + 0.25), math.min(1, c[3] + 0.25))
+    panel.pill:SetColorTexture(c[1], c[2], c[3], 0.20)
+    panel.pill:SetWidth((panel.pillText:GetStringWidth() or 20) + 12)
+
     -- Meta line: zone / faction / expansion.
     local bits = {}
     if entry.zoneName then bits[#bits + 1] = entry.zoneName end
     if entry.side and entry.side ~= "Both" then bits[#bits + 1] = entry.side end
-    local exp = entry.expansion and DT.EXPANSION_BY_KEY[entry.expansion]
     if exp then bits[#bits + 1] = exp.name end
     panel.meta:SetText(table.concat(bits, "  |cff808080•|r  "))
-
-    -- Status label.
-    y = addLine(content, y, { text = DT.STATUS_LABEL[entry.status] or "", color = c })
 
     -- Quest giver: live-captured coords win; else the wiki's coords; else its
     -- location text; else just the name.
@@ -399,7 +408,7 @@ local function render(entry)
         end
     else
         y = renderObjectives(content, y, entry.questID)
-        y = addLine(content, y, { text = "Rewards", color = { 1, 0.82, 0 }, spacingBefore = 10 })
+        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
         y = renderRewards(content, y, entry.questID)
     end
 
@@ -435,6 +444,11 @@ local function createPanel()
     local host = _G["QuestTallyFrame"]
     if not host then return nil end
 
+    local skin = DT.UI and DT.UI.Skin
+    local THEME = skin and skin.THEME
+    local panelBg   = (THEME and THEME.panelBg)   or { 0.06, 0.07, 0.09, 0.98 }
+    local panelEdge = (THEME and THEME.panelEdge) or { 0.16, 0.17, 0.21, 1.00 }
+
     local p = CreateFrame("Frame", "QuestTallyDetailPanel", host, "BackdropTemplate")
     p:SetWidth(PANEL_WIDTH)
     p:SetPoint("TOPLEFT", host, "TOPRIGHT", -8, 0)
@@ -442,16 +456,28 @@ local function createPanel()
     p:SetFrameStrata("MEDIUM")
     p:EnableMouse(true)  -- swallow clicks so they don't fall through to the world
 
+    -- Flat dark panel + 1px border, matching the main tracker window (replaces the
+    -- old parchment DialogBox skin so the two frames read as one piece).
     if p.SetBackdrop then
         p:SetBackdrop({
-            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-            tile = true, tileSize = 32, edgeSize = 32,
-            insets = { left = 8, right = 8, top = 8, bottom = 8 },
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
         })
+        p:SetBackdropColor(panelBg[1], panelBg[2], panelBg[3], panelBg[4] or 1)
+        p:SetBackdropBorderColor(panelEdge[1], panelEdge[2], panelEdge[3], panelEdge[4] or 1)
     end
 
-    p.close = CreateFrame("Button", nil, p, "UIPanelCloseButton")
+    -- Expansion-accent stripe across the very top, tinted per quest at render time;
+    -- ties the open detail panel back to the section the quest came from.
+    p.accent = p:CreateTexture(nil, "ARTWORK")
+    p.accent:SetTexture("Interface\\Buttons\\WHITE8X8")
+    p.accent:SetPoint("TOPLEFT", 1, -1)
+    p.accent:SetPoint("TOPRIGHT", -1, -1)
+    p.accent:SetHeight(2)
+
+    p.close = (skin and skin.CreateCloseButton and skin.CreateCloseButton(p))
+        or CreateFrame("Button", nil, p, "UIPanelCloseButton")
     p.close:SetPoint("TOPRIGHT", -4, -4)
     p.close:SetScript("OnClick", function() DT.Details:Hide() end)
 
@@ -461,25 +487,40 @@ local function createPanel()
     p.title:SetJustifyH("LEFT")
     p.title:SetWordWrap(true)
 
+    -- Status pill: a small tinted chip whose width is fit to its label at render.
+    p.pill = p:CreateTexture(nil, "ARTWORK")
+    p.pill:SetTexture("Interface\\Buttons\\WHITE8X8")
+    p.pill:SetPoint("TOPLEFT", p.title, "BOTTOMLEFT", 0, -7)
+    p.pill:SetHeight(15)
+    p.pillText = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    p.pillText:SetPoint("LEFT", p.pill, "LEFT", 6, 0)
+
     p.meta = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    p.meta:SetPoint("TOPLEFT", p.title, "BOTTOMLEFT", 0, -6)
-    p.meta:SetPoint("TOPRIGHT", p.title, "BOTTOMRIGHT", 0, -6)
+    p.meta:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
+    p.meta:SetPoint("TOPRIGHT", p.title, "BOTTOMRIGHT", 0, -7)
     p.meta:SetJustifyH("LEFT")
     p.meta:SetWordWrap(true)
 
     p.divider = p:CreateTexture(nil, "ARTWORK")
-    p.divider:SetColorTexture(1, 0.82, 0, 0.18)
+    p.divider:SetColorTexture(0.5, 0.5, 0.5, 0.20)  -- recolored to the accent at render
     p.divider:SetHeight(1)
     p.divider:SetPoint("TOPLEFT", p.meta, "BOTTOMLEFT", 0, -8)
     p.divider:SetPoint("TOPRIGHT", p.meta, "BOTTOMRIGHT", 0, -8)
 
-    -- Scroll list for the (variable-length) body.
-    local scroll = CreateFrame("ScrollFrame", "QuestTallyDetailScroll", p, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", p.divider, "BOTTOMLEFT", 0, -8)
-    scroll:SetPoint("BOTTOMRIGHT", -28, 16)
-    local content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(PANEL_WIDTH - (LINE_PAD * 2), 10)
-    scroll:SetScrollChild(content)
+    -- Scroll list for the (variable-length) body, with the custom scrollbar.
+    local scroll, content
+    if skin and skin.CreateScrollFrame then
+        scroll, content = skin.CreateScrollFrame(p, PANEL_WIDTH - (LINE_PAD * 2))
+        scroll:SetPoint("TOPLEFT", p.divider, "BOTTOMLEFT", 0, -8)
+        scroll:SetPoint("BOTTOMRIGHT", -20, 16)
+    else
+        scroll = CreateFrame("ScrollFrame", "QuestTallyDetailScroll", p, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", p.divider, "BOTTOMLEFT", 0, -8)
+        scroll:SetPoint("BOTTOMRIGHT", -28, 16)
+        content = CreateFrame("Frame", nil, scroll)
+        content:SetSize(PANEL_WIDTH - (LINE_PAD * 2), 10)
+        scroll:SetScrollChild(content)
+    end
     p.scroll, p.content = scroll, content
 
     return p

@@ -14,11 +14,7 @@ DT.DB = {}
 local ACCOUNT_DEFAULTS = {
     version = DT.VERSION,
     settings = {
-        showCompleted = true,       -- show dailies already done today
-        sortMode = "EXPANSION",     -- EXPANSION | STATUS | NAME
-        expansionOrder = "NEWEST",  -- NEWEST first or OLDEST first
-        windowScale = 1.0,
-        groupBy = "EXPANSION",      -- how the modern UI groups sections: EXPANSION | STATUS | ZONE
+        expansionOrder = "NEWEST",  -- NEWEST first or OLDEST first (All view)
         showInactiveWQ = false,     -- show world quests that exist but aren't currently up
         showSeasonal = false,       -- show holiday/seasonal dailies (only up during their festival)
     },
@@ -34,9 +30,6 @@ local ACCOUNT_DEFAULTS = {
 
 local CHAR_DEFAULTS = {
     version = DT.VERSION,
-    -- Snapshot of completion, keyed by questID -> last reset timestamp we saw it done.
-    -- Live API is the source of truth; this is only a fallback/history cache.
-    completedCache = {},
     -- Quests the user has pinned/favorited for emphasis.
     pinned = {},
 }
@@ -178,11 +171,6 @@ end
 function DT.DB:SetQuestKind(questID, kind)
     local e = self.account.learned[questID]
     if e and kind then e.kind = kind end
-end
-
-function DT.DB:GetQuestKind(questID)
-    local e = self.account.learned[questID]
-    return e and e.kind or nil
 end
 
 -- How many learned dailies carry baked harvester details (rewards/objectives).

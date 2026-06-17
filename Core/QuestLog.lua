@@ -31,48 +31,30 @@ local function resolveStatus(questID, inLog)
     return STATUS.AVAILABLE
 end
 
--- Build one entry table the UI can render.
-local function makeEntry(questID, title, status, expansionKey, fromCatalog)
-    local catInfo = DT.QuestData:GetInfo(questID)
-    return {
-        questID    = questID,
-        title      = title or (catInfo and catInfo.name) or ("Quest " .. questID),
-        status     = status,
-        expansion  = expansionKey or DT.QuestData:GetExpansionForQuest(questID),
-        zone       = catInfo and catInfo.zone or nil,
-        faction    = catInfo and catInfo.faction or nil,
-        pinned     = DT.DB:IsPinned(questID),
-        fromCatalog= fromCatalog or false,
-    }
-end
+-- The daily-frequency enum value, resolved defensively (Daily == 1, Weekly == 2
+-- on modern clients). Cached so the per-refresh scan below stays cheap.
+local DAILY_FREQUENCY = Enum and Enum.QuestFrequency and Enum.QuestFrequency.Daily or 1
 
--- Scan the player's quest log for daily-frequency quests.
--- Returns a map of questID -> entry, so the caller can merge with the catalog.
--- Side effect: every daily we see is recorded into the account-wide learned DB
--- with its real quest ID, so it can be tracked later even when not in the log.
-local function scanLogDailies()
-    local found = {}
+-- Passively learn every daily-frequency quest currently in the player's log into
+-- the account-wide store, with its real quest ID and best-known name/faction/zone.
+-- This catches dailies already sitting in the log (accepted before install, from
+-- a quest item, or via a chain) that we never saw a gossip/detail page for. Pure
+-- side-effect; called from Core on the throttled quest-log refresh.
+function DT.QuestLog:ScanLogForLearning()
+    if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return end
     local now = GetServerTime and GetServerTime() or (time and time()) or nil
     local playerFaction = UnitFactionGroup and UnitFactionGroup("player") or nil
 
     local numEntries = C_QuestLog.GetNumQuestLogEntries()
     for i = 1, numEntries do
         local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID and info.questID > 0 then
-            -- Enum.QuestFrequency.Daily == 1, .Weekly == 2 on modern clients.
-            local isDaily = info.frequency == Enum.QuestFrequency.Daily
-            if isDaily then
-                local status = resolveStatus(info.questID, true)
-                found[info.questID] = makeEntry(info.questID, info.title, status, nil, false)
-
-                -- Learn it: capture the real ID + best-known name/faction/zone.
-                local mapID = C_QuestLog.GetQuestUiMapID and C_QuestLog.GetQuestUiMapID(info.questID) or nil
-                DT.DB:LearnDaily(info.questID, info.title, playerFaction,
-                                 (mapID and mapID > 0) and mapID or nil, now)
-            end
+        if info and not info.isHeader and info.questID and info.questID > 0
+        and info.frequency == DAILY_FREQUENCY then
+            local mapID = C_QuestLog.GetQuestUiMapID and C_QuestLog.GetQuestUiMapID(info.questID) or nil
+            DT.DB:LearnDaily(info.questID, info.title, playerFaction,
+                             (mapID and mapID > 0) and mapID or nil, now)
         end
     end
-    return found
 end
 
 -- Public: resolve the live status of a single quest ID, checking the log for
@@ -186,40 +168,6 @@ function DT.QuestLog:SetGiverWaypoint(giver)
         return true
     end
     return false
-end
-
--- Public: returns a flat array of entries combining:
---   1. Daily quests currently in the player's log (live).
---   2. Cataloged dailies NOT in the log (available or done-today).
--- The UI handles grouping/sorting.
-function DT.QuestLog:GetEntries()
-    local byID = scanLogDailies()
-
-    -- Add cataloged dailies the player hasn't accepted, so they show as
-    -- Available or Done Today even when not in the log.
-    DT.QuestData:ForEach(function(questID, info, expKey)
-        if not byID[questID] then
-            local status = resolveStatus(questID, false)
-            byID[questID] = makeEntry(questID, info.name, status, expKey, true)
-        end
-    end)
-
-    -- Add auto-learned dailies (seen in a past session) not currently in the log,
-    -- so they show as Available or Done Today. Catalog entries win if both exist.
-    DT.DB:ForEachLearned(function(questID, info)
-        if not byID[questID] then
-            local status = resolveStatus(questID, false)
-            local entry = makeEntry(questID, info.name, status, nil, false)
-            entry.faction = entry.faction or info.faction
-            byID[questID] = entry
-        end
-    end)
-
-    local list = {}
-    for _, entry in pairs(byID) do
-        list[#list + 1] = entry
-    end
-    return list
 end
 
 -- Public: seconds until the next daily reset (or nil if unavailable).

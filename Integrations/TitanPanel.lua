@@ -28,10 +28,9 @@ local function titanAvailable()
 end
 
 -- Pull a fresh summary from the SAME source the tracker window renders from:
--- the checklist engine (master checklist + baked giver DB + live-learned data).
--- Using DT.Checklist here -- instead of the narrower DT.QuestLog:GetEntries(),
--- which only sees the live log + learned quests -- guarantees the bar and the
--- tracker can never disagree about which dailies exist or what status they're in.
+-- the checklist engine (master checklist + baked catalog + live-learned data).
+-- Sharing DT.Checklist:GetEntries() with the main window guarantees the bar and
+-- the tracker can never disagree about which dailies exist or their status.
 local function getCounts()
     return DT.QuestLog:Summarize(DT.Checklist:GetEntries())
 end

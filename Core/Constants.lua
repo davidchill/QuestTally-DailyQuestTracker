@@ -6,7 +6,7 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.2.1"
+DT.VERSION = "0.3.0"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
@@ -45,34 +45,38 @@ DT.STATUS = {
     UNKNOWN      = "UNKNOWN",
 }
 
--- Colors used by the UI (r, g, b in 0-1).
+-- Colors used by the UI (r, g, b in 0-1). Tuned darker and lower-saturation so
+-- nothing glows against the dark panel; each still reads as its own status.
 DT.COLORS = {
-    [DT.STATUS.AVAILABLE]    = { 1.00, 0.82, 0.00 }, -- gold
-    [DT.STATUS.IN_PROGRESS]  = { 0.40, 0.70, 1.00 }, -- blue
-    [DT.STATUS.READY_TURNIN] = { 0.40, 1.00, 0.40 }, -- green
-    [DT.STATUS.COMPLETED]    = { 0.50, 0.50, 0.50 }, -- gray
-    [DT.STATUS.INACTIVE]     = { 0.40, 0.42, 0.48 }, -- dim slate (exists, not up now)
-    [DT.STATUS.UNDISCOVERED] = { 0.45, 0.40, 0.55 }, -- muted purple
-    [DT.STATUS.UNKNOWN]      = { 0.80, 0.80, 0.80 },
+    [DT.STATUS.AVAILABLE]    = { 0.82, 0.68, 0.28 }, -- muted amber
+    [DT.STATUS.IN_PROGRESS]  = { 0.42, 0.60, 0.78 }, -- steel blue
+    [DT.STATUS.READY_TURNIN] = { 0.46, 0.72, 0.46 }, -- sage green
+    [DT.STATUS.COMPLETED]    = { 0.45, 0.45, 0.47 }, -- gray
+    [DT.STATUS.INACTIVE]     = { 0.36, 0.38, 0.44 }, -- dim slate (exists, not up now)
+    [DT.STATUS.UNDISCOVERED] = { 0.40, 0.36, 0.48 }, -- muted purple
+    [DT.STATUS.UNKNOWN]      = { 0.62, 0.62, 0.64 },
 }
 
 -- Accent color per expansion (r, g, b in 0-1), used by the modern UI to tint
--- each collapsible section's accent bar, icon, and title. Loosely themed to each
--- expansion's identity. OTHER falls back to a neutral slate.
+-- each collapsible section's accent bar, icon, and title. Each is keyed to its
+-- expansion logo's signature color, then held to a mid tone so it reads on the
+-- dark panel (the section gradient lights the top edge). Where logos share a
+-- family (the warm Cata/WoD pair, the TBC/MoP/Legion greens) the hue/lightness
+-- is nudged so adjacent sections stay distinguishable. OTHER is neutral slate.
 DT.EXPANSION_COLORS = {
-    CLASSIC      = { 0.80, 0.66, 0.30 }, -- worn gold
-    TBC          = { 0.55, 0.80, 0.25 }, -- fel green
-    WRATH        = { 0.45, 0.78, 0.95 }, -- icy blue
-    CATA         = { 0.90, 0.45, 0.25 }, -- ember orange
-    MOP          = { 0.30, 0.80, 0.55 }, -- jade
-    WOD          = { 0.85, 0.55, 0.20 }, -- iron orange
-    LEGION       = { 0.60, 0.45, 0.95 }, -- fel purple
-    BFA          = { 0.30, 0.60, 0.95 }, -- azerite blue
-    SHADOWLANDS  = { 0.55, 0.75, 0.95 }, -- anima blue
-    DRAGONFLIGHT = { 0.20, 0.78, 0.65 }, -- dragon teal
-    TWW          = { 0.50, 0.70, 0.90 }, -- earthen blue
-    MIDNIGHT     = { 0.65, 0.40, 0.85 }, -- void violet
-    OTHER        = { 0.55, 0.55, 0.62 }, -- slate
+    CLASSIC      = { 0.74, 0.62, 0.30 }, -- gold lettering
+    TBC          = { 0.36, 0.56, 0.30 }, -- fel green portal
+    WRATH        = { 0.44, 0.64, 0.84 }, -- Lich King frost blue
+    CATA         = { 0.84, 0.44, 0.18 }, -- Deathwing fire orange
+    MOP          = { 0.34, 0.64, 0.46 }, -- jade green
+    WOD          = { 0.64, 0.31, 0.27 }, -- Iron Horde red
+    LEGION       = { 0.55, 0.66, 0.22 }, -- fel lime green
+    BFA          = { 0.80, 0.58, 0.26 }, -- azerite bronze-gold
+    SHADOWLANDS  = { 0.42, 0.66, 0.74 }, -- cold anima cyan
+    DRAGONFLIGHT = { 0.24, 0.62, 0.50 }, -- Dragon Isles teal
+    TWW          = { 0.34, 0.52, 0.72 }, -- earthen azure
+    MIDNIGHT     = { 0.56, 0.36, 0.66 }, -- void violet
+    OTHER        = { 0.45, 0.45, 0.50 }, -- slate
 }
 
 -- Short human label for each status, shown in the list.

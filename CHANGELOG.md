@@ -2,6 +2,52 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.3.0] - 2026-06-17
+
+A visual overhaul of the tracker — a darker, less-flat theme with custom widgets —
+plus a round of dead-code removal and a restored learning path.
+
+### Added
+- **Custom themed widgets** replacing the stock Blizzard ones on the tracker and
+  detail panel: a slim **scrollbar** (gradient thumb, mouse-wheel, draggable, and
+  it **auto-hides when the content fits** — no more stray arrow buttons), and a
+  flat **"X" close button** that lights to a soft red on hover. Both are shared
+  via `DT.UI.Skin` so every panel stays consistent.
+- **Depth styling.** Vertical gradients plus 1px highlight/shadow bevel hairlines
+  on the title bar, tab bar, active tab, and each section header; lit accent bars
+  and section icon-chips. The panel is now near-opaque so the game world no longer
+  bleeds through and washes out the dark look.
+- **Detail panel header.** A **status pill** (e.g. *Available*, *Ready to Turn In*)
+  and a top **expansion-accent stripe** that ties the open panel to the section
+  the quest came from.
+
+### Changed
+- **Expansion section colors** retuned toward each expansion logo's signature color
+  — Iron-Horde red for Warlords, fel-lime green for Legion, frost-blue for Wrath,
+  Deathwing orange for Cataclysm, void-violet for Midnight, and so on — held to a
+  mid tone so they sit on the dark panel instead of glowing.
+- **Status colors** desaturated and darkened (neon gold → amber, neon green →
+  sage, bright blue → steel) so nothing neons against the dark UI.
+- **Detail panel reskinned** from the old parchment dialog to the flat dark theme,
+  so it reads as one piece with the main window.
+
+### Fixed
+- **Restored passive quest-log learning.** Dailies already sitting in your log
+  (accepted before installing, from a quest item, or via a chain) are learned
+  again — the learning side-effect had been orphaned when the UI moved to the
+  checklist engine, so those quests were only learned on giver interaction. It now
+  runs via `DT.QuestLog:ScanLogForLearning()` on the throttled quest-log refresh.
+
+### Removed
+- **Dead code.** `QuestLog:GetEntries`/`makeEntry`, `Checklist:GetDiscoveredEntries`,
+  `QuestData:GetExpansionForMap`/`GetInfo`/`_catalog`, `DB:GetQuestKind`,
+  `Harvester:IsRunning`, the unused `completedCache` store, and four settings that
+  were defined but never read (`showCompleted`, `sortMode`, `windowScale`,
+  `groupBy`).
+- Relabeled the in-game `/qt harvest export` box as a **quick snapshot** (titles +
+  rewards only) rather than a drop-in `QuestRewards.lua`, so it can't overwrite the
+  richer generated file (which also bakes objectives and quest kind).
+
 ## [0.2.1] - 2026-06-17
 
 A ground-up rebuild of how the addon both **looks** and **gets its data**. The

@@ -88,52 +88,6 @@ function DT.QuestData:GetExpansionForQuest(questID)
     return questToExpansion[questID] or expansionByIdBand(questID)
 end
 
--- Blizzard continent-map NAME -> expansion key. Used to classify harvested
--- dailies (which carry only a mapID) into an expansion section. This is the
--- approximate "mapID -> continent -> expansion" path: every modern continent
--- maps 1:1 to its expansion. Eastern Kingdoms / Kalimdor are shared between
--- Classic and Cataclysm content; at retail, dailies there are overwhelmingly
--- Cata-era, so we bucket them as CATA. Spellings cover the variants C_Map may
--- return across client versions.
-local CONTINENT_EXP = {
-    ["Outland"]           = "TBC",
-    ["Northrend"]         = "WRATH",
-    ["Eastern Kingdoms"]  = "CATA",
-    ["Kalimdor"]          = "CATA",
-    ["Deepholm"]          = "CATA",
-    ["Pandaria"]          = "MOP",
-    ["The Wandering Isle"]= "MOP",
-    ["Draenor"]           = "WOD",
-    ["Broken Isles"]      = "LEGION",
-    ["Argus"]             = "LEGION",
-    ["Zandalar"]          = "BFA",
-    ["Kul Tiras"]         = "BFA",
-    ["Shadowlands"]       = "SHADOWLANDS",
-    ["The Shadowlands"]   = "SHADOWLANDS",
-    ["Dragon Isles"]      = "DRAGONFLIGHT",
-    ["The Dragon Isles"]  = "DRAGONFLIGHT",
-    ["Khaz Algar"]        = "TWW",
-    ["Isle of Dorn"]      = "TWW",
-}
-DT.QuestData.CONTINENT_EXP = CONTINENT_EXP
-
--- Best-effort expansion KEY for a mapID, via its continent. Returns "OTHER"
--- when the map can't be resolved or its continent isn't mapped. Depends on
--- DT.Zones (resolved at call time, after all files have loaded).
-function DT.QuestData:GetExpansionForMap(mapID)
-    if not mapID or not DT.Zones then return "OTHER" end
-    local z = DT.Zones:Resolve(mapID)
-    local cont = z and z.continentName
-    return (cont and CONTINENT_EXP[cont]) or "OTHER"
-end
-
--- Returns the catalog info table for a quest ID, or nil if uncataloged.
-function DT.QuestData:GetInfo(questID)
-    local expKey = questToExpansion[questID]
-    if not expKey then return nil end
-    return catalog[expKey][questID]
-end
-
 -- Iterate every cataloged daily as (questID, info, expansionKey).
 -- Used for "discovery" -- checking availability of dailies not yet in the log.
 function DT.QuestData:ForEach(callback)
@@ -143,6 +97,3 @@ function DT.QuestData:ForEach(callback)
         end
     end
 end
-
--- Expose the raw catalog for tooling/debugging.
-DT.QuestData._catalog = catalog

@@ -22,16 +22,24 @@ local mainFrame
 
 -- Flat dark theme palette (r, g, b, a). Kept here so the look is tweakable in
 -- one place.
+-- Bars use a top->bottom gradient (the *2 keys are the darker bottom stop) plus
+-- 1px bevel hairlines, so flat strips read as raised surfaces. panelBg is nearly
+-- opaque so the game world behind it doesn't wash out the dark look.
 local THEME = {
-    panelBg    = { 0.07, 0.08, 0.10, 0.96 },
-    panelEdge  = { 0.18, 0.19, 0.24, 1.00 },
-    titleBg    = { 0.11, 0.12, 0.15, 1.00 },
-    subBarBg   = { 0.09, 0.10, 0.13, 1.00 },
-    tabBarBg   = { 0.11, 0.12, 0.15, 1.00 },
-    tabActive  = { 0.20, 0.22, 0.28, 1.00 },
+    panelBg    = { 0.06, 0.07, 0.09, 0.98 },
+    panelEdge  = { 0.16, 0.17, 0.21, 1.00 },
+    titleBg    = { 0.13, 0.14, 0.17, 1.00 }, -- gradient top
+    titleBg2   = { 0.09, 0.10, 0.13, 1.00 }, -- gradient bottom
+    subBarBg   = { 0.085, 0.095, 0.12, 1.00 },
+    tabBarBg   = { 0.13, 0.14, 0.17, 1.00 },
+    tabBarBg2  = { 0.09, 0.10, 0.13, 1.00 },
+    tabActive  = { 0.22, 0.24, 0.30, 1.00 },
+    tabActive2 = { 0.16, 0.17, 0.22, 1.00 },
     sectionBg  = { 1, 1, 1, 0.05 },   -- multiplied by the section accent
     divider    = { 1, 1, 1, 0.06 },
-    progress   = { 0.59, 0.77, 0.35 }, -- green-ish counter text
+    bevelHi    = { 1, 1, 1, 0.05 },   -- top highlight hairline
+    bevelLo    = { 0, 0, 0, 0.35 },   -- bottom shadow hairline
+    progress   = { 0.55, 0.72, 0.34 }, -- green-ish counter text
 }
 
 -- Popup that shows a copyable Wowhead URL. Addons can't open a browser directly,
@@ -273,6 +281,24 @@ local function acquireRow(parent)
         row.headerBg:SetPoint("BOTTOMRIGHT", 0, 0)
         row.headerBg:Hide()
 
+        -- Bevel hairlines for section rows: a light line along the top edge and a
+        -- dark line along the bottom give the header a subtle embossed lift.
+        row.headerTop = row:CreateTexture(nil, "BORDER")
+        row.headerTop:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.headerTop:SetPoint("TOPLEFT", 1, 0)
+        row.headerTop:SetPoint("TOPRIGHT", 0, 0)
+        row.headerTop:SetHeight(1)
+        row.headerTop:SetColorTexture(1, 1, 1, 0.05)
+        row.headerTop:Hide()
+
+        row.headerBot = row:CreateTexture(nil, "BORDER")
+        row.headerBot:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.headerBot:SetPoint("BOTTOMLEFT", 1, 0)
+        row.headerBot:SetPoint("BOTTOMRIGHT", 0, 0)
+        row.headerBot:SetHeight(1)
+        row.headerBot:SetColorTexture(0, 0, 0, 0.35)
+        row.headerBot:Hide()
+
         -- Small square section icon, tinted to the accent.
         row.icon = row:CreateTexture(nil, "ARTWORK")
         row.icon:SetTexture("Interface\\Buttons\\WHITE8X8")
@@ -477,18 +503,160 @@ local function updateModeButtons()
     mainFrame.zoneDD:SetShown(browsing)
     mainFrame.scroll:ClearAllPoints()
     mainFrame.scroll:SetPoint("TOPLEFT", 12, browsing and -86 or -54)
-    mainFrame.scroll:SetPoint("BOTTOMRIGHT", -28, 32)
+    mainFrame.scroll:SetPoint("BOTTOMRIGHT", -18, 32)
 end
 
 -- ---------------------------------------------------------------------------
 -- Frame creation
 -- ---------------------------------------------------------------------------
--- Small helper: a flat color-textured strip.
-local function makeStrip(parent, layer, color)
+-- Paint a texture with a vertical top->bottom gradient. Falls back to a flat
+-- fill on any client whose texture API lacks the modern SetGradient signature,
+-- so the UI degrades to the old look instead of erroring.
+local function setVGradient(tex, top, bottom)
+    if tex.SetGradient and CreateColor then
+        tex:SetColorTexture(1, 1, 1, 1)
+        tex:SetGradient("VERTICAL",
+            CreateColor(bottom[1], bottom[2], bottom[3], bottom[4] or 1),
+            CreateColor(top[1], top[2], top[3], top[4] or 1))
+        return true
+    end
+    tex:SetColorTexture(top[1], top[2], top[3], top[4] or 1)
+    return false
+end
+
+-- Small helper: a color-textured strip. Flat by default; pass `color2` for a
+-- vertical gradient from `color` (top) to `color2` (bottom).
+local function makeStrip(parent, layer, color, color2)
     local t = parent:CreateTexture(nil, layer or "ARTWORK")
     t:SetTexture("Interface\\Buttons\\WHITE8X8")
-    t:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+    if color2 then
+        setVGradient(t, color, color2)
+    else
+        t:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+    end
     return t
+end
+
+-- ---------------------------------------------------------------------------
+-- Custom widgets, styled to the theme, replacing the stock Blizzard close
+-- button and scroll bar. Exported on DT.UI.Skin so sibling panels share them.
+-- ---------------------------------------------------------------------------
+
+-- A flat "X" close button: two thin diagonal strokes that brighten to a soft red
+-- on hover over a faint red backing. Caller sets the anchor and OnClick.
+local function createCloseButton(parent)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(20, 20)
+
+    b.bg = b:CreateTexture(nil, "BACKGROUND")
+    b.bg:SetAllPoints()
+
+    local function stroke(angle)
+        local t = b:CreateTexture(nil, "ARTWORK")
+        t:SetTexture("Interface\\Buttons\\WHITE8X8")
+        t:SetSize(11, 1.6)
+        t:SetPoint("CENTER")
+        t:SetRotation(angle)
+        return t
+    end
+    b.s1 = stroke(0.785398)   -- +45 degrees
+    b.s2 = stroke(-0.785398)  -- -45 degrees
+
+    local IDLE = { 0.72, 0.72, 0.75 }
+    local function paint(self, glow)
+        local g = glow and { 1.0, 0.86, 0.86 } or IDLE
+        self.s1:SetColorTexture(g[1], g[2], g[3], 1)
+        self.s2:SetColorTexture(g[1], g[2], g[3], 1)
+        self.bg:SetColorTexture(0.80, 0.25, 0.25, glow and 0.30 or 0)
+    end
+    paint(b, false)
+    b:SetScript("OnEnter", function(self) paint(self, true) end)
+    b:SetScript("OnLeave", function(self) paint(self, false) end)
+    return b
+end
+
+-- A scroll frame with a slim themed scrollbar: mouse-wheel support and a
+-- draggable thumb that hides itself whenever the content fits. The scrollbar is
+-- anchored to the scroll frame's right edge, so the caller only positions the
+-- scroll frame (and the bar follows, even when repositioned later). Returns
+-- (scroll, content, scrollbar); `width` is the scroll child width.
+local SCROLL_STEP = 24
+local function createScrollFrame(parent, width)
+    local scroll = CreateFrame("ScrollFrame", nil, parent)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(width, 10)
+    scroll:SetScrollChild(content)
+    scroll:EnableMouseWheel(true)
+
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetWidth(6)
+    bar:SetPoint("TOPLEFT", scroll, "TOPRIGHT", 4, 0)
+    bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", 4, 0)
+    bar:SetFrameLevel((scroll:GetFrameLevel() or 1) + 5)
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints()
+    bar.track:SetColorTexture(0, 0, 0, 0.28)
+
+    local thumb = CreateFrame("Button", nil, bar)
+    thumb:SetWidth(6)
+    thumb:SetPoint("TOP", bar, "TOP", 0, 0)
+    thumb.tex = thumb:CreateTexture(nil, "ARTWORK")
+    thumb.tex:SetAllPoints()
+    bar.thumb = thumb
+
+    local function paintThumb(glow)
+        local top    = glow and { 0.46, 0.49, 0.58 } or { 0.34, 0.36, 0.43 }
+        local bottom = glow and { 0.30, 0.32, 0.39 } or { 0.22, 0.23, 0.29 }
+        setVGradient(thumb.tex, top, bottom)
+    end
+    paintThumb(false)
+
+    local function update()
+        local range = scroll:GetVerticalScrollRange()
+        if range <= 1 then bar:Hide(); return end
+        bar:Show()
+        if scroll:GetVerticalScroll() > range then scroll:SetVerticalScroll(range) end
+        local trackH = bar:GetHeight()
+        local viewH  = scroll:GetHeight()
+        local thumbH = math.max(24, trackH * (viewH / (viewH + range)))
+        thumb:SetHeight(thumbH)
+        local pct = scroll:GetVerticalScroll() / range
+        thumb:ClearAllPoints()
+        thumb:SetPoint("TOP", bar, "TOP", 0, -(trackH - thumbH) * pct)
+    end
+    bar.Update = update
+
+    scroll:SetScript("OnScrollRangeChanged", update)
+    scroll:SetScript("OnVerticalScroll", update)
+    scroll:SetScript("OnMouseWheel", function(self, delta)
+        local range = self:GetVerticalScrollRange()
+        self:SetVerticalScroll(math.min(math.max(0, self:GetVerticalScroll() - delta * SCROLL_STEP), range))
+    end)
+
+    thumb:SetScript("OnEnter", function() paintThumb(true) end)
+    thumb:SetScript("OnLeave", function(self) if not self.drag then paintThumb(false) end end)
+    thumb:SetScript("OnMouseDown", function(self)
+        self.drag = true
+        self.s0 = scroll:GetVerticalScroll()
+        local _, cy = GetCursorPosition()
+        self.cy0 = cy
+    end)
+    thumb:SetScript("OnMouseUp", function(self)
+        self.drag = false
+        if not self:IsMouseOver() then paintThumb(false) end
+    end)
+    thumb:SetScript("OnUpdate", function(self)
+        if not self.drag then return end
+        local range = scroll:GetVerticalScrollRange()
+        local denom = bar:GetHeight() - self:GetHeight()
+        if range <= 0 or denom <= 0 then return end
+        local scale = UIParent:GetEffectiveScale()
+        local _, cy = GetCursorPosition()
+        local dy = (self.cy0 - cy) / scale
+        scroll:SetVerticalScroll(math.min(math.max(0, self.s0 + dy * (range / denom)), range))
+    end)
+
+    return scroll, content, bar
 end
 
 local function createMainFrame()
@@ -518,11 +686,22 @@ local function createMainFrame()
         f:SetBackdropBorderColor(unpack(THEME.panelEdge))
     end
 
-    -- Title bar strip.
-    f.titleBar = makeStrip(f, "BORDER", THEME.titleBg)
+    -- Title bar strip (gradient + a top highlight and bottom shadow hairline so
+    -- it reads as a raised bar rather than a flat block).
+    f.titleBar = makeStrip(f, "BORDER", THEME.titleBg, THEME.titleBg2)
     f.titleBar:SetPoint("TOPLEFT", 1, -1)
     f.titleBar:SetPoint("TOPRIGHT", -1, -1)
     f.titleBar:SetHeight(28)
+
+    f.titleHi = makeStrip(f, "BORDER", THEME.bevelHi)
+    f.titleHi:SetPoint("TOPLEFT", f.titleBar, "TOPLEFT", 0, 0)
+    f.titleHi:SetPoint("TOPRIGHT", f.titleBar, "TOPRIGHT", 0, 0)
+    f.titleHi:SetHeight(1)
+
+    f.titleLo = makeStrip(f, "BORDER", THEME.bevelLo)
+    f.titleLo:SetPoint("BOTTOMLEFT", f.titleBar, "BOTTOMLEFT", 0, 0)
+    f.titleLo:SetPoint("BOTTOMRIGHT", f.titleBar, "BOTTOMRIGHT", 0, 0)
+    f.titleLo:SetHeight(1)
 
     -- Title icon + text.
     f.portrait = f:CreateTexture(nil, "ARTWORK")
@@ -536,9 +715,8 @@ local function createMainFrame()
     f.title:SetText("QuestTally")
     f.title:SetTextColor(0.95, 0.95, 0.92)
 
-    f.close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-    f.close:SetSize(24, 24)
-    f.close:SetPoint("RIGHT", f.titleBar, "RIGHT", 2, 0)
+    f.close = createCloseButton(f)
+    f.close:SetPoint("RIGHT", f.titleBar, "RIGHT", -6, 0)
     f.close:SetScript("OnClick", function() DT.UI:Hide() end)
 
     -- Settings (gear) button: opens the options panel.
@@ -602,20 +780,24 @@ local function createMainFrame()
     UIDropDownMenu_SetWidth(f.zoneDD, 120)
     UIDropDownMenu_Initialize(f.zoneDD, initZoneDropdown)
 
-    -- Scroll list (its top is repositioned per mode in updateModeButtons).
-    local scroll = CreateFrame("ScrollFrame", "QuestTallyScroll", f, "UIPanelScrollFrameTemplate")
+    -- Scroll list (its top is repositioned per mode in updateModeButtons). The
+    -- custom scrollbar is anchored to the scroll frame's right edge, so it tracks
+    -- those repositions automatically.
+    local scroll, content, scrollbar = createScrollFrame(f, CONTENT_WIDTH)
     scroll:SetPoint("TOPLEFT", 12, -54)
-    scroll:SetPoint("BOTTOMRIGHT", -28, 32)
-    local content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(CONTENT_WIDTH, 10)
-    scroll:SetScrollChild(content)
-    f.scroll, f.content = scroll, content
+    scroll:SetPoint("BOTTOMRIGHT", -18, 32)
+    f.scroll, f.content, f.scrollbar = scroll, content, scrollbar
 
-    -- Bottom tab bar.
-    f.tabBar = makeStrip(f, "BORDER", THEME.tabBarBg)
+    -- Bottom tab bar (gradient + a top highlight hairline to lift it off the list).
+    f.tabBar = makeStrip(f, "BORDER", THEME.tabBarBg, THEME.tabBarBg2)
     f.tabBar:SetPoint("BOTTOMLEFT", 1, 1)
     f.tabBar:SetPoint("BOTTOMRIGHT", -1, 1)
     f.tabBar:SetHeight(28)
+
+    f.tabHi = makeStrip(f, "BORDER", THEME.bevelHi)
+    f.tabHi:SetPoint("TOPLEFT", f.tabBar, "TOPLEFT", 0, 0)
+    f.tabHi:SetPoint("TOPRIGHT", f.tabBar, "TOPRIGHT", 0, 0)
+    f.tabHi:SetHeight(1)
 
     f.modeButtons = {}
     local modes = { { "ZONE", "Current Zone" }, { "ALL", "All" }, { "BROWSE", "Browse" } }
@@ -628,7 +810,7 @@ local function createMainFrame()
         b:SetSize(tabW - 4, 26)
         b:SetPoint("TOPLEFT", f.tabBar, "TOPLEFT", 2 + (i - 1) * tabW, -1)
 
-        b.bg = makeStrip(b, "BACKGROUND", THEME.tabActive)
+        b.bg = makeStrip(b, "BACKGROUND", THEME.tabActive, THEME.tabActive2)
         b.bg:SetAllPoints()
         b.bg:Hide()
 
@@ -732,12 +914,17 @@ local function renderDisplay(display)
             row:EnableMouse(true)
 
             local c = item.color or THEME.progress
-            row.accent:SetColorTexture(c[1], c[2], c[3], 1)
+            -- Lit accent bar + chip (brighter top, darker bottom) and a tint
+            -- gradient behind the header that fades to almost nothing at the base.
+            local lt1, lt2, lt3 = lighten(c, 0.15)
+            setVGradient(row.accent, { lt1, lt2, lt3, 1 }, { c[1] * 0.78, c[2] * 0.78, c[3] * 0.78, 1 })
             row.accent:Show()
-            row.headerBg:SetColorTexture(c[1], c[2], c[3], 0.10)
+            setVGradient(row.headerBg, { c[1], c[2], c[3], 0.18 }, { c[1], c[2], c[3], 0.03 })
             row.headerBg:Show()
-            row.icon:SetColorTexture(c[1], c[2], c[3], 1)
+            setVGradient(row.icon, { lt1, lt2, lt3, 1 }, { c[1], c[2], c[3], 1 })
             row.icon:Show()
+            row.headerTop:Show()
+            row.headerBot:Show()
 
             row.title:SetFontObject("GameFontNormal")
             row.title:ClearAllPoints()
@@ -763,6 +950,7 @@ local function renderDisplay(display)
             row.sectionKey = nil
             row.dot:Hide(); row.accent:Hide(); row.headerBg:Hide()
             row.icon:Hide(); row.collapse:Hide()
+            row.headerTop:Hide(); row.headerBot:Hide()
             row:EnableMouse(false)
             row.title:SetFontObject("GameFontDisable")
             row.title:ClearAllPoints()
@@ -780,6 +968,7 @@ local function renderDisplay(display)
             row.sectionKey = nil
             row:EnableMouse(true)
             row.accent:Hide(); row.headerBg:Hide(); row.icon:Hide(); row.collapse:Hide()
+            row.headerTop:Hide(); row.headerBot:Hide()
             row.dot:Show()
 
             local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
@@ -873,3 +1062,15 @@ function DT.UI:ResetPosition()
         mainFrame:SetPoint("CENTER")
     end
 end
+
+-- Expose the panel skin (palette + texture helpers) so sibling UI modules -- the
+-- detail panel in particular -- can match the main window's look without
+-- duplicating the theme. Loaded before DetailPanel via the .toc order.
+DT.UI.Skin = {
+    THEME            = THEME,
+    makeStrip        = makeStrip,
+    setVGradient     = setVGradient,
+    lighten          = lighten,
+    CreateCloseButton = createCloseButton,
+    CreateScrollFrame = createScrollFrame,
+}

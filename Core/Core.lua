@@ -32,6 +32,12 @@ local function requestRefresh()
     refreshPending = true
     C_Timer.After(0.2, function()
         refreshPending = false
+        -- Passively learn any daily-frequency quests already in the log, so a
+        -- daily we never saw a gossip/detail page for still gets tracked. Cheap
+        -- and coalesced here so it runs at most a few times per second.
+        if DT.QuestLog and DT.QuestLog.ScanLogForLearning then
+            DT.QuestLog:ScanLogForLearning()
+        end
         if DT.UI and DT.UI.Refresh then
             DT.UI:Refresh()
         end
@@ -188,7 +194,6 @@ SlashCmdList["QUESTTALLY"] = function(msg)
     -- Split into first word + remainder so multi-word commands ("harvest start")
     -- dispatch on the verb while keeping their argument.
     local cmd, rest = full:match("^(%S*)%s*(.-)$")
-    cmd = cmd or full
 
     if cmd == "harvest" then
         handleHarvest(rest)

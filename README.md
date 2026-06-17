@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.2.1** — built and tested against Retail patch **12.0.x**.
+> **Version 0.3.0** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~1,460 dailies across every expansion** plus **~3,600 world
 > quests** (Legion → Midnight), all from first-party sources.
 >
@@ -17,10 +17,11 @@ available, tracking completion, and helping you finish them, organized by
 - **Full quest catalog.** **~1,460 daily quests across every expansion** (from
   warcraft.wiki) plus **~3,600 world quests** (Legion → Midnight, from Blizzard's
   own client database), grouped by expansion.
-- **Modern window.** A flat dark panel with **collapsible, color-coded sections**
-  (one accent per expansion), an overall **progress counter**, per-section
-  `done / total` counts, and bottom tabs. Movable, with remembered position and
-  persisted fold state.
+- **Modern window.** A dark panel with subtle gradients and bevels (not flat),
+  **collapsible sections color-coded to each expansion's logo**, an overall
+  **progress counter**, per-section `done / total` counts, custom themed
+  scrollbars and close buttons, and bottom tabs. Movable, with remembered position
+  and persisted fold state.
 - **Live status, always accurate.** Reads your real quest log and completion
   flags — never stale. Each quest is color-coded:
   - 🟡 **Available** · 🔵 **In Progress** · 🟢 **Ready to Turn In** ·
@@ -134,7 +135,7 @@ or wiki refreshes the catalogs.
 - REST API enrichment (item stats/icons, achievements, currencies) — pending
   Blizzard API credentials.
 - World-map and minimap pins for daily turn-ins and objectives.
-- Live-ticking reset countdown and a settings panel.
+- Live-ticking reset countdown (currently updates on quest events, not every second).
 
 ## Project layout
 
@@ -156,7 +157,7 @@ QuestTally/
 │   ├── Checklist.lua        Title↔ID matching engine + zone resolution
 │   └── Core.lua             Events, init, slash commands
 ├── UI/
-│   ├── MainFrame.lua        The tracker window (3 modes, native skin)
+│   ├── MainFrame.lua        The tracker window (3 modes, dark theme + DT.UI.Skin)
 │   ├── DetailPanel.lua      Per-quest details pane (rewards/objectives/desc)
 │   └── HarvestPanel.lua     Harvester button panel (developer tool)
 └── Integrations/
