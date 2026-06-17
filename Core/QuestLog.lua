@@ -84,6 +84,24 @@ function DT.QuestLog:GetStatus(questID)
     return resolveStatus(questID, inLog)
 end
 
+-- Status for a WORLD QUEST. Unlike a hub daily, a world quest only counts as
+-- "available" while it's actively up in the world rotation; the catalog lists
+-- every WQ that exists, so the ones not currently up are marked INACTIVE rather
+-- than falsely shown as available.
+function DT.QuestLog:GetWorldQuestStatus(questID)
+    if not questID then return DT.STATUS.UNKNOWN end
+    if C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(questID) then
+        return DT.STATUS.COMPLETED
+    end
+    local inLog = C_QuestLog.GetLogIndexForQuestID
+        and C_QuestLog.GetLogIndexForQuestID(questID) ~= nil
+    if inLog then return resolveStatus(questID, true) end
+    if C_TaskQuest and C_TaskQuest.IsActive and C_TaskQuest.IsActive(questID) then
+        return DT.STATUS.AVAILABLE
+    end
+    return DT.STATUS.INACTIVE
+end
+
 -- Capture the NPC the player is interacting with (the "npc" unit is valid during
 -- GOSSIP_SHOW / QUEST_DETAIL) plus the player's position, which -- since you're
 -- standing at the giver -- is the giver's location. Returns name, mapID, x, y.

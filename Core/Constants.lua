@@ -6,7 +6,7 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.2.0"
+DT.VERSION = "0.2.1"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
@@ -40,6 +40,7 @@ DT.STATUS = {
     IN_PROGRESS  = "IN_PROGRESS",  -- accepted, in the quest log
     READY_TURNIN = "READY_TURNIN", -- objectives done, ready to hand in
     COMPLETED    = "COMPLETED",    -- completed/turned in today (on cooldown until reset)
+    INACTIVE     = "INACTIVE",     -- a world quest that exists but isn't currently up
     UNDISCOVERED = "UNDISCOVERED", -- on the master checklist, but we don't know its ID yet
     UNKNOWN      = "UNKNOWN",
 }
@@ -50,8 +51,28 @@ DT.COLORS = {
     [DT.STATUS.IN_PROGRESS]  = { 0.40, 0.70, 1.00 }, -- blue
     [DT.STATUS.READY_TURNIN] = { 0.40, 1.00, 0.40 }, -- green
     [DT.STATUS.COMPLETED]    = { 0.50, 0.50, 0.50 }, -- gray
+    [DT.STATUS.INACTIVE]     = { 0.40, 0.42, 0.48 }, -- dim slate (exists, not up now)
     [DT.STATUS.UNDISCOVERED] = { 0.45, 0.40, 0.55 }, -- muted purple
     [DT.STATUS.UNKNOWN]      = { 0.80, 0.80, 0.80 },
+}
+
+-- Accent color per expansion (r, g, b in 0-1), used by the modern UI to tint
+-- each collapsible section's accent bar, icon, and title. Loosely themed to each
+-- expansion's identity. OTHER falls back to a neutral slate.
+DT.EXPANSION_COLORS = {
+    CLASSIC      = { 0.80, 0.66, 0.30 }, -- worn gold
+    TBC          = { 0.55, 0.80, 0.25 }, -- fel green
+    WRATH        = { 0.45, 0.78, 0.95 }, -- icy blue
+    CATA         = { 0.90, 0.45, 0.25 }, -- ember orange
+    MOP          = { 0.30, 0.80, 0.55 }, -- jade
+    WOD          = { 0.85, 0.55, 0.20 }, -- iron orange
+    LEGION       = { 0.60, 0.45, 0.95 }, -- fel purple
+    BFA          = { 0.30, 0.60, 0.95 }, -- azerite blue
+    SHADOWLANDS  = { 0.55, 0.75, 0.95 }, -- anima blue
+    DRAGONFLIGHT = { 0.20, 0.78, 0.65 }, -- dragon teal
+    TWW          = { 0.50, 0.70, 0.90 }, -- earthen blue
+    MIDNIGHT     = { 0.65, 0.40, 0.85 }, -- void violet
+    OTHER        = { 0.55, 0.55, 0.62 }, -- slate
 }
 
 -- Short human label for each status, shown in the list.
@@ -60,6 +81,7 @@ DT.STATUS_LABEL = {
     [DT.STATUS.IN_PROGRESS]  = "In Progress",
     [DT.STATUS.READY_TURNIN] = "Ready to Turn In",
     [DT.STATUS.COMPLETED]    = "Done Today",
+    [DT.STATUS.INACTIVE]     = "Not Active",
     [DT.STATUS.UNDISCOVERED] = "Not Yet Seen",
     [DT.STATUS.UNKNOWN]      = "Unknown",
 }

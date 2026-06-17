@@ -267,14 +267,33 @@ local function normalizeBaked(e)
     return d
 end
 
--- Best baked details for a quest: live-harvested (this session) wins, else the
--- shipped baked table loaded from QuestRewards.lua.
+-- Convert a shipped DT.WikiDetails entry (from warcraft.wiki, compact keys) into
+-- the renderer shape. Objectives/description are single strings on the wiki.
+local function normalizeWiki(e)
+    local d = { objectives = e.o and { e.o } or nil, description = e.de }
+    if e.r or e.mo then
+        local r = { money = e.mo }
+        if e.r then
+            local items = {}
+            for _, it in ipairs(e.r) do items[#items + 1] = { name = it.n, count = 1 } end
+            r.items = items
+        end
+        d.rewards = r
+    end
+    return d
+end
+
+-- Best baked details for a quest, in priority order: live-harvested (this
+-- session) wins, then the shipped harvested table (QuestRewards.lua), then the
+-- wiki-imported details (WikiDetails.lua).
 local function resolveBaked(questID)
     if not questID then return nil end
     local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
     if live and (live.rewards or live.objectives or live.description) then return live end
     local shipped = DT.BakedDetails and DT.BakedDetails[questID]
     if shipped then return normalizeBaked(shipped) end
+    local wiki = DT.WikiDetails and DT.WikiDetails[questID]
+    if wiki then return normalizeWiki(wiki) end
     return nil
 end
 
@@ -284,7 +303,7 @@ local function renderBaked(content, y, questID)
     local details = resolveBaked(questID)
     if not details or not (details.rewards or details.objectives) then return nil end
 
-    y = addLine(content, y, { text = "Saved from an earlier visit:",
+    y = addLine(content, y, { text = "Details:",
                               color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
     if details.objectives and #details.objectives > 0 then
         y = addLine(content, y, { text = "Objectives:", color = { 1, 0.82, 0 }, spacingBefore = 8 })
@@ -339,13 +358,16 @@ local function render(entry)
     -- Status label.
     y = addLine(content, y, { text = DT.STATUS_LABEL[entry.status] or "", color = c })
 
-    -- Quest giver (captured live when you visited the NPC), if we know it.
+    -- Quest giver: live-captured coords win; else the wiki's coords; else its
+    -- location text; else just the name.
     if entry.giver and entry.giver.name then
-        local coords = ""
+        local where = ""
         if entry.giver.x and entry.giver.y then
-            coords = string.format("  (%.1f, %.1f)", entry.giver.x * 100, entry.giver.y * 100)
+            where = string.format("  (%.1f, %.1f)", entry.giver.x * 100, entry.giver.y * 100)
+        elseif entry.giver.loc and entry.giver.loc ~= "" then
+            where = "  |cff808080" .. entry.giver.loc .. "|r"
         end
-        y = addLine(content, y, { text = "Giver: " .. entry.giver.name .. coords,
+        y = addLine(content, y, { text = "Giver: " .. entry.giver.name .. where,
                                   color = { 0.9, 0.8, 0.4 } })
     end
 

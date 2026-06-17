@@ -2,6 +2,57 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.2.1] - 2026-06-17
+
+A ground-up rebuild of how the addon both **looks** and **gets its data**. The
+window is now a modern flat-dark panel with collapsible, color-coded sections,
+and the entire quest catalog is rebuilt from first-party sources — the Questie
+dependency is gone. Three pipelines now feed the catalog: warcraft.wiki for
+dailies (with IDs, zones, givers, rewards, and coordinates), Blizzard's own
+client database for world quests, and the live in-game harvester for the rest.
+
+### Added
+- **Modern UI** (`UI/MainFrame.lua`) — flat dark panel with a title bar +
+  overall progress counter, **collapsible color-coded sections** (one accent per
+  expansion, `done / total` counters, `+/–` toggles, fold state persisted), and a
+  bottom tab bar. Completed quests dim; status dots keep their color coding.
+- **Settings panel** — a gear button on the title bar opens a toggle panel:
+  *Show holiday / seasonal quests*, *Show inactive world quests*, *Newest
+  expansions first*.
+- **World-quest catalog** (`Core/WorldQuestData.lua`, `DT.WorldQuests`) — **~3,600
+  world quests** (Legion → Midnight) with title, expansion, and zone, mined
+  first-party from Blizzard's retail client database (DB2) via wago.tools
+  (`_generator/build-db2-catalog.js`). World-quest status is **rotation-aware**:
+  ones not currently up read as *Not Active* rather than falsely *Available*.
+- **Wiki daily catalog** (`Core/ChecklistData.lua` + `Core/WikiDetails.lua`) —
+  **~1,460 dailies across every expansion** imported from warcraft.wiki.gg
+  (CC BY-SA) via `_generator/build-checklist-from-wiki.js`, carrying real quest
+  IDs, zones, givers, rewards, objectives, descriptions, and giver coordinates.
+  Old-era dailies now light up with live status immediately (no scan needed).
+- **Detail panel** now fills from wiki data too — rewards, objectives,
+  description, and giver name + coordinates (or location text when coords aren't
+  on the wiki).
+
+### Changed
+- **Catalog engine** (`Core/Checklist.lua`) merges three first-party sources
+  (wiki dailies, harvested dailies, DB2 world quests) into one de-duplicated list,
+  and **hides opposite-faction variants** for your character.
+- **Seasonal / holiday dailies** (Love is in the Air, Brewfest, Hallow's End, …)
+  are tagged and **hidden by default** (they're only up during their festival);
+  toggle them on in Settings.
+- Bottom tab order is now **Current Zone | All | Browse**.
+- Expansion classification now uses quest-ID bands plus content data, so modern
+  expansions group correctly.
+
+### Removed
+- **Questie dependency** — deleted `Core/QuestDetails.lua` and the `_questie/`
+  dataset. All giver/coordinate data is now first-party (wiki + live capture).
+
+### Fixed
+- **Wiki importer cache collision** — the data-build cache key was truncated and
+  could serve one request's data to another, corrupting givers/rewards in bulk.
+  Cache keys are now hashed, so the imported catalog is accurate.
+
 ## [0.2.0] - 2026-06-16
 
 First-party quest-data harvesting: a developer toolchain that builds the

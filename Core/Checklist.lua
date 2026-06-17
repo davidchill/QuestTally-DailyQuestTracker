@@ -64,13 +64,31 @@ local function buildResolution()
     return keyToInfo
 end
 
--- Look up baked quest-giver details for an entry (keyed by title@faction).
-local function bakedFor(entry)
-    if not DT.QuestDetails then return nil end
-    return DT.QuestDetails[entry.matchKey .. "@" .. (entry.side or "Both")]
+-- Index of our own harvested catalog (the shipped DT.BakedDetails, keyed by
+-- quest ID) by normalized title -> { id, m }. This is the first-party
+-- replacement for the old Questie giver table: it lets a name-only checklist
+-- entry resolve to the real quest ID (and mapID, when we captured one) we saw
+-- live. Built lazily once.
+local bakedByTitle
+local function ensureBakedIndex()
+    if bakedByTitle then return end
+    bakedByTitle = {}
+    if not DT.BakedDetails then return end
+    for id, info in pairs(DT.BakedDetails) do
+        local _, key = normalize(info.n)
+        if key and not bakedByTitle[key] then
+            bakedByTitle[key] = { id = id, m = info.m }
+        end
+    end
 end
 
--- Effective location: live (learned) zone if discovered, else the baked giver's
+-- Resolve a checklist entry to harvested catalog info (id/mapID) by title.
+local function bakedFor(entry)
+    ensureBakedIndex()
+    return bakedByTitle[entry.matchKey]
+end
+
+-- Effective location: live (learned) zone if discovered, else the wiki-provided
 -- zone, else the pre-mapped default. Returns (continent, zone).
 local function effectiveLocation(entry, resolved, baked)
     local mapID = (resolved and resolved.mapID) or (baked and baked.m)
@@ -80,12 +98,111 @@ local function effectiveLocation(entry, resolved, baked)
             return z.continentName or entry.defContinent, z.zoneName
         end
     end
+    if entry.zoneName then return entry.defContinent, entry.zoneName end
     return entry.defContinent, entry.defZone
 end
 
 -- Public: ensure the index is built (safe to call repeatedly).
 function DT.Checklist:EnsureBuilt()
     if not next(titleIndex) then build() end
+end
+
+-- Append harvested REGULAR dailies (the shipped DT.BakedDetails table, keyed by
+-- quest ID) that the name-only wiki checklist doesn't already cover. This carries
+-- the dailies we've only ever seen live -- e.g. WoD garrison/Tanaan and modern
+-- non-world-quest turn-in dailies. World quests are intentionally skipped here:
+-- they come from the DB2 catalog (appendWorldQuestEntries) instead. Each quest is
+-- classified into an expansion by its ID band. Honors the same `opts` filters.
+local function appendBakedEntries(list, opts, emitted)
+    local baked = DT.BakedDetails
+    if not baked then return end
+    local added = {}  -- guard against two harvested rows sharing a title
+    for id, info in pairs(baked) do
+        -- World quests are owned by the DB2 catalog; skip them here.
+        if info.k ~= "worldquest" and not emitted[id] then
+            local clean, key = normalize(info.n)
+            -- Skip anything the wiki checklist already owns, or a dup we added.
+            if key and not titleIndex[key] and not added[key] then
+                local mapID = info.m
+                local z = mapID and DT.Zones and DT.Zones:Resolve(mapID) or nil
+                local continentName = z and z.continentName or nil
+                local zoneName = z and z.zoneName or nil
+                local expansion = DT.QuestData:GetExpansionForQuest(id)
+
+                if (not opts.expansion or expansion == opts.expansion)
+                and (not opts.type or opts.type == "Daily")
+                and (not opts.continentName or continentName == opts.continentName)
+                and (not opts.zoneName or zoneName == opts.zoneName) then
+                    local status = DT.QuestLog:GetStatus(id) or DT.STATUS.UNDISCOVERED
+                    if opts.undiscovered ~= false or status ~= DT.STATUS.UNDISCOVERED then
+                        added[key] = true
+                        emitted[id] = true
+                        list[#list + 1] = {
+                            title         = clean,
+                            rawTitle      = info.n,
+                            expansion     = expansion,
+                            type          = "Daily",
+                            category      = nil,
+                            side          = info.f,
+                            questID       = id,
+                            status        = status,
+                            pinned        = DT.DB:IsPinned(id),
+                            continentName = continentName,
+                            zoneName      = zoneName,
+                            giver         = DT.DB:GetQuestGiver(id),
+                        }
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Append the world-quest catalog mined from Blizzard's retail DB2 (the shipped
+-- DT.WorldQuests table, keyed by quest ID). Each entry already carries its
+-- expansion key and uiMapID, so classification and zone are first-party and
+-- exact. World-quest status is rotation-aware (see QuestLog:GetWorldQuestStatus):
+-- WQs that exist but aren't currently up read as INACTIVE.
+local function appendWorldQuestEntries(list, opts, emitted)
+    local wq = DT.WorldQuests
+    if not wq then return end
+    -- By default only currently-active world quests show (a tracker wants what's
+    -- actionable, not all ~3.6k that exist). Opt in to the full catalog via the
+    -- showInactiveWQ setting.
+    local showInactive = DT.DB:GetSetting("showInactiveWQ")
+    for id, info in pairs(wq) do
+        if not emitted[id] then
+            local z = info.m and DT.Zones and DT.Zones:Resolve(info.m) or nil
+            local continentName = z and z.continentName or nil
+            local zoneName = z and z.zoneName or nil
+            local expansion = info.e or DT.QuestData:GetExpansionForQuest(id)
+
+            if (not opts.expansion or expansion == opts.expansion)
+            and (not opts.type or opts.type == "WorldQuest")
+            and (not opts.continentName or continentName == opts.continentName)
+            and (not opts.zoneName or zoneName == opts.zoneName) then
+                local status = DT.QuestLog:GetWorldQuestStatus(id)
+                if (showInactive or status ~= DT.STATUS.INACTIVE)
+                and (opts.undiscovered ~= false or status ~= DT.STATUS.UNDISCOVERED) then
+                    emitted[id] = true
+                    list[#list + 1] = {
+                        title         = info.n,
+                        rawTitle      = info.n,
+                        expansion     = expansion,
+                        type          = "WorldQuest",
+                        category      = info.t,        -- e.g. "Battle Pet World Quest"
+                        side          = nil,
+                        questID       = id,
+                        status        = status,
+                        pinned        = DT.DB:IsPinned(id),
+                        continentName = continentName,
+                        zoneName      = zoneName,
+                        giver         = DT.DB:GetQuestGiver(id),
+                    }
+                end
+            end
+        end
+    end
 end
 
 -- Public: return checklist entries as renderable rows with live status and
@@ -100,7 +217,11 @@ function DT.Checklist:GetEntries(opts)
     opts = opts or {}
     local resolution = buildResolution()
 
+    local playerFaction = UnitFactionGroup and UnitFactionGroup("player") or nil
+    local showSeasonal = DT.DB:GetSetting("showSeasonal")
+
     local list = {}
+    local emitted = {}  -- quest IDs already placed, so later sources don't dup
     for _, entry in ipairs(DT.ChecklistData.entries) do
         local resolved = resolution[entry.matchKey]
         local baked = bakedFor(entry)
@@ -109,16 +230,28 @@ function DT.Checklist:GetEntries(opts)
         if (not opts.expansion or entry.expansion == opts.expansion)
         and (not opts.type or entry.type == opts.type)
         and (not opts.continentName or continentName == opts.continentName)
-        and (not opts.zoneName or zoneName == opts.zoneName) then
-            -- Quest ID: learned (live) wins; otherwise the baked ID.
-            local questID = (resolved and resolved.id) or (baked and baked.id) or nil
+        and (not opts.zoneName or zoneName == opts.zoneName)
+        -- Hide the opposite faction's variant of a quest.
+        and (not entry.side or entry.side == "Both" or not playerFaction
+             or entry.side == playerFaction)
+        -- Hide holiday/seasonal dailies unless the player opts in.
+        and (showSeasonal or not entry.seasonal) then
+            -- Quest ID: the wiki list now ships real IDs; learned/harvested only
+            -- serve as a fallback for any entry without one.
+            local questID = entry.id or (resolved and resolved.id) or (baked and baked.id) or nil
             local status = questID and DT.QuestLog:GetStatus(questID) or DT.STATUS.UNDISCOVERED
-            -- Giver: learned (live) wins; otherwise the baked giver.
+            -- Giver: live capture wins; else the wiki's giver (name + coords).
             local giver = questID and DT.DB:GetQuestGiver(questID) or nil
-            if not giver and baked then
-                giver = { name = baked.g, mapID = baked.m, x = baked.x, y = baked.y }
+            if not giver then
+                local wd = questID and DT.WikiDetails and DT.WikiDetails[questID]
+                if wd and wd.g then
+                    giver = { name = wd.g.n, mapID = wd.g.m, x = wd.g.x, y = wd.g.y, loc = wd.g.loc }
+                elseif entry.giver then
+                    giver = { name = entry.giver }
+                end
             end
             if opts.undiscovered ~= false or status ~= DT.STATUS.UNDISCOVERED then
+                if questID then emitted[questID] = true end
                 list[#list + 1] = {
                     title         = entry.title,
                     rawTitle      = entry.rawTitle,
@@ -136,6 +269,11 @@ function DT.Checklist:GetEntries(opts)
             end
         end
     end
+
+    -- Fold in harvested regular dailies the wiki list doesn't cover, then the
+    -- DB2 world-quest catalog. `emitted` keeps the three sources from duplicating.
+    appendBakedEntries(list, opts, emitted)
+    appendWorldQuestEntries(list, opts, emitted)
     return list
 end
 
@@ -190,27 +328,59 @@ function DT.Checklist:GetDiscoveredEntries(opts)
 end
 
 -- Public: summary stats for the whole checklist (or a filtered slice).
+-- Counts the wiki master list PLUS harvested modern dailies, so the totals
+-- line up with what the views actually show.
 function DT.Checklist:GetStats()
     self:EnsureBuilt()
     local resolution = buildResolution()
-    local stats = {
-        total = #DT.ChecklistData.entries,
-        discovered = 0,
-        completed = 0,
-        byExpansion = {},
-    }
-    for _, entry in ipairs(DT.ChecklistData.entries) do
-        local exp = entry.expansion
-        stats.byExpansion[exp] = stats.byExpansion[exp] or { total = 0, discovered = 0 }
-        stats.byExpansion[exp].total = stats.byExpansion[exp].total + 1
-        local questID = resolution[entry.matchKey] and resolution[entry.matchKey].id
-        if questID then
+    local stats = { total = 0, discovered = 0, completed = 0, byExpansion = {} }
+
+    local function tally(exp, discovered, completed)
+        local b = stats.byExpansion[exp] or { total = 0, discovered = 0 }
+        stats.byExpansion[exp] = b
+        b.total = b.total + 1
+        stats.total = stats.total + 1
+        if discovered then
+            b.discovered = b.discovered + 1
             stats.discovered = stats.discovered + 1
-            stats.byExpansion[exp].discovered = stats.byExpansion[exp].discovered + 1
-            if DT.QuestLog:GetStatus(questID) == DT.STATUS.COMPLETED then
-                stats.completed = stats.completed + 1
+            if completed then stats.completed = stats.completed + 1 end
+        end
+    end
+
+    local showSeasonal = DT.DB:GetSetting("showSeasonal")
+    for _, entry in ipairs(DT.ChecklistData.entries) do
+        if showSeasonal or not entry.seasonal then
+            local questID = entry.id or (resolution[entry.matchKey] and resolution[entry.matchKey].id)
+            tally(entry.expansion, questID ~= nil,
+                  questID and DT.QuestLog:GetStatus(questID) == DT.STATUS.COMPLETED)
+        end
+    end
+
+    -- Harvested regular dailies not already on the wiki list (world quests are
+    -- counted from the DB2 catalog below). These always have a real quest ID.
+    if DT.BakedDetails then
+        local added = {}
+        for id, info in pairs(DT.BakedDetails) do
+            if info.k ~= "worldquest" then
+                local _, key = normalize(info.n)
+                if key and not titleIndex[key] and not added[key] then
+                    added[key] = true
+                    tally(DT.QuestData:GetExpansionForQuest(id), true,
+                          DT.QuestLog:GetStatus(id) == DT.STATUS.COMPLETED)
+                end
             end
         end
     end
+
+    -- DB2 world-quest catalog (every WQ has a real ID; "completed" means done
+    -- for the current period).
+    if DT.WorldQuests then
+        for id, info in pairs(DT.WorldQuests) do
+            tally(info.e or DT.QuestData:GetExpansionForQuest(id), true,
+                  C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
+                  and C_QuestLog.IsQuestFlaggedCompleted(id) or false)
+        end
+    end
+
     return stats
 end

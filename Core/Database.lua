@@ -18,7 +18,13 @@ local ACCOUNT_DEFAULTS = {
         sortMode = "EXPANSION",     -- EXPANSION | STATUS | NAME
         expansionOrder = "NEWEST",  -- NEWEST first or OLDEST first
         windowScale = 1.0,
+        groupBy = "EXPANSION",      -- how the modern UI groups sections: EXPANSION | STATUS | ZONE
+        showInactiveWQ = false,     -- show world quests that exist but aren't currently up
+        showSeasonal = false,       -- show holiday/seasonal dailies (only up during their festival)
     },
+    -- Per-section collapsed state for the modern UI, keyed by a stable group key
+    -- (e.g. an expansion key or zone name). ui.collapsed[key] = true when folded.
+    ui = { collapsed = {} },
     framePosition = nil,            -- { point, x, y } once the user moves the window
     -- Auto-learned daily quests, account-wide. The addon fills this in from live
     -- play: every daily-frequency quest the player has seen, with its REAL id.
@@ -71,6 +77,21 @@ end
 
 function DT.DB:SetSetting(key, value)
     self.account.settings[key] = value
+end
+
+-- Modern-UI section fold state. Keyed by a stable group key (expansion key,
+-- zone name, status, ...). Absent/false means expanded.
+function DT.DB:IsCollapsed(key)
+    return self.account.ui.collapsed[key] == true
+end
+
+function DT.DB:ToggleCollapsed(key)
+    if self.account.ui.collapsed[key] then
+        self.account.ui.collapsed[key] = nil
+    else
+        self.account.ui.collapsed[key] = true
+    end
+    return self.account.ui.collapsed[key] == true
 end
 
 -- Record (or refresh) a daily we've seen live. `now` is the current server

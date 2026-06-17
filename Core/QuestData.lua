@@ -52,9 +52,79 @@ for expKey, quests in pairs(catalog) do
     end
 end
 
--- Returns the expansion KEY for a quest ID, or "OTHER" if we don't have it cataloged.
+-- Quest-ID range -> expansion. Blizzard assigns quest IDs roughly in
+-- chronological (expansion) order, so the ID alone is a good classifier when we
+-- have nothing else -- which is the case for harvested dailies, whose mapID the
+-- game often doesn't report. Thresholds are the LOWER bound of each band and are
+-- approximate near boundaries; nudge them if a daily lands in the wrong section.
+-- Evaluated high-to-low; first threshold the ID meets or exceeds wins.
+local ID_BANDS = {
+    { 88000, "MIDNIGHT" },
+    { 78000, "TWW" },
+    { 64500, "DRAGONFLIGHT" },
+    { 57000, "SHADOWLANDS" },
+    { 46500, "BFA" },
+    { 38800, "LEGION" },
+    { 35000, "WOD" },
+    { 29200, "MOP" },
+    { 24000, "CATA" },
+    { 11800, "WRATH" },
+    {  9000, "TBC" },
+    {     1, "CLASSIC" },
+}
+
+-- Classify a quest ID into an expansion KEY by its numeric band.
+local function expansionByIdBand(questID)
+    for _, band in ipairs(ID_BANDS) do
+        if questID >= band[1] then return band[2] end
+    end
+    return "OTHER"
+end
+
+-- Returns the expansion KEY for a quest ID. Prefers an explicit catalog entry,
+-- then falls back to the ID-band classifier. "OTHER" only for non-positive IDs.
 function DT.QuestData:GetExpansionForQuest(questID)
-    return questToExpansion[questID] or "OTHER"
+    if not questID or questID <= 0 then return "OTHER" end
+    return questToExpansion[questID] or expansionByIdBand(questID)
+end
+
+-- Blizzard continent-map NAME -> expansion key. Used to classify harvested
+-- dailies (which carry only a mapID) into an expansion section. This is the
+-- approximate "mapID -> continent -> expansion" path: every modern continent
+-- maps 1:1 to its expansion. Eastern Kingdoms / Kalimdor are shared between
+-- Classic and Cataclysm content; at retail, dailies there are overwhelmingly
+-- Cata-era, so we bucket them as CATA. Spellings cover the variants C_Map may
+-- return across client versions.
+local CONTINENT_EXP = {
+    ["Outland"]           = "TBC",
+    ["Northrend"]         = "WRATH",
+    ["Eastern Kingdoms"]  = "CATA",
+    ["Kalimdor"]          = "CATA",
+    ["Deepholm"]          = "CATA",
+    ["Pandaria"]          = "MOP",
+    ["The Wandering Isle"]= "MOP",
+    ["Draenor"]           = "WOD",
+    ["Broken Isles"]      = "LEGION",
+    ["Argus"]             = "LEGION",
+    ["Zandalar"]          = "BFA",
+    ["Kul Tiras"]         = "BFA",
+    ["Shadowlands"]       = "SHADOWLANDS",
+    ["The Shadowlands"]   = "SHADOWLANDS",
+    ["Dragon Isles"]      = "DRAGONFLIGHT",
+    ["The Dragon Isles"]  = "DRAGONFLIGHT",
+    ["Khaz Algar"]        = "TWW",
+    ["Isle of Dorn"]      = "TWW",
+}
+DT.QuestData.CONTINENT_EXP = CONTINENT_EXP
+
+-- Best-effort expansion KEY for a mapID, via its continent. Returns "OTHER"
+-- when the map can't be resolved or its continent isn't mapped. Depends on
+-- DT.Zones (resolved at call time, after all files have loaded).
+function DT.QuestData:GetExpansionForMap(mapID)
+    if not mapID or not DT.Zones then return "OTHER" end
+    local z = DT.Zones:Resolve(mapID)
+    local cont = z and z.continentName
+    return (cont and CONTINENT_EXP[cont]) or "OTHER"
 end
 
 -- Returns the catalog info table for a quest ID, or nil if uncataloged.
