@@ -35,6 +35,12 @@ local function requestRefresh()
         if DT.UI and DT.UI.Refresh then
             DT.UI:Refresh()
         end
+        -- Keep the optional TitanPanel bar in lockstep with the tracker; both
+        -- read the same checklist data, so they refresh from the same trigger.
+        -- No-ops cleanly if Titan isn't installed/registered.
+        if DT.Titan and DT.Titan.Update then
+            DT.Titan:Update()
+        end
     end)
 end
 DT.RequestRefresh = requestRefresh
@@ -101,6 +107,7 @@ local function printHelp()
     print("  |cffffd100/qt hide|r       - close the window")
     print("  |cffffd100/qt reset|r      - reset window position")
     print("  |cffffd100/qt stats|r      - checklist & discovery summary")
+    print("  |cffffd100/qt harvest|r    - open the harvester panel (buttons for everything)")
     print("  |cffffd100/qt help|r       - show this help")
     print("  aliases: |cffffd100/questtally|r, |cffffd100/dailies|r")
 end
@@ -118,11 +125,75 @@ local function printStats()
             print(string.format("   %s: %d/%d discovered", exp.name, b.discovered, b.total))
         end
     end
+    print(string.format("   harvested: %d dailies have baked rewards/details.",
+        DT.DB:GetHarvestedCount()))
     print("Discovery grows automatically as you pick up dailies in-game.")
 end
 
+local function printHarvestHelp()
+    print("|cff33ff99QuestTally|r harvest -- bake quest data first-party from your client:")
+    print("  |cffffd100/qt harvest full|r - one-button scan of every quest id (dailies + world quests)")
+    print("  |cffffd100/qt harvest discover [from] [to]|r - scan a custom id range (dev)")
+    print("  |cffffd100/qt harvest start|r  - enrich all known dailies (title/rewards/objectives)")
+    print("  |cffffd100/qt harvest sweep|r  - learn active world quests on known maps")
+    print("  |cffffd100/qt harvest status|r - progress of a running harvest")
+    print("  |cffffd100/qt harvest stop|r   - cancel a running harvest")
+    print("  |cffffd100/qt harvest export|r - open a copy box with ship-ready Lua")
+end
+
+-- Handle the `/qt harvest ...` subcommands. `rest` is the text after "harvest";
+-- it may carry its own arguments (e.g. "discover 1 5000").
+local function handleHarvest(rest)
+    local sub, args = (rest or ""):match("^(%S*)%s*(.-)$")
+
+    -- Bare "/qt harvest" (or "panel") opens the button panel -- no commands to memorize.
+    if sub == "" or sub == "panel" or sub == "tools" then
+        if DT.HarvestPanel then DT.HarvestPanel:Toggle() end
+        return
+    end
+
+    if sub == "start" then
+        DT.Harvester:Start()
+    elseif sub == "full" or sub == "fullscan" then
+        DT.Harvester:StartFullScan()
+    elseif sub == "discover" or sub == "range" then
+        local from, to = args:match("^(%d*)%s*(%d*)$")
+        if not (tonumber(from) and tonumber(to)) then
+            print("|cff33ff99QuestTally|r: give an id range to scan, in chunks, e.g.")
+            print("  |cffffd100/qt harvest discover 1 25000|r   (then 25001 50000, etc.)")
+            print("  Retail quest ids run from 1 to ~95000. Scan ~25k at a time.")
+            return
+        end
+        DT.Harvester:StartRange(tonumber(from), tonumber(to))
+    elseif sub == "stop" or sub == "cancel" then
+        DT.Harvester:Stop()
+    elseif sub == "status" then
+        DT.Harvester:Status()
+    elseif sub == "sweep" then
+        local n, err = DT.Harvester:SweepWorldQuests()
+        if err then
+            print("|cff33ff99QuestTally|r: " .. err)
+        else
+            print(string.format("|cff33ff99QuestTally|r: world-quest sweep learned %d new quests.", n or 0))
+        end
+    elseif sub == "export" then
+        DT.Harvester:Export()
+    else
+        printHarvestHelp()
+    end
+end
+
 SlashCmdList["QUESTTALLY"] = function(msg)
-    local cmd = strtrim((msg or ""):lower())
+    local full = strtrim((msg or ""):lower())
+    -- Split into first word + remainder so multi-word commands ("harvest start")
+    -- dispatch on the verb while keeping their argument.
+    local cmd, rest = full:match("^(%S*)%s*(.-)$")
+    cmd = cmd or full
+
+    if cmd == "harvest" then
+        handleHarvest(rest)
+        return
+    end
 
     if cmd == "" or cmd == "toggle" then
         if DT.UI and DT.UI.Toggle then DT.UI:Toggle() end

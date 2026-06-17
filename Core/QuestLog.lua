@@ -143,6 +143,13 @@ function DT.QuestLog:ScanQuestDetail()
         local gName, gMap, gx, gy = captureGiver()
         local res = DT.DB:LearnDaily(qID, GetTitleText and GetTitleText() or nil, faction, gMap, now)
         DT.DB:SetQuestGiver(qID, gName, gMap, gx, gy)
+        -- Capture the quest-giver's flavor/description text. This is the only
+        -- moment it's readable (GetQuestText is valid during QUEST_DETAIL); there
+        -- is no per-questID getter, so we grab it opportunistically here.
+        local desc = GetQuestText and GetQuestText() or nil
+        if desc and desc ~= "" then
+            DT.DB:SetQuestDetails(qID, { description = desc, harvested = now })
+        end
         return res
     end
     return false

@@ -2,6 +2,71 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.2.0] - 2026-06-16
+
+First-party quest-data harvesting: a developer toolchain that builds the
+catalog, rewards, and quest details straight from the live game client (no
+third-party datasets), the detail panel that displays them, TitanPanel bar
+improvements, and a fix for a detail-panel rendering bug.
+
+### Added
+- **In-game harvester** (`Core/Harvester.lua`) — generates quest data
+  first-party from your own client:
+  - **Full Scan / Discover** — scans the quest-ID space, recognizing dailies by
+    matching titles to the checklist and world quests via
+    `C_QuestLog.IsWorldQuest` (so Legion→Midnight world-quest content is found
+    without a curated list).
+  - **Enrich** — re-reads title/rewards/objectives for already-known dailies.
+  - **Sweep** — learns active world quests via `C_TaskQuest`.
+  - Throttled with in-flight backpressure and per-request expiry, so a full
+    unattended scan can't flood the server or hang on non-existent IDs.
+- **Harvester panel** (`UI/HarvestPanel.lua`) — a **Tools** button on the tracker
+  (and bare `/qt harvest`) opens a panel with one-click **Full Scan**, custom
+  range, Enrich, Sweep, Stop, and Export, plus a live progress readout.
+- **Baked rewards & objectives in the detail panel** — money, XP, items,
+  currencies, and objectives now show for dailies you haven't picked up,
+  sourced from harvested data (`Core/QuestRewards.lua` → `DT.BakedDetails`).
+- **Quest descriptions** — the giver's flavor text is captured when you view a
+  quest (`QUEST_DETAIL`) and displayed in the detail panel.
+- **Build pipeline** (`_generator/`, Node, zero dependencies):
+  - `build-from-harvest.js` — converts harvested SavedVariables into shippable
+    `Core/QuestRewards.lua`; **merges multiple snapshots** (e.g. Alliance + Horde).
+  - `build-chains.js` + `lib/wago.js` — quest chains from Blizzard's own DB2
+    tables via wago.tools.
+- **`Core/QuestRewards.lua`** — baked titles/rewards/objectives for **702 quests**
+  (Alliance harvest; Horde merge to follow).
+- **Midnight** added to the expansion list (`Core/Constants.lua`).
+
+### Fixed
+- **Detail-panel body now renders.** Row text was created without an anchor
+  point, so everything below the header (status, giver, objectives, rewards) drew
+  nothing. Text is now anchored within its row — this affected all quests, baked
+  or live.
+
+### Changed
+- The detail panel falls back to harvested/baked data when the live API hasn't
+  cached a quest, so undiscovered dailies show their rewards out of the box.
+- `/qt harvest` subcommands: `full`, `discover`, `start`, `sweep`, `status`,
+  `stop`, `export`.
+- **TitanPanel bar** (`Integrations/TitanPanel.lua`) now reads from the same
+  checklist engine (`DT.Checklist`) the tracker window uses, so the bar and
+  window can never disagree on counts or status. The tooltip adds **"Not yet
+  seen"** and **"Discovered X/total"** lines, and bar refreshes are driven by
+  Core's shared throttled refresh (so the bar updates on quest-giver discovery
+  too) instead of the plugin's own quest-event handlers.
+
+### Notes
+- **Sourcing is first-party only.** Quest titles, the daily flag, and rewards are
+  not in any static retail file (verified: retail ships no `Quest`/`QuestSparse`
+  DB2 — `QuestV2` is just an ID registry) — that data is streamed to the client,
+  so the harvester reads it there. wago.tools DB2 (Blizzard's own files) is used
+  only for quest chains; no curated third-party quest datasets.
+- The harvester is a **developer tool** for generating the data that ships; end
+  users simply load the baked files.
+- World quests mostly capture titles, not rewards (inactive WQs don't stream
+  reward data — that fills in via Sweep when they're live); quest descriptions
+  accumulate as quests are viewed.
+
 ## [0.1.1] - 2026-06-14
 
 Quest-giver locations and a baked-in giver/coordinate database, so dailies are
@@ -21,9 +86,11 @@ ready out of the box without exploring.
 - **Giver in the tooltip** — hovering a quest now shows `Giver: <name> (x, y)`.
 
 ### Changed
-- **Renamed the addon to QuestTally — Daily Quest Tracker** (folder, `.toc`,
-  SavedVariables, and slash commands). Primary command is now **`/qt`**
-  (aliases `/questtally`, `/dailies`).
+- **Renamed the addon from *DailyGrind* to *QuestTally — Daily Quest Tracker***
+  (folder, `.toc`, SavedVariables, and slash commands). The old slash commands
+  `/grind`, `/ddt`, and `/dailies` are replaced; the primary command is now
+  **`/qt`** (aliases `/questtally`, `/dailies`). *Any references to "DailyGrind"
+  in the 0.1.0 entry below describe the project under its former name.*
 - Checklist entries now resolve a **real quest ID from the baked data** even
   before discovery, so **live status, Wowhead links, and zone placement work
   out of the box** for the covered dailies (previously only after discovery).

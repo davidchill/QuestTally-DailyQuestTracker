@@ -27,10 +27,13 @@ local function titanAvailable()
     return TitanPanelButton_OnLoad ~= nil and TitanUtils_GetButton ~= nil
 end
 
--- Pull a fresh summary from the live quest data.
+-- Pull a fresh summary from the SAME source the tracker window renders from:
+-- the checklist engine (master checklist + baked giver DB + live-learned data).
+-- Using DT.Checklist here -- instead of the narrower DT.QuestLog:GetEntries(),
+-- which only sees the live log + learned quests -- guarantees the bar and the
+-- tracker can never disagree about which dailies exist or what status they're in.
 local function getCounts()
-    local entries = DT.QuestLog:GetEntries()
-    return DT.QuestLog:Summarize(entries)
+    return DT.QuestLog:Summarize(DT.Checklist:GetEntries())
 end
 
 -- ---------------------------------------------------------------------------
@@ -59,10 +62,13 @@ end
 -- left label from the right-aligned value (Titan renders these as two columns).
 function QuestTally_GetTooltipText()
     local c = getCounts()
-    local ready = c[DT.STATUS.READY_TURNIN] or 0
-    local prog  = c[DT.STATUS.IN_PROGRESS] or 0
-    local avail = c[DT.STATUS.AVAILABLE] or 0
-    local done  = c[DT.STATUS.COMPLETED] or 0
+    local ready  = c[DT.STATUS.READY_TURNIN] or 0
+    local prog   = c[DT.STATUS.IN_PROGRESS] or 0
+    local avail  = c[DT.STATUS.AVAILABLE] or 0
+    local done   = c[DT.STATUS.COMPLETED] or 0
+    local unseen = c[DT.STATUS.UNDISCOVERED] or 0
+    local total  = c.total or 0
+    local discovered = total - unseen   -- dailies with a resolved (known) quest ID
     local reset = DT.QuestLog:FormatDuration(DT.QuestLog:GetSecondsUntilReset())
 
     local lines = {
@@ -70,6 +76,9 @@ function QuestTally_GetTooltipText()
         "In progress\t" .. prog,
         "Available\t" .. avail,
         "Done today\t" .. done,
+        "Not yet seen\t" .. unseen,
+        " \t ",
+        "Discovered\t" .. discovered .. "/" .. total,
         " \t ",
         "Next reset\t" .. reset,
         " \t ",
@@ -178,31 +187,15 @@ function DT.Titan:Update()
 end
 
 -- ---------------------------------------------------------------------------
--- Lifecycle: register once Titan and the player world are ready, then keep the
--- bar text in sync with the same quest events the main window uses.
+-- Lifecycle: register the plugin once Titan and the player world are ready.
+-- After that, bar refreshes are driven by Core's RequestRefresh (the same
+-- throttled trigger that refreshes the tracker window), so the bar and the
+-- tracker always update together -- including on quest-giver discovery, which
+-- this plugin would otherwise miss. We only need PLAYER_ENTERING_WORLD here.
 -- ---------------------------------------------------------------------------
 local f = CreateFrame("Frame")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
-f:RegisterEvent("QUEST_LOG_UPDATE")
-f:RegisterEvent("QUEST_TURNED_IN")
-f:RegisterEvent("QUEST_ACCEPTED")
-f:RegisterEvent("QUEST_REMOVED")
-
-local updatePending = false
-local function throttledUpdate()
-    if updatePending then return end
-    updatePending = true
-    C_Timer.After(0.3, function()
-        updatePending = false
-        DT.Titan:Update()
-    end)
-end
-
-f:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
-        registerPlugin()
-        DT.Titan:Update()
-    else
-        throttledUpdate()
-    end
+f:SetScript("OnEvent", function()
+    registerPlugin()
+    DT.Titan:Update()
 end)

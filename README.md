@@ -5,9 +5,12 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.1.1** — built and tested against Retail patch **12.0.5**.
-> Quest-giver/coordinate coverage currently spans **TBC–MoP** and is expanding
-> toward the full Vanilla → Midnight goal.
+> **Version 0.2.0** — built and tested against Retail patch **12.0.x**.
+> Quest-giver/coordinate coverage spans **TBC–MoP**; rewards/details are
+> harvested first-party and expanding toward the full Vanilla → Midnight goal.
+>
+> *Formerly named **DailyGrind**. The addon was renamed to QuestTally in 0.1.1;
+> the old slash commands (`/grind`, `/ddt`) are replaced by **`/qt`**.*
 
 ## Features
 
@@ -29,6 +32,13 @@ available, tracking completion, and helping you finish them, organized by
   giver name and coordinates**, so the tooltip shows the giver and **right-click
   drops a travel waypoint** on them right out of the box — no exploring required.
   Talking to a giver also captures it **live**, which overrides the baked data.
+- **Quest details — baked in.** Click a daily to see its **rewards** (money, XP,
+  items, currencies), **objectives**, and the quest-giver's **description**, even
+  for quests you haven't picked up — populated from harvested data.
+- **First-party data harvester (developer tool).** A **Tools** panel (or
+  `/qt harvest`) drives a one-click scan that reads quest titles, rewards,
+  objectives, and world-quest data straight from your own game client — no
+  third-party datasets — and exports it for shipping in the addon.
 - **Reset timer.** Time remaining until the next daily reset.
 - **Row actions.** Left-click to **pin**, right-click to **travel to the giver /
   track the quest**, **Shift-click to copy the Wowhead link**.
@@ -58,6 +68,7 @@ Open the window with **`/qt`** (or `/questtally`, `/dailies`).
 | `/qt show` / `hide` | Open / close the window |
 | `/qt reset` | Reset the window position to center |
 | `/qt stats` | Checklist & discovery summary |
+| `/qt harvest` | Open the harvester panel (developer data tools) |
 | `/qt help` | List commands |
 
 ## How it works
@@ -80,16 +91,41 @@ not their numeric IDs. QuestTally bridges that gap:
 5. **Baked giver details.** `Core/QuestDetails.lua` ships 609 dailies' quest IDs,
    giver names, and map coordinates (TBC–MoP), so status, Wowhead links, and
    travel waypoints work immediately. Live capture refines any of it as you play.
+6. **Baked rewards & details.** `Core/QuestRewards.lua` ships each daily's
+   rewards, objectives, and description so the detail panel is populated out of
+   the box. This file is **harvested first-party** from the game client (see
+   below) — never scraped.
 
-Adding more dailies is a one-line append in `Core/ChecklistData.lua`.
+### First-party harvesting (developer toolchain)
+
+Retail does **not** ship quest titles, the daily flag, or rewards in any static
+file (`Quest`/`QuestSparse` don't exist on retail; `QuestV2` is just an ID
+registry) — that data is streamed to the client on demand. So QuestTally's data
+is generated from the **client itself**:
+
+- The in-game **harvester** (`Core/Harvester.lua`, the **Tools** panel) scans the
+  quest-ID space, recognizing dailies by checklist title-match and world quests
+  via `C_QuestLog.IsWorldQuest`, and reads their rewards/objectives/title live.
+- `_generator/build-from-harvest.js` converts the harvested SavedVariables into
+  the shipped `Core/QuestRewards.lua` (merging Alliance + Horde passes).
+- `_generator/build-chains.js` pulls quest chains from Blizzard's own DB2 tables
+  via [wago.tools](https://wago.tools).
+
+This is a **developer workflow**: the data is baked and shipped, so end users
+just install the addon. Adding more daily *names* is still a one-line append in
+`Core/ChecklistData.lua`.
 
 ## Roadmap
 
-- Expand the checklist to WoD → The War Within.
+- Complete the harvest on both factions and bake the full reward/detail set.
+- Extend the checklist to WoD → Midnight; world-quest content is already covered
+  first-party via the harvester's `IsWorldQuest` classifier.
+- Fill in world-quest rewards via periodic `Sweep` (inactive WQs don't stream
+  reward data until live).
+- REST API enrichment (item stats/icons, achievements, currencies) — pending
+  Blizzard API credentials.
 - World-map and minimap pins for daily turn-ins and objectives.
 - Live-ticking reset countdown and a settings panel.
-- Refine pre-mapped zones for capital-city and multi-zone dailies.
-- Classic / progression-client support via version-specific `.toc` files.
 
 ## Project layout
 
@@ -102,16 +138,24 @@ QuestTally/
 │   ├── QuestData.lua        Optional expansion-keyed catalog of quest IDs
 │   ├── ChecklistData.lua    Master checklist of daily quest titles (712)
 │   ├── QuestDetails.lua      Baked giver/coordinate database (609, TBC–MoP)
+│   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery
+│   ├── Harvester.lua        First-party data harvester (dev tool; Tools panel)
 │   ├── Zones.lua            Map/zone resolution + current-zone lookup
 │   ├── ZoneMap.lua          Pre-mapped continent/zone per category
 │   ├── Checklist.lua        Title↔ID matching engine + zone resolution
 │   └── Core.lua             Events, init, slash commands
 ├── UI/
-│   └── MainFrame.lua        The tracker window (3 modes, native skin)
+│   ├── MainFrame.lua        The tracker window (3 modes, native skin)
+│   ├── DetailPanel.lua      Per-quest details pane (rewards/objectives/desc)
+│   └── HarvestPanel.lua     Harvester button panel (developer tool)
 └── Integrations/
     └── TitanPanel.lua       Optional TitanPanel bar plugin (no-op without Titan)
 ```
+
+The `_generator/` folder (Node tools that bake harvested data into shipped Lua)
+sits at the repo root, alongside this addon folder. It's dev-only and not part
+of the installed addon.
 
 ## Credits
 

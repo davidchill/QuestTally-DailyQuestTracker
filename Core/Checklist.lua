@@ -146,6 +146,14 @@ local function metaForTitle(name)
     return list and list[1] or nil
 end
 
+-- Public: is this in-game title one of our known dailies? Returns the matching
+-- checklist entry (with expansion/type/category/side), or nil. Used by the
+-- harvester's discovery crawl to recognize dailies by name, first-party.
+function DT.Checklist:FindByTitle(name)
+    self:EnsureBuilt()
+    return metaForTitle(name)
+end
+
 -- Public: entries for every DISCOVERED daily (a learned quest ID), enriched with
 -- checklist metadata and resolved zone. These are the only quests we can place
 -- on a map, so the zone views are built from this.

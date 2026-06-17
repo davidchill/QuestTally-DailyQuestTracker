@@ -209,12 +209,23 @@ local function acquireRow(parent)
 
         row:SetScript("OnClick", function(self, button)
             local e = self.entry
-            if not e or not e.questID then return end
+            if not e then return end
+            -- Shift-click: copyable Wowhead link (needs a known quest ID).
             if IsShiftKeyDown() then
-                DT.UI:ShowWowheadLink(e.questID)
+                if e.questID then DT.UI:ShowWowheadLink(e.questID) end
                 return
             end
-            if button == "RightButton" then
+            if button == "LeftButton" then
+                -- Left-click: open the details pane (rewards / objectives).
+                DT.Details:Toggle(e)
+            elseif button == "MiddleButton" then
+                -- Middle-click: pin/unpin (this used to be left-click).
+                if e.questID then
+                    DT.DB:TogglePinned(e.questID)
+                    DT.UI:Refresh()
+                end
+            elseif button == "RightButton" then
+                if not e.questID then return end
                 -- If the quest isn't in the log yet and we know its giver's
                 -- location, point the waypoint at the giver so you can go get it.
                 -- Otherwise super-track the quest (objective / turn-in).
@@ -229,12 +240,9 @@ local function acquireRow(parent)
                     C_SuperTrack.SetSuperTrackedQuestID(e.questID)
                     print("|cff33ff99QuestTally|r: tracking " .. (e.title or e.questID))
                 end
-            else
-                DT.DB:TogglePinned(e.questID)
-                DT.UI:Refresh()
             end
         end)
-        row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        row:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
         row:SetScript("OnEnter", function(self)
             local e = self.entry
@@ -253,8 +261,9 @@ local function acquireRow(parent)
                 GameTooltip:AddLine("Giver: " .. e.giver.name .. coords, 0.9, 0.8, 0.4)
             end
             GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Left-click: quest details", 0.5, 0.8, 1)
             if e.questID then
-                GameTooltip:AddLine("Left-click: pin/unpin", 0.5, 0.8, 1)
+                GameTooltip:AddLine("Middle-click: pin/unpin", 0.5, 0.8, 1)
                 if e.giver and e.giver.x then
                     GameTooltip:AddLine("Right-click: travel to giver / track quest", 0.5, 0.8, 1)
                 else
@@ -412,6 +421,22 @@ local function createMainFrame()
     f.close:SetPoint("TOPRIGHT", -6, -6)
     f.close:SetScript("OnClick", function() DT.UI:Hide() end)
 
+    -- Small "Tools" button opens the harvester panel (the dev data-baking tools).
+    f.toolsBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    f.toolsBtn:SetSize(48, 18)
+    f.toolsBtn:SetText("Tools")
+    f.toolsBtn:SetPoint("TOPRIGHT", f.close, "TOPLEFT", -2, -3)
+    f.toolsBtn:SetScript("OnClick", function()
+        if DT.HarvestPanel then DT.HarvestPanel:Toggle() end
+    end)
+    f.toolsBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:SetText("Harvester tools", 1, 1, 1)
+        GameTooltip:AddLine("Bake quest data from your client (dev).", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    f.toolsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     f.summary = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.summary:SetPoint("TOP", f.title, "BOTTOM", 0, -8)
 
@@ -555,6 +580,9 @@ end
 
 function DT.UI:Hide()
     if mainFrame then mainFrame:Hide() end
+    -- The details pane is a child of the main frame (so it hides with it), but
+    -- clear its state too so a fresh open doesn't reuse a stale selection.
+    if DT.Details then DT.Details:Hide() end
 end
 
 function DT.UI:Toggle()

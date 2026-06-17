@@ -128,6 +128,53 @@ function DT.DB:GetQuestGiver(questID)
     return e and e.giver or nil
 end
 
+-- Store baked quest details captured by the harvester (title/rewards/objectives),
+-- so they can be shown for dailies the player hasn't loaded this session. Merges
+-- field-by-field, keeping the best data we have. `details` may contain any of:
+--   { title, rewards = {...}, objectives = {...}, harvested = <serverTime> }
+function DT.DB:SetQuestDetails(questID, details)
+    if not questID or not details then return end
+    local e = self.account.learned[questID]
+    if not e then return end  -- LearnDaily must have created the record first
+    e.details = e.details or {}
+    local d = e.details
+    if details.title then d.title = details.title end
+    if details.rewards then d.rewards = details.rewards end
+    if details.objectives then d.objectives = details.objectives end
+    if details.description then d.description = details.description end
+    if details.harvested then d.harvested = details.harvested end
+end
+
+function DT.DB:GetQuestDetails(questID)
+    local e = self.account.learned[questID]
+    return e and e.details or nil
+end
+
+-- Tag a learned quest with the kind of content it is, as classified first-party
+-- during a discovery crawl: "daily" (matched the checklist) or "worldquest"
+-- (flagged by C_QuestLog.IsWorldQuest). Lets modern content be told apart from
+-- classic-style dailies without a curated list for it.
+function DT.DB:SetQuestKind(questID, kind)
+    local e = self.account.learned[questID]
+    if e and kind then e.kind = kind end
+end
+
+function DT.DB:GetQuestKind(questID)
+    local e = self.account.learned[questID]
+    return e and e.kind or nil
+end
+
+-- How many learned dailies carry baked harvester details (rewards/objectives).
+function DT.DB:GetHarvestedCount()
+    local n = 0
+    for _, info in pairs(self.account.learned) do
+        if info.details and (info.details.rewards or info.details.objectives) then
+            n = n + 1
+        end
+    end
+    return n
+end
+
 function DT.DB:IsPinned(questID)
     return self.char.pinned[questID] == true
 end

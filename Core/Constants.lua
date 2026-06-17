@@ -6,7 +6,7 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.1.1"
+DT.VERSION = "0.2.0"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
@@ -24,6 +24,7 @@ DT.EXPANSIONS = {
     { key = "SHADOWLANDS", id = 8,  name = "Shadowlands",        short = "SL" },
     { key = "DRAGONFLIGHT",id = 9,  name = "Dragonflight",       short = "DF" },
     { key = "TWW",         id = 10, name = "The War Within",     short = "TWW" },
+    { key = "MIDNIGHT",    id = 11, name = "Midnight",           short = "Midnight" },
     { key = "OTHER",       id = 99, name = "Uncategorized",      short = "Other" },
 }
 
