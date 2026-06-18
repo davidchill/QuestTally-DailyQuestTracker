@@ -2,6 +2,40 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.1] - 2026-06-18
+
+A polish release: a new **Pinned** companion panel, the **QuestTally logo** in the
+title bar, and fixes to quest tagging, the right-click waypoint, and the Current
+Zone tab.
+
+### Added
+- **Pinned panel.** A companion pane docked to the **left** of the window
+  (mirroring the detail panel on the right) lists every quest you've **pinned** by
+  middle-clicking. Each row shows status + zone; **left-click** opens its details,
+  **right-click** un-pins it. Toggle it with the new **Pinned** button on the title
+  bar. (`UI/PinnedPanel.lua`)
+- **Logo in the title bar.** The stock note icon is replaced by the QuestTally
+  app-icon logo (`Media/QuestTally-Logo.tga`, baked from the first-party art).
+
+### Fixed
+- **Skyriding races now tag correctly.** Base race courses (e.g. *Elwynn Forest
+  Flash*, *Azure Span Sprint*) were mislabeled as faction dailies — only their
+  *Advanced/Reverse* variants got the **Race** tag. All **75** base courses are now
+  tagged, and 13 incidental expansion mislabels (Mount Hyjal, Zangarmarsh) were
+  corrected.
+- **Right-click waypoints work for the whole catalog.** The waypoint needs a giver
+  map ID, which the wiki data never supplied — so for **572** quests with known
+  coordinates the pin silently failed. The giver's map is now resolved from live
+  data or, failing that, from the quest's zone (via a new runtime zone-name → map
+  index), so right-click reliably drops the tracked map pin.
+- **Current Zone tab no longer drops quests.** It filtered on each quest's raw zone
+  name while the other tabs use normalized zone grouping, so ~45 quests under
+  sub-hub names (Molten Front, Shrine of Seven Stars, Landfall, …) were missing.
+  The tab now shows every quest mapped to your zone, matching the All/Browse view.
+- **A few more quests tagged right.** Tol Barad / Tol Barad Peninsula dailies now
+  carry the **PvP** tag (contested-control zones), and a stray garrison daily
+  (*Scrap Meltdown*) now gets the **Garrison** tag.
+
 ## [0.4.0] - 2026-06-17
 
 A data-quality and organization release. A fourth first-party source — the

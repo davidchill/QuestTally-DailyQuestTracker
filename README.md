@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.4.0** — built and tested against Retail patch **12.0.x**.
+> **Version 0.4.1** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~2,100 dailies across every expansion** (wiki + Blizzard-API
 > gap-fill) plus **~3,600 world quests** (Legion → Midnight, hidden by default),
 > all from first-party sources.
@@ -20,10 +20,14 @@ available, tracking completion, and helping you finish them, organized by
   — plus **~3,600 world quests** (Legion → Midnight, from Blizzard's client
   database). Grouped by **expansion → zone**.
 - **Modern window.** A dark panel with subtle gradients and bevels (not flat),
-  **collapsible sections color-coded to each expansion's logo** that **nest by
-  zone**, an overall **progress counter**, per-section `done / total` counts,
-  custom themed scrollbars and close buttons, and bottom tabs. Movable, with
-  remembered position and persisted fold state.
+  the **QuestTally logo** in the title bar, **collapsible sections color-coded to
+  each expansion's logo** that **nest by zone**, an overall **progress counter**,
+  per-section `done / total` counts, custom themed scrollbars and close buttons,
+  and bottom tabs. Movable, with remembered position and persisted fold state.
+- **Pinned panel.** Middle-click any quest to **pin** it; a companion panel docks
+  to the left of the window listing your pins (status + zone). Left-click a pinned
+  row to open its details, right-click to un-pin. Toggle it with the title-bar
+  **Pinned** button.
 - **Quest-kind tags.** A small inline badge labels each quest's kind — **Prof**,
   **Pet**, **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**,
   **Garrison** — so it groups by zone yet stays identifiable at a glance.
@@ -51,9 +55,9 @@ available, tracking completion, and helping you finish them, organized by
 - **Search by location.** Three tabs: **Current Zone** *(default)* · **All**
   (everything by expansion) · **Browse** (pick a Continent → Zone).
 - **Faction-aware.** Only your character's faction's dailies are shown.
-- **Reset timer, row actions.** Time until daily reset; left-click to **pin**,
-  right-click to **travel to the giver / track the quest**, **Shift-click to copy
-  the Wowhead link**.
+- **Reset timer, row actions.** Time until daily reset; **left-click** for
+  details, **middle-click** to **pin**, **right-click** to **travel to the giver /
+  track the quest**, **Shift-click** to copy the **Wowhead link**.
 - **First-party data only.** All quest data comes from Blizzard's client database,
   Blizzard's official **Game Data API**, the openly-licensed community wiki, or
   your live game — never scraped from a commercial site. A developer **harvester**
@@ -179,8 +183,11 @@ QuestTally/
 │   └── Core.lua             Events, init, slash commands
 ├── UI/
 │   ├── MainFrame.lua        The tracker window (3 modes, dark theme + DT.UI.Skin)
-│   ├── DetailPanel.lua      Per-quest details pane (rewards/objectives/desc)
+│   ├── DetailPanel.lua      Per-quest details pane, right side (rewards/objectives/desc)
+│   ├── PinnedPanel.lua      Pinned-quests pane, left side (middle-clicked favourites)
 │   └── HarvestPanel.lua     Harvester button panel (developer tool)
+├── Media/
+│   └── QuestTally-Logo.tga  Title-bar logo (baked from the first-party art)
 └── Integrations/
     └── TitanPanel.lua       Optional TitanPanel bar plugin (no-op without Titan)
 ```

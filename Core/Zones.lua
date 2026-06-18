@@ -54,6 +54,43 @@ function DT.Zones:Resolve(mapID)
     return result
 end
 
+-- Reverse lookup: zone NAME -> uiMapID. Needed to place a right-click waypoint on
+-- a quest whose giver coordinates we know but whose map ID we don't (the wiki
+-- dailies ship zone-relative x/y but no map ID). WoW only exposes name->ID at
+-- runtime, so we walk the whole map tree once from the cosmic root and index every
+-- Zone-level map. Same zone name can repeat across expansions (two Shadowmoon
+-- Valleys, two Dalarans), so we also key by continent+zone to disambiguate.
+local COSMIC_MAP = 946          -- root of the uiMap hierarchy
+local nameToMap                 -- { [zoneName] = mapID }            (first writer wins)
+local contZoneToMap             -- { ["continent|zone"] = mapID }    (disambiguated)
+
+local function buildNameIndex()
+    nameToMap, contZoneToMap = {}, {}
+    if not (C_Map and C_Map.GetMapChildrenInfo) then return end
+    local zones = C_Map.GetMapChildrenInfo(COSMIC_MAP, MAPTYPE_ZONE, true) or {}
+    for _, info in ipairs(zones) do
+        if info.name and info.mapID then
+            if not nameToMap[info.name] then nameToMap[info.name] = info.mapID end
+            local res = DT.Zones:Resolve(info.mapID)
+            if res and res.continentName then
+                contZoneToMap[res.continentName .. "|" .. info.name] = info.mapID
+            end
+        end
+    end
+end
+
+-- Public: best uiMapID for a zone name (continentName optional but recommended,
+-- it disambiguates names shared across expansions). nil if the zone is unknown.
+function DT.Zones:MapIDForZone(zoneName, continentName)
+    if not zoneName then return nil end
+    if not nameToMap then buildNameIndex() end
+    if continentName then
+        local id = contZoneToMap[continentName .. "|" .. zoneName]
+        if id then return id end
+    end
+    return nameToMap[zoneName]
+end
+
 -- The player's current map and its resolved zone/continent.
 function DT.Zones:GetPlayerZone()
     if not C_Map or not C_Map.GetBestMapForUnit then return nil, nil end

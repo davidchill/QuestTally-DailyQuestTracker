@@ -157,11 +157,22 @@ local PVP_QUESTS = {
     [79098] = true, -- Clear the Forest!    (Ashenvale, Horde)
 }
 
+-- Contested PvP-control zones: every daily here is gated on your faction holding
+-- the zone, so the whole zone reads as PvP content (Wintergrasp is listed for
+-- consistency though it has no dailies in the current catalog).
+local PVP_ZONES = {
+    ["Tol Barad"]            = true,
+    ["Tol Barad Peninsula"]  = true,
+    ["Wintergrasp"]          = true,
+}
+
 -- PvP dailies: battleground "Call to Arms" quests, the PvP world-quest subtypes
--- ("PvP World Quest" / "PvP Elite World Quest"), and the curated zone-event set.
+-- ("PvP World Quest" / "PvP Elite World Quest"), the contested-zone dailies, and
+-- the curated zone-event set.
 local function isPvP(e)
     if e.questID and PVP_QUESTS[e.questID] then return true end
     if e.category and e.category:find("PvP", 1, true) then return true end
+    if (e.zoneName and PVP_ZONES[e.zoneName]) or (e.category and PVP_ZONES[e.category]) then return true end
     local t = e.rawTitle or e.title
     return t ~= nil and t:find("^Call to Arms:") ~= nil
 end
@@ -189,7 +200,9 @@ local function isRace(e) return e.type == "Race" or e.category == "Skyriding Rac
 -- ship as type="Event"; the showSeasonal setting already gates them, the tag just
 -- labels them. Garrison Support is the WoD garrison follower-mission hub.
 local function isHoliday(e)  return e.type == "Event" end
-local function isGarrison(e) return e.category == "Garrison Support" end
+-- Garrison follower-mission hub. The wiki labels most of these "Garrison Support"
+-- but a few carry the bare "Garrison" spelling; accept both so none slip through.
+local function isGarrison(e) return e.category == "Garrison Support" or e.category == "Garrison" end
 
 -- Quest-kind labels — shown as an inline tag on the row (content isn't grouped
 -- by these; it's grouped by zone).
@@ -259,6 +272,7 @@ local ZONE_ALIASES = {
     ["Shadowmoon Valley (alternate universe)"] = "Shadowmoon Valley",
     ["Lunarfall"]                             = "Shadowmoon Valley",
     ["Coilfang Reservoir"]                    = "Zangarmarsh",
+    ["Garrison"]                              = "Garrison Support",
 }
 
 -- A real zone name for grouping. Handles bad catalog data: a character level
@@ -456,7 +470,15 @@ local function buildZoneMode()
         return { { type = "message", text = "Unable to determine your current zone." } },
                "Current zone"
     end
-    local entries = applyKindFilters(DT.Checklist:GetEntries({ zoneName = zone.zoneName }))
+    -- Match the SAME zone bucketing the Browse/All tabs use: filter on the
+    -- normalized zoneLabel (which folds sub-hubs/aliases like "Molten Front" ->
+    -- "Mount Hyjal" and cleans numeric/multi-zone strings), not the raw catalog
+    -- zoneName. Otherwise this tab silently drops quests those tabs group here.
+    local target = ZONE_ALIASES[zone.zoneName] or zone.zoneName
+    local entries = {}
+    for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
+        if zoneLabel(e) == target then entries[#entries+1] = e end
+    end
     table.sort(entries, sortEntries)
     local display = {}
     emitSection(display, {
@@ -616,6 +638,7 @@ local function acquireRow(parent)
                 if e.questID then
                     DT.DB:TogglePinned(e.questID)
                     DT.UI:Refresh()
+                    if DT.Pinned then DT.Pinned:Refresh() end
                 end
             elseif button == "RightButton" then
                 if not e.questID then return end
@@ -968,12 +991,13 @@ local function createMainFrame()
     f.titleLo:SetPoint("BOTTOMRIGHT", f.titleBar, "BOTTOMRIGHT", 0, 0)
     f.titleLo:SetHeight(1)
 
-    -- Title icon + text.
+    -- Title icon + text. The QuestTally app-icon logo (baked to TGA by
+    -- _generator/build-logo-texture.js); its art carries its own border, so the
+    -- texture is shown full-frame rather than trimmed like a stock action icon.
     f.portrait = f:CreateTexture(nil, "ARTWORK")
     f.portrait:SetSize(18, 18)
     f.portrait:SetPoint("LEFT", f.titleBar, "LEFT", 9, 0)
-    f.portrait:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
-    f.portrait:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    f.portrait:SetTexture("Interface\\AddOns\\QuestTally\\Media\\QuestTally-Logo.tga")
 
     f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.title:SetPoint("LEFT", f.portrait, "RIGHT", 7, 0)
@@ -1015,9 +1039,26 @@ local function createMainFrame()
     end)
     f.toolsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- Overall progress counter, right-aligned before the Tools button.
+    -- "Pinned" button toggles the companion panel of middle-clicked favourites,
+    -- docked to the left edge of the window.
+    f.pinnedBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    f.pinnedBtn:SetSize(52, 18)
+    f.pinnedBtn:SetText("Pinned")
+    f.pinnedBtn:SetPoint("RIGHT", f.toolsBtn, "LEFT", -4, 0)
+    f.pinnedBtn:SetScript("OnClick", function()
+        if DT.Pinned then DT.Pinned:Toggle() end
+    end)
+    f.pinnedBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:SetText("Pinned quests", 1, 1, 1)
+        GameTooltip:AddLine("Show/hide your middle-clicked favourites.", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    f.pinnedBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -- Overall progress counter, right-aligned before the Pinned button.
     f.progress = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.progress:SetPoint("RIGHT", f.toolsBtn, "LEFT", -8, 0)
+    f.progress:SetPoint("RIGHT", f.pinnedBtn, "LEFT", -8, 0)
     f.progress:SetJustifyH("RIGHT")
 
     -- Context sub-bar (zone / reset info).
@@ -1356,6 +1397,9 @@ function DT.UI:Refresh()
 
     updateModeButtons()
     renderDisplay(display)
+
+    -- Keep the pinned companion panel in step (status/zone can change on refresh).
+    if DT.Pinned then DT.Pinned:Refresh() end
 end
 
 -- ---------------------------------------------------------------------------
@@ -1372,9 +1416,10 @@ function DT.UI:Hide()
         if mainFrame.settings then mainFrame.settings:Hide() end
         mainFrame:Hide()
     end
-    -- The details pane is a child of the main frame (so it hides with it), but
-    -- clear its state too so a fresh open doesn't reuse a stale selection.
+    -- The side panes are children of the main frame (so they hide with it), but
+    -- clear their state too so a fresh open doesn't reuse a stale selection.
     if DT.Details then DT.Details:Hide() end
+    if DT.Pinned then DT.Pinned:Hide() end
 end
 
 function DT.UI:Toggle()

@@ -245,7 +245,26 @@ function DT.Checklist:GetEntries(opts)
             if not giver then
                 local wd = questID and DT.WikiDetails and DT.WikiDetails[questID]
                 if wd and wd.g then
-                    giver = { name = wd.g.n, mapID = wd.g.m, x = wd.g.x, y = wd.g.y, loc = wd.g.loc }
+                    -- Wiki givers carry zone-relative x/y but no map ID, so the
+                    -- right-click waypoint can't place a pin from them alone. When
+                    -- we know the quest's map from live/harvested data, supply its
+                    -- ZONE-level map ID (matching the zone-relative coords).
+                    local gmap = wd.g.m
+                    if not gmap then
+                        local lm = (resolved and resolved.mapID) or (baked and baked.m)
+                        if lm and DT.Zones then
+                            local z = DT.Zones:Resolve(lm)
+                            gmap = (z and z.zoneID) or lm
+                        else
+                            gmap = lm
+                        end
+                    end
+                    -- Last resort: derive the map from the quest's zone name, so
+                    -- even never-discovered wiki dailies can place a waypoint.
+                    if not gmap and DT.Zones and DT.Zones.MapIDForZone then
+                        gmap = DT.Zones:MapIDForZone(zoneName, continentName)
+                    end
+                    giver = { name = wd.g.n, mapID = gmap, x = wd.g.x, y = wd.g.y, loc = wd.g.loc }
                 elseif entry.giver then
                     giver = { name = entry.giver }
                 end
