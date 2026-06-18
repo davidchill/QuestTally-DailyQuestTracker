@@ -5,35 +5,42 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.3.0** — built and tested against Retail patch **12.0.x**.
-> Catalog covers **~1,460 dailies across every expansion** plus **~3,600 world
-> quests** (Legion → Midnight), all from first-party sources.
+> **Version 0.4.0** — built and tested against Retail patch **12.0.x**.
+> Catalog covers **~2,100 dailies across every expansion** (wiki + Blizzard-API
+> gap-fill) plus **~3,600 world quests** (Legion → Midnight, hidden by default),
+> all from first-party sources.
 >
 > *Formerly named **DailyGrind**. The addon was renamed to QuestTally in 0.1.1;
 > the old slash commands (`/grind`, `/ddt`) are replaced by **`/qt`**.*
 
 ## Features
 
-- **Full quest catalog.** **~1,460 daily quests across every expansion** (from
-  warcraft.wiki) plus **~3,600 world quests** (Legion → Midnight, from Blizzard's
-  own client database), grouped by expansion.
+- **Full quest catalog.** **~2,100 daily quests across every expansion** — from
+  warcraft.wiki, completed and zone-corrected against Blizzard's own Game Data API
+  — plus **~3,600 world quests** (Legion → Midnight, from Blizzard's client
+  database). Grouped by **expansion → zone**.
 - **Modern window.** A dark panel with subtle gradients and bevels (not flat),
-  **collapsible sections color-coded to each expansion's logo**, an overall
-  **progress counter**, per-section `done / total` counts, custom themed
-  scrollbars and close buttons, and bottom tabs. Movable, with remembered position
-  and persisted fold state.
+  **collapsible sections color-coded to each expansion's logo** that **nest by
+  zone**, an overall **progress counter**, per-section `done / total` counts,
+  custom themed scrollbars and close buttons, and bottom tabs. Movable, with
+  remembered position and persisted fold state.
+- **Quest-kind tags.** A small inline badge labels each quest's kind — **Prof**,
+  **Pet**, **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**,
+  **Garrison** — so it groups by zone yet stays identifiable at a glance.
 - **Live status, always accurate.** Reads your real quest log and completion
   flags — never stale. Each quest is color-coded:
   - 🟡 **Available** · 🔵 **In Progress** · 🟢 **Ready to Turn In** ·
     ⚪ **Done Today** · ⚫ **Not Active** *(world quest not currently up)* ·
     🟣 **Not Yet Seen**
-- **World quests, rotation-aware.** Only world quests that are **currently active**
-  show by default; the full catalog is one toggle away in Settings.
-- **Seasonal quests, out of the way.** Holiday dailies (Love is in the Air,
-  Brewfest, Hallow's End, …) are **hidden by default** and revealed via Settings,
-  so they don't clutter the list year-round.
-- **Settings panel.** A **gear button** on the title bar toggles holiday quests,
-  inactive world quests, and newest-expansions-first ordering.
+- **World quests hidden by default.** Blizzard already tracks world quests
+  natively on the map, so QuestTally focuses on the dailies it *doesn't* surface
+  well. The full ~3,600 catalog is one toggle away in Settings.
+- **Clutter, out of the way.** Holiday dailies, profession dailies, battle-pet
+  dailies, and skyriding races each have their own Settings toggle (races and
+  holidays **hidden by default**), so the list stays focused year-round.
+- **Settings panel.** A **gear button** on the title bar toggles world quests,
+  inactive world quests, holiday quests, profession dailies, battle-pet dailies,
+  skyriding races, and newest-expansions-first ordering.
 - **Quest givers & coordinates — baked in.** Dailies ship with their **giver name
   and (where the wiki has them) map coordinates**, so the tooltip shows the giver
   and **right-click drops a travel waypoint**. Talking to a giver captures it
@@ -48,9 +55,9 @@ available, tracking completion, and helping you finish them, organized by
   right-click to **travel to the giver / track the quest**, **Shift-click to copy
   the Wowhead link**.
 - **First-party data only.** All quest data comes from Blizzard's client database,
-  the openly-licensed community wiki, or your live game — never scraped from a
-  commercial site. A developer **harvester** (`/qt harvest`) reads fresh data from
-  your own client.
+  Blizzard's official **Game Data API**, the openly-licensed community wiki, or
+  your live game — never scraped from a commercial site. A developer **harvester**
+  (`/qt harvest`) reads fresh data from your own client.
 - **TitanPanel support (optional).** If [TitanPanel](https://www.curseforge.com/wow/addons/titan-panel)
   is installed, a bar button shows a live **"Dailies: done/total"** summary with
   a per-status tooltip. Works fully without Titan.
@@ -89,15 +96,21 @@ entry up with real-time status:
    across every expansion** — with real quest IDs, zones, and givers — and
    `Core/WikiDetails.lua` ships their rewards, objectives, descriptions, and giver
    coordinates. Both are imported from warcraft.wiki.gg (CC BY-SA).
-2. **World-quest catalog (Blizzard's database).** `Core/WorldQuestData.lua` ships
+2. **Gap-fill + corrections (Blizzard Game Data API).** `Core/ChecklistDataExtra.lua`
+   adds **~650 more dailies** the wiki list missed (found by sweeping the official
+   API for `is_daily` quests), and the same API corrected **452 zones** in the wiki
+   list. `Core/ApiDetails.lua` ships **~2,000 quest descriptions** so the gap
+   dailies show their flavor text.
+3. **World-quest catalog (Blizzard's database).** `Core/WorldQuestData.lua` ships
    **~3,600 world quests** (Legion → Midnight) — title, expansion, zone — mined
-   from Blizzard's own retail client database (DB2, via wago.tools).
-3. **Harvested details.** `Core/QuestRewards.lua` ships rewards/objectives read
+   from Blizzard's own retail client database (DB2, via wago.tools). Hidden by
+   default (Blizzard tracks these on the map already).
+4. **Harvested details.** `Core/QuestRewards.lua` ships rewards/objectives read
    first-party from the live client (see the harvester, below).
-4. **Live status.** `Core/Checklist.lua` merges those catalogs and asks the game
+5. **Live status.** `Core/Checklist.lua` merges those catalogs and asks the game
    for each quest's real-time status — never stale. World quests are
    **rotation-aware**: ones not currently up read as *Not Active*.
-5. **Live capture.** Talking to a quest giver records its **exact coordinates**
+6. **Live capture.** Talking to a quest giver records its **exact coordinates**
    account-wide, overriding the baked data — so locations sharpen as you play.
 
 ### First-party harvesting (developer toolchain)
@@ -120,6 +133,12 @@ is generated from the **client itself**:
   and `Core/WikiDetails.lua`.
 - `_generator/build-from-harvest.js` converts the harvested SavedVariables into
   the shipped `Core/QuestRewards.lua` (merging Alliance + Horde passes).
+- `_generator/build-quest-details-from-api.js` queries Blizzard's official **Game
+  Data API** to **audit** our titles/zones (`--fix-zones` rewrote 452 zones) and
+  **find gaps** (`--find-gaps` sweeps each zone for `is_daily` quests we lack).
+  `build-gap-entries.js` turns those gaps into `Core/ChecklistDataExtra.lua`, and
+  `build-api-details.js` bakes their descriptions into `Core/ApiDetails.lua`.
+  (Needs a free Battle.net API client; build-time only — addons can't call the web.)
 
 This is a **developer workflow**: the data is baked and shipped, so end users
 just install the addon. Re-running the generators against a newer client build
@@ -128,12 +147,12 @@ or wiki refreshes the catalogs.
 ## Roadmap
 
 - Complete the harvest on both factions and bake the full reward/detail set.
-- Extend the checklist to WoD → Midnight; world-quest content is already covered
-  first-party via the harvester's `IsWorldQuest` classifier.
+- Place the remaining "Various"-zone dailies (Blizzard's API has no area for them;
+  only a live harvest can resolve their zone).
 - Fill in world-quest rewards via periodic `Sweep` (inactive WQs don't stream
   reward data until live).
-- REST API enrichment (item stats/icons, achievements, currencies) — pending
-  Blizzard API credentials.
+- Extend the API enrichment to **rewards/currencies** (descriptions and zones are
+  done as of 0.4.0).
 - World-map and minimap pins for daily turn-ins and objectives.
 - Live-ticking reset countdown (currently updates on quest events, not every second).
 
@@ -147,7 +166,9 @@ QuestTally/
 │   ├── Database.lua         SavedVariables, defaults, learned-quest store
 │   ├── QuestData.lua        Optional expansion-keyed catalog of quest IDs
 │   ├── ChecklistData.lua    Daily master list from warcraft.wiki (id/zone/giver)
+│   ├── ChecklistDataExtra.lua  API-found dailies the wiki missed (~650; gaps + races)
 │   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords (by id)
+│   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
 │   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery

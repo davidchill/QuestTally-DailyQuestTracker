@@ -2,6 +2,68 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.0] - 2026-06-17
+
+A data-quality and organization release. A fourth first-party source — the
+official **Blizzard Game Data API** — was added to the build pipeline and used to
+**audit, correct, and complete** the daily catalog: hundreds of zones fixed, ~400
+genuinely-missing dailies filled in, and descriptions baked for the gaps. The
+list is now organized by **zone within each expansion** and **tagged by quest
+kind**, with world quests hidden by default.
+
+### Added
+- **Zone sub-grouping.** In the **All** view, each expansion now nests its quests
+  into **collapsible zone sub-sections** (e.g. *The War Within → Hallowfall*),
+  with their own `done / total` counts and persisted fold state.
+- **Quest-kind tags.** Inline colored badges label a quest's kind while it still
+  groups by zone: **Prof**, **Pet**, **PvP**, **Incursion**, **Calling**,
+  **Ally** (Combat Ally), **Race** (skyriding), **Holiday**, and **Garrison**.
+- **~400 missing dailies.** A completeness sweep against the Blizzard API found
+  dailies the wiki list never had — they ship in the new `Core/ChecklistDataExtra.lua`
+  (397 hub dailies + 253 skyriding races), zone-classified and faction-aware.
+- **Baked quest descriptions.** `Core/ApiDetails.lua` ships **~2,000 quest
+  descriptions** from the Blizzard API, so the gap dailies (and any entry the wiki
+  never described) show their flavor text in the detail panel.
+- **New Settings toggles:** *Show world quests* (off by default), *Show skyriding
+  races* (off), *Show profession dailies*, and *Show battle pet dailies*.
+- **Blizzard Game Data API pipeline.** New developer tools
+  (`_generator/build-quest-details-from-api.js`, `build-gap-entries.js`,
+  `build-api-details.js`) audit our titles/zones, find gaps, and bake details —
+  all first-party, build-time only (addons can't make web requests).
+
+### Changed
+- **Group by zone, tag by kind.** Professions, battle pets, PvP, incursions,
+  callings, etc. are no longer pseudo-"zones" — every quest groups under its real
+  geographic zone and carries a kind tag instead.
+- **World quests hidden by default.** Blizzard tracks world quests natively on the
+  map, so the ~3,600-entry catalog is now off by default (one toggle reveals it).
+  The catalog's non-WQ task quests — **Callings, Combat Ally, Island Weekly** — are
+  correctly told apart and **kept** as tracked dailies.
+- **452 zones corrected** from the Blizzard API: the placeholder `"Various"` zone
+  (390 quests), character-level leaks (`"60"`/`"90"`), and plain-wrong zones
+  (e.g. a Korthia daily mislabeled Revendreth) now use Blizzard's canonical names.
+- **Sub-hub zones merged.** Aliases fold Molten Front → Mount Hyjal, Argent
+  Tournament → Icecrown, Landfall → Krasarang Wilds, Shrine of Seven Stars → Vale,
+  etc., so they group with their parent zone.
+- **Expansion classification is zone-based** for the new entries — the quest-ID
+  band is unreliable because Blizzard reissues old dailies with modern IDs (439 of
+  the 650 gaps would have been misfiled by ID alone).
+
+### Fixed
+- **Quest descriptions no longer go blank.** The detail panel resolved description
+  from the *first* data source that existed, even when it had none — so a quest
+  with a harvested or wiki entry lacking a description showed nothing, even when
+  another source had the text (702 harvested + 726 wiki entries were affected).
+  Description is now resolved independently across every source (live → harvested →
+  wiki → API). ~99% of tracked quests now show their description.
+- **Detail panel no longer hangs on "Loading…".** Quests whose data the client
+  can't supply (group/raid-style, never-harvested) now settle on the available
+  objectives or a clear note, instead of spinning forever; added a load-timeout
+  safety net.
+- **Placeholder quests hidden.** Blizzard's internal test entries that leaked into
+  the catalog (`Calling Quest (DNT)`, `x.x Testing (YGR)`) are filtered out, and
+  the catalog generator's junk filter was widened to catch them at the source.
+
 ## [0.3.0] - 2026-06-17
 
 A visual overhaul of the tracker — a darker, less-flat theme with custom widgets —

@@ -15,6 +15,8 @@ DT.UI = {}
 
 local ROW_HEIGHT = 20
 local SECTION_HEIGHT = 24
+local SUBSECTION_HEIGHT = 21   -- nested zone / themed sub-group headers (level 2)
+local SUBSECTION_INDENT = 14   -- how far level-2 headers are inset from the left
 local CONTENT_WIDTH = 332
 
 local rowPool, activeRows = {}, {}
@@ -112,6 +114,210 @@ local function expansionOrderIndex(expKey)
     return exp.id
 end
 
+-- ---------------------------------------------------------------------------
+-- Quest-kind classification (Profession / Battle Pet / PvP / Incursion)
+-- ---------------------------------------------------------------------------
+-- Quests are grouped by zone; their *kind* is shown as a small inline tag on the
+-- row instead of a separate group, so e.g. a fishing daily and a battle in the
+-- same zone sit together, each labeled. These classifiers also drive the
+-- show/hide settings toggles. The data already labels most kinds: ChecklistData
+-- uses type="Profession" / category="Battle Pets", and the world-quest catalog
+-- stores its subtype in `category` (e.g. "Mining World Quest", "PvP World Quest").
+local PROFESSION_WQ = {
+    ["Alchemy World Quest"]       = true, ["Blacksmithing World Quest"] = true,
+    ["Cooking World Quest"]       = true, ["Enchanting World Quest"]    = true,
+    ["Engineering World Quest"]   = true, ["Fishing World Quest"]       = true,
+    ["Herbalism World Quest"]     = true, ["Inscription World Quest"]   = true,
+    ["Jewelcrafting World Quest"] = true, ["Leatherworking World Quest"]= true,
+    ["Mining World Quest"]        = true, ["Skinning World Quest"]      = true,
+    ["Tailoring World Quest"]     = true,
+}
+
+local function isBattlePet(e)
+    return e.category == "Battle Pets"
+        or (e.category and e.category:find("Battle Pet", 1, true) ~= nil)
+end
+
+local function isProfession(e)
+    if e.type == "Profession" then return true end
+    return e.category ~= nil and PROFESSION_WQ[e.category] == true
+end
+
+-- Incursion content (e.g. "Nightmare Incursion" in TWW). Matched on the category
+-- so future incursion flavors are caught without a curated list.
+local function isIncursion(e)
+    return e.category ~= nil and e.category:find("Incursion", 1, true) ~= nil
+end
+
+-- A few PvP zone-event dailies carry no PvP signal in the data (their category
+-- is just the zone, e.g. the TWW Ashenvale battle). Tag them by quest ID. Extend
+-- this set as new ones appear — it only drives the label, not the zone grouping.
+local PVP_QUESTS = {
+    [79090] = true, -- Repelling Invaders   (Ashenvale, Alliance)
+    [79098] = true, -- Clear the Forest!    (Ashenvale, Horde)
+}
+
+-- PvP dailies: battleground "Call to Arms" quests, the PvP world-quest subtypes
+-- ("PvP World Quest" / "PvP Elite World Quest"), and the curated zone-event set.
+local function isPvP(e)
+    if e.questID and PVP_QUESTS[e.questID] then return true end
+    if e.category and e.category:find("PvP", 1, true) then return true end
+    local t = e.rawTitle or e.title
+    return t ~= nil and t:find("^Call to Arms:") ~= nil
+end
+
+-- A *genuine* world quest — the kind Blizzard surfaces on the world map and
+-- tracks natively. The catalog's category carries the subtype, so anything with
+-- "World Quest" in it qualifies ("Battle Pet World Quest", "Mining World Quest",
+-- ...). NOTE: the catalog also holds task quests that are NOT world quests
+-- (Callings, Combat Ally, Island Weekly) — those have no "World Quest" in their
+-- category, so they're correctly excluded here and tracked as ordinary dailies.
+local function isWorldQuest(e)
+    return e.category ~= nil and e.category:find("World Quest", 1, true) ~= nil
+end
+
+-- Non-WQ task quests that we DO track as dailies. Tagged so they stand out from
+-- ordinary faction dailies in the same zone.
+local function isCalling(e)    return e.category == "Calling Quest" end
+local function isCombatAlly(e) return e.category == "Combat Ally Quest" end
+
+-- Skyriding/dragonriding race courses (API-sourced gap entries mark these). Lots
+-- of Advanced/Reverse/Challenge variants, so they're hidden behind a setting.
+local function isRace(e) return e.type == "Race" or e.category == "Skyriding Race" end
+
+-- Holiday / world-event dailies (Brewfest, Hallow's End, Love is in the Air, ...)
+-- ship as type="Event"; the showSeasonal setting already gates them, the tag just
+-- labels them. Garrison Support is the WoD garrison follower-mission hub.
+local function isHoliday(e)  return e.type == "Event" end
+local function isGarrison(e) return e.category == "Garrison Support" end
+
+-- Quest-kind labels — shown as an inline tag on the row (content isn't grouped
+-- by these; it's grouped by zone).
+local SUB_PROFESSIONS = "Professions"
+local SUB_BATTLEPETS  = "Battle Pets"
+local SUB_PVP         = "PvP"
+local SUB_INCURSIONS  = "Incursions"
+local SUB_CALLING     = "Calling"
+local SUB_ALLY        = "Combat Ally"
+local SUB_RACE        = "Race"
+local SUB_HOLIDAY     = "Holiday"
+local SUB_GARRISON    = "Garrison"
+
+-- Most specific first, so e.g. a "Battle Pet World Quest" wins over its zone.
+local function themedSubgroup(e)
+    if isRace(e)       then return SUB_RACE        end
+    if isBattlePet(e)  then return SUB_BATTLEPETS  end
+    if isProfession(e) then return SUB_PROFESSIONS end
+    if isIncursion(e)  then return SUB_INCURSIONS  end
+    if isPvP(e)        then return SUB_PVP         end
+    if isCalling(e)    then return SUB_CALLING     end
+    if isCombatAlly(e) then return SUB_ALLY        end
+    if isGarrison(e)   then return SUB_GARRISON    end
+    if isHoliday(e)    then return SUB_HOLIDAY     end
+    return nil
+end
+
+-- Accent colors for each kind (used for the row tags).
+local SUBGROUP_ACCENT = {
+    [SUB_PROFESSIONS] = { 0.85, 0.62, 0.28 }, -- warm amber (a wrench / forge feel)
+    [SUB_BATTLEPETS]  = { 0.52, 0.74, 0.42 }, -- soft green (a critter / paw feel)
+    [SUB_PVP]         = { 0.86, 0.38, 0.36 }, -- red (conflict)
+    [SUB_INCURSIONS]  = { 0.64, 0.46, 0.86 }, -- purple (nightmare / void)
+    [SUB_CALLING]     = { 0.40, 0.70, 0.74 }, -- teal (covenant callings)
+    [SUB_ALLY]        = { 0.46, 0.62, 0.86 }, -- blue (follower / ally)
+    [SUB_RACE]        = { 0.40, 0.78, 0.90 }, -- cyan (speed / sky)
+    [SUB_HOLIDAY]     = { 0.90, 0.55, 0.78 }, -- pink (festive)
+    [SUB_GARRISON]    = { 0.66, 0.58, 0.40 }, -- khaki (garrison / outpost)
+}
+
+-- Short label drawn on a quest row's inline tag, per kind.
+local SUB_BADGE = {
+    [SUB_PROFESSIONS] = "Prof",
+    [SUB_BATTLEPETS]  = "Pet",
+    [SUB_PVP]         = "PvP",
+    [SUB_INCURSIONS]  = "Incursion",
+    [SUB_CALLING]     = "Calling",
+    [SUB_ALLY]        = "Ally",
+    [SUB_RACE]        = "Race",
+    [SUB_HOLIDAY]     = "Holiday",
+    [SUB_GARRISON]    = "Garrison",
+}
+
+-- Aliases that fold sub-hubs and name variants onto the real Blizzard zone, so
+-- they group with their parent (and match the API's area names). These are the
+-- "skipped zones" the completeness sweep couldn't place geographically.
+local ZONE_ALIASES = {
+    ["Molten Front"]                          = "Mount Hyjal",
+    ["Mount Hyjal; Molten Front"]             = "Mount Hyjal",
+    ["Landfall"]                              = "Krasarang Wilds",
+    ["Shrine of Seven Stars"]                 = "Vale of Eternal Blossoms",
+    ["Argent Tournament"]                     = "Icecrown",
+    ["Argent Tournament Grounds"]             = "Icecrown",
+    ["Jade Forest"]                           = "The Jade Forest",
+    ["Waking Shores"]                         = "The Waking Shores",
+    ["Little Scales Daycare"]                 = "The Waking Shores",
+    ["Shadowmoon Valley (alternate universe)"] = "Shadowmoon Valley",
+    ["Lunarfall"]                             = "Shadowmoon Valley",
+    ["Coilfang Reservoir"]                    = "Zangarmarsh",
+}
+
+-- A real zone name for grouping. Handles bad catalog data: a character level
+-- leaked into zoneName ("52"/"70") -> fall back to category (the true zone for
+-- fixed entries). A world quest's category is a *subtype*, never a zone, so we
+-- don't fall back to it there. Known sub-hubs are aliased to their parent zone,
+-- and multi-zone wiki strings ("A; B; C") collapse to the category or first zone.
+local function zoneLabel(e)
+    local z = e.zoneName
+    if not z or z:find("^%d+$") then
+        if e.type ~= "WorldQuest" and e.category and not e.category:find("^%d+$") then
+            return e.category
+        end
+        return nil
+    end
+    if ZONE_ALIASES[z] then return ZONE_ALIASES[z] end
+    if z:find(";") then
+        -- Garbled multi-zone value: a clean content category reads better than a
+        -- semicolon list; otherwise take the first listed zone.
+        if e.category and not e.category:find("^%d+$") and not e.category:find(";") then
+            return e.category
+        end
+        local first = (z:match("^[^;]+") or z):gsub("%s+$", "")
+        return first
+    end
+    return z
+end
+
+-- Blizzard ships internal test / placeholder quests in the DB2 catalog, e.g.
+-- "Calling Quest (DNT)" and "x.x Testing (YGR)" (DNT = "Do Not Translate"). These
+-- aren't real content, so they're always hidden regardless of settings.
+local function isPlaceholderQuest(e)
+    local t = e.rawTitle or e.title
+    if not t then return false end
+    return t:find("%(DNT%)") ~= nil
+        or t:find("%(YGR%)") ~= nil
+        or t:find("^x%.x") ~= nil
+end
+
+-- Drop placeholder quests always; drop genuine world quests and profession /
+-- battle-pet entries per the user's settings. Applied to the full entry list
+-- before grouping so the filter holds in every view mode.
+local function applyKindFilters(entries)
+    local showWQ    = DT.DB:GetSetting("showWorldQuests")
+    local showProf  = DT.DB:GetSetting("showProfessions")
+    local showPets  = DT.DB:GetSetting("showBattlePets")
+    local showRaces = DT.DB:GetSetting("showRaces")
+    local kept = {}
+    for _, e in ipairs(entries) do
+        local drop = isPlaceholderQuest(e)
+                  or (not showWQ and isWorldQuest(e))
+                  or (not showRaces and isRace(e))
+                  or (not showPets and isBattlePet(e))
+                  or (not showProf and isProfession(e))
+        if not drop then kept[#kept + 1] = e end
+    end
+    return kept
+end
+
 -- How many entries in a list count as "done today".
 local function doneCount(list)
     local n = 0
@@ -128,10 +334,13 @@ local function lighten(c, amt)
 end
 
 -- Build one collapsible section header item plus (when expanded) its quest rows.
+-- level: 1 = top-level (expansion / zone), 2 = nested sub-group. The nesting
+-- level only affects how the header is indented and styled in renderDisplay.
 local function emitSection(display, opts)
     local collapsed = DT.DB:IsCollapsed(opts.key)
     display[#display+1] = {
         type = "section",
+        level = opts.level or 1,
         text = opts.text,
         done = opts.done,
         total = opts.total,
@@ -146,7 +355,30 @@ local function emitSection(display, opts)
     end
 end
 
--- Group entries by expansion -> display list of section/quest items.
+-- Split an expansion's entries into ordered zone sub-groups (alphabetical, with
+-- the catch-all "Other" sinking to the bottom). Quest *type* — Profession, Battle
+-- Pet, PvP, Incursion — is conveyed by a per-row tag rather than a separate
+-- group, so everything lives under its zone. Each result is { name, list }.
+local function subgroupEntries(entries)
+    local groups, names = {}, {}
+    for _, e in ipairs(entries) do
+        local name = zoneLabel(e) or "Other"
+        if not groups[name] then groups[name] = {}; names[#names+1] = name end
+        table.insert(groups[name], e)
+    end
+    table.sort(names, function(a, b)
+        if (a == "Other") ~= (b == "Other") then return b == "Other" end
+        return a < b
+    end)
+    local ordered = {}
+    for _, name in ipairs(names) do
+        ordered[#ordered+1] = { name = name, list = groups[name] }
+    end
+    return ordered
+end
+
+-- Group entries by expansion, then by zone / themed sub-group within each
+-- expansion -> nested display list of section/quest items.
 local function groupByExpansion(entries)
     local groups, keys = {}, {}
     for _, e in ipairs(entries) do
@@ -157,16 +389,34 @@ local function groupByExpansion(entries)
     local display = {}
     for _, key in ipairs(keys) do
         local list = groups[key]
-        table.sort(list, sortEntries)
         local exp = DT.EXPANSION_BY_KEY[key]
-        emitSection(display, {
-            text  = exp and exp.name or key,
-            list  = list,
-            total = #list,
-            done  = doneCount(list),
-            color = DT.EXPANSION_COLORS[key] or DT.EXPANSION_COLORS.OTHER,
-            key   = "EXP:" .. key,
-        })
+        local expColor = DT.EXPANSION_COLORS[key] or DT.EXPANSION_COLORS.OTHER
+        local expKey = "EXP:" .. key
+        local expCollapsed = DT.DB:IsCollapsed(expKey)
+
+        -- Expansion header (level 1). Counts roll up the whole expansion.
+        display[#display+1] = {
+            type = "section", level = 1,
+            text = exp and exp.name or key,
+            done = doneCount(list), total = #list,
+            color = expColor, key = expKey, collapsed = expCollapsed,
+        }
+
+        -- Nested zone / themed sub-groups (level 2), only when expanded.
+        if not expCollapsed then
+            for _, sub in ipairs(subgroupEntries(list)) do
+                table.sort(sub.list, sortEntries)
+                emitSection(display, {
+                    level = 2,
+                    text  = sub.name,
+                    list  = sub.list,
+                    total = #sub.list,
+                    done  = doneCount(sub.list),
+                    color = expColor,  -- zone sub-headers inherit the expansion tint
+                    key   = expKey .. "::" .. sub.name,
+                })
+            end
+        end
     end
     return display
 end
@@ -176,7 +426,7 @@ local ZONE_ACCENT = { 0.36, 0.62, 0.92 }
 local function groupByZone(entries)
     local groups, names = {}, {}
     for _, e in ipairs(entries) do
-        local zn = e.zoneName or "Unknown"
+        local zn = zoneLabel(e) or "Unknown"
         if not groups[zn] then groups[zn] = {}; names[#names+1] = zn end
         table.insert(groups[zn], e)
     end
@@ -206,7 +456,7 @@ local function buildZoneMode()
         return { { type = "message", text = "Unable to determine your current zone." } },
                "Current zone"
     end
-    local entries = DT.Checklist:GetEntries({ zoneName = zone.zoneName })
+    local entries = applyKindFilters(DT.Checklist:GetEntries({ zoneName = zone.zoneName }))
     table.sort(entries, sortEntries)
     local display = {}
     emitSection(display, {
@@ -227,7 +477,7 @@ local function buildZoneMode()
 end
 
 local function buildBrowseMode()
-    local all = DT.Checklist:GetEntries()
+    local all = applyKindFilters(DT.Checklist:GetEntries())
     browseTree = DT.Zones:BuildTree(all)
 
     -- Default the continent selection to the first available.
@@ -251,10 +501,15 @@ local function buildBrowseMode()
 end
 
 local function buildAllMode()
-    local entries = DT.Checklist:GetEntries()
-    local stats = DT.Checklist:GetStats()
+    local entries = applyKindFilters(DT.Checklist:GetEntries())
+    -- Count from the filtered list so the summary matches what's on screen
+    -- (hiding world quests drops the total substantially).
+    local discovered = 0
+    for _, e in ipairs(entries) do
+        if e.status ~= DT.STATUS.UNDISCOVERED then discovered = discovered + 1 end
+    end
     return groupByExpansion(entries),
-           string.format("All  |cff707070— %d quests, |r|cff66cc66%d discovered|r", stats.total, stats.discovered)
+           string.format("All  |cff707070— %d quests, |r|cff66cc66%d discovered|r", #entries, discovered)
 end
 
 -- ---------------------------------------------------------------------------
@@ -324,6 +579,16 @@ local function acquireRow(parent)
         row.collapse:SetPoint("RIGHT", -8, -1)
         row.collapse:SetJustifyH("RIGHT")
         row.collapse:Hide()
+
+        -- Inline kind tag (quest rows): a small colored chip — "Prof" / "Pet" —
+        -- sitting between the status dot and the title. A faint tinted backing
+        -- gives it a pill look that matches the section accents.
+        row.badgeBg = row:CreateTexture(nil, "ARTWORK")
+        row.badgeBg:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.badgeBg:Hide()
+        row.badge = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.badge:SetJustifyH("CENTER")
+        row.badge:Hide()
 
         row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
         row.highlight:SetAllPoints()
@@ -827,7 +1092,7 @@ local function createMainFrame()
 
     -- Settings panel: a small dark overlay of toggles, opened by the gear button.
     local sp = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    sp:SetSize(244, 132)
+    sp:SetSize(244, 236)
     sp:SetPoint("TOPRIGHT", f.titleBar, "BOTTOMRIGHT", -6, -6)
     sp:SetFrameStrata("DIALOG")
     sp:EnableMouse(true)  -- swallow clicks so they don't fall through to the list
@@ -868,9 +1133,21 @@ local function createMainFrame()
     addCheck("Show holiday / seasonal quests",
         function() return DT.DB:GetSetting("showSeasonal") end,
         function(v) DT.DB:SetSetting("showSeasonal", v) end)
+    addCheck("Show world quests (Blizzard-tracked)",
+        function() return DT.DB:GetSetting("showWorldQuests") end,
+        function(v) DT.DB:SetSetting("showWorldQuests", v) end)
     addCheck("Show inactive world quests",
         function() return DT.DB:GetSetting("showInactiveWQ") end,
         function(v) DT.DB:SetSetting("showInactiveWQ", v) end)
+    addCheck("Show profession dailies",
+        function() return DT.DB:GetSetting("showProfessions") end,
+        function(v) DT.DB:SetSetting("showProfessions", v) end)
+    addCheck("Show battle pet dailies",
+        function() return DT.DB:GetSetting("showBattlePets") end,
+        function(v) DT.DB:SetSetting("showBattlePets", v) end)
+    addCheck("Show skyriding races",
+        function() return DT.DB:GetSetting("showRaces") end,
+        function(v) DT.DB:SetSetting("showRaces", v) end)
     addCheck("Newest expansions first",
         function() return DT.DB:GetSetting("expansionOrder") == "NEWEST" end,
         function(v) DT.DB:SetSetting("expansionOrder", v and "NEWEST" or "OLDEST") end)
@@ -907,30 +1184,52 @@ local function renderDisplay(display)
         row:SetPoint("TOPLEFT", 0, -y)
 
         if item.type == "section" then
-            row:SetSize(CONTENT_WIDTH, SECTION_HEIGHT)
+            local sub = (item.level or 1) == 2
+            local indent = sub and SUBSECTION_INDENT or 0
+            local h = sub and SUBSECTION_HEIGHT or SECTION_HEIGHT
+            row:SetSize(CONTENT_WIDTH, h)
             row.entry = nil
             row.sectionKey = item.key
             row.dot:Hide()
+            row.badge:Hide(); row.badgeBg:Hide()
             row:EnableMouse(true)
 
             local c = item.color or THEME.progress
             -- Lit accent bar + chip (brighter top, darker bottom) and a tint
             -- gradient behind the header that fades to almost nothing at the base.
+            -- Nested headers are inset from the left and tinted a touch fainter so
+            -- they read as belonging under their expansion.
             local lt1, lt2, lt3 = lighten(c, 0.15)
+            local bgTop = sub and 0.12 or 0.18
+            row.accent:ClearAllPoints()
+            row.accent:SetPoint("TOPLEFT", indent, 0)
+            row.accent:SetPoint("BOTTOMLEFT", indent, 0)
             setVGradient(row.accent, { lt1, lt2, lt3, 1 }, { c[1] * 0.78, c[2] * 0.78, c[3] * 0.78, 1 })
             row.accent:Show()
-            setVGradient(row.headerBg, { c[1], c[2], c[3], 0.18 }, { c[1], c[2], c[3], 0.03 })
+            row.headerBg:ClearAllPoints()
+            row.headerBg:SetPoint("TOPLEFT", 1 + indent, 0)
+            row.headerBg:SetPoint("BOTTOMRIGHT", 0, 0)
+            setVGradient(row.headerBg, { c[1], c[2], c[3], bgTop }, { c[1], c[2], c[3], 0.03 })
             row.headerBg:Show()
+            row.headerTop:ClearAllPoints()
+            row.headerTop:SetPoint("TOPLEFT", 1 + indent, 0)
+            row.headerTop:SetPoint("TOPRIGHT", 0, 0)
+            row.headerBot:ClearAllPoints()
+            row.headerBot:SetPoint("BOTTOMLEFT", 1 + indent, 0)
+            row.headerBot:SetPoint("BOTTOMRIGHT", 0, 0)
+            row.icon:ClearAllPoints()
+            row.icon:SetPoint("LEFT", 10 + indent, 0)
+            row.icon:SetSize(sub and 7 or 9, sub and 7 or 9)
             setVGradient(row.icon, { lt1, lt2, lt3, 1 }, { c[1], c[2], c[3], 1 })
             row.icon:Show()
             row.headerTop:Show()
             row.headerBot:Show()
 
-            row.title:SetFontObject("GameFontNormal")
+            row.title:SetFontObject(sub and "GameFontNormalSmall" or "GameFontNormal")
             row.title:ClearAllPoints()
-            row.title:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
-            row.title:SetWidth(CONTENT_WIDTH - 110)
-            row.title:SetTextColor(lighten(c, 0.28))
+            row.title:SetPoint("LEFT", row.icon, "RIGHT", sub and 7 or 8, 0)
+            row.title:SetWidth(CONTENT_WIDTH - 110 - indent)
+            row.title:SetTextColor(lighten(c, sub and 0.22 or 0.28))
             row.title:SetText(item.text)
 
             row.status:ClearAllPoints()
@@ -940,9 +1239,13 @@ local function renderDisplay(display)
             row.collapse:Show()
             row.collapse:SetText(item.collapsed and "|cff909090+|r" or "|cff909090\226\128\147|r") -- + / en-dash
 
-            overallDone = overallDone + (item.done or 0)
-            overallTotal = overallTotal + (item.total or 0)
-            y = y + SECTION_HEIGHT
+            -- Only top-level sections roll into the title-bar counter; nested
+            -- sub-groups would otherwise double-count their parent expansion.
+            if not sub then
+                overallDone = overallDone + (item.done or 0)
+                overallTotal = overallTotal + (item.total or 0)
+            end
+            y = y + h
 
         elseif item.type == "message" then
             row:SetSize(CONTENT_WIDTH, ROW_HEIGHT * 2)
@@ -950,6 +1253,7 @@ local function renderDisplay(display)
             row.sectionKey = nil
             row.dot:Hide(); row.accent:Hide(); row.headerBg:Hide()
             row.icon:Hide(); row.collapse:Hide()
+            row.badge:Hide(); row.badgeBg:Hide()
             row.headerTop:Hide(); row.headerBot:Hide()
             row:EnableMouse(false)
             row.title:SetFontObject("GameFontDisable")
@@ -974,12 +1278,38 @@ local function renderDisplay(display)
             local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
             row.dot:SetColorTexture(c[1], c[2], c[3], 1)
 
+            -- Inline kind tag between the dot and the title (Prof / Pet / PvP /
+            -- Incursion). The title anchors to the badge when one is present, so
+            -- it never overlaps; its width is trimmed so long titles still ellipsize.
+            local tagText, tagColor
+            local kind = themedSubgroup(e)
+            if kind then
+                tagText, tagColor = SUB_BADGE[kind], SUBGROUP_ACCENT[kind]
+            end
+            local titleAnchor, titleGap, titleWidth = row.dot, 7, CONTENT_WIDTH - 120
+            if tagText then
+                row.badge:Show()
+                row.badge:SetText(tagText)
+                row.badge:SetTextColor(lighten(tagColor, 0.35))
+                row.badge:ClearAllPoints()
+                row.badge:SetPoint("LEFT", row.dot, "RIGHT", 8, 0)
+                row.badgeBg:Show()
+                row.badgeBg:ClearAllPoints()
+                row.badgeBg:SetPoint("TOPLEFT", row.badge, "TOPLEFT", -4, 2)
+                row.badgeBg:SetPoint("BOTTOMRIGHT", row.badge, "BOTTOMRIGHT", 4, -2)
+                row.badgeBg:SetColorTexture(tagColor[1], tagColor[2], tagColor[3], 0.16)
+                titleAnchor, titleGap = row.badge, 9
+                titleWidth = titleWidth - (row.badge:GetStringWidth() + 18)
+            else
+                row.badge:Hide(); row.badgeBg:Hide()
+            end
+
             local done = (e.status == DT.STATUS.COMPLETED)
             local pin = e.pinned and "|cffffd100*|r " or ""
             row.title:SetFontObject("GameFontHighlight")
             row.title:ClearAllPoints()
-            row.title:SetPoint("LEFT", row.dot, "RIGHT", 7, 0)
-            row.title:SetWidth(CONTENT_WIDTH - 120)
+            row.title:SetPoint("LEFT", titleAnchor, "RIGHT", titleGap, 0)
+            row.title:SetWidth(titleWidth)
             row.title:SetText(pin .. (e.title or ("Quest " .. (e.questID or "?"))))
             row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
 

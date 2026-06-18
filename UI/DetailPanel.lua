@@ -21,6 +21,11 @@ local lastEntry              -- the entry currently displayed (for re-render on 
 -- One hidden frame listens for the async "quest data is ready" event.
 local loader = CreateFrame("Frame")
 local pendingQuestID         -- the questID we're currently waiting on (if any)
+-- Quests whose async load has finished (value = whether the server reported
+-- success). Lets us tell "still loading" apart from "loaded, but the client has
+-- no reward data for it" — the latter must show a terminal state, not loop on
+-- the "Loading..." message forever.
+local loadResult = {}
 
 -- ---------------------------------------------------------------------------
 -- Line-widget pool. Each "line" is a row that can show an optional icon plus
@@ -185,12 +190,9 @@ local function renderRewards(content, y, questID)
         end
     end
 
-    if not rendered then
-        y = addLine(content, y, { text = "No rewards listed for this quest.",
-                                  color = { 0.6, 0.6, 0.6 }, spacingBefore = 4 })
-    end
-
-    return y
+    -- Caller decides what to show when nothing rendered (the "No rewards" line in
+    -- the cached path, or a softer note in the post-load fallback).
+    return y, rendered
 end
 
 -- ---------------------------------------------------------------------------
@@ -283,9 +285,9 @@ local function normalizeWiki(e)
     return d
 end
 
--- Best baked details for a quest, in priority order: live-harvested (this
--- session) wins, then the shipped harvested table (QuestRewards.lua), then the
--- wiki-imported details (WikiDetails.lua).
+-- Best baked details for a quest (rewards/objectives), in priority order:
+-- live-harvested (this session) wins, then the shipped harvested table
+-- (QuestRewards.lua), then the wiki-imported details (WikiDetails.lua).
 local function resolveBaked(questID)
     if not questID then return nil end
     local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
@@ -294,6 +296,23 @@ local function resolveBaked(questID)
     if shipped then return normalizeBaked(shipped) end
     local wiki = DT.WikiDetails and DT.WikiDetails[questID]
     if wiki then return normalizeWiki(wiki) end
+    return nil
+end
+
+-- Resolve the DESCRIPTION on its own, across every source, taking the first that
+-- actually has one. This matters because a source can exist for a quest yet lack
+-- a description (e.g. a WikiDetails entry with only objectives/giver) -- in that
+-- case we must still fall through to the API-baked text rather than show nothing.
+local function bestDescription(questID)
+    if not questID then return nil end
+    local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
+    if live and live.description and live.description ~= "" then return live.description end
+    local b = DT.BakedDetails and DT.BakedDetails[questID]
+    if b and b.de and b.de ~= "" then return b.de end
+    local w = DT.WikiDetails and DT.WikiDetails[questID]
+    if w and w.de and w.de ~= "" then return w.de end
+    local a = DT.ApiDetails and DT.ApiDetails[questID]
+    if a and a.de and a.de ~= "" then return a.de end
     return nil
 end
 
@@ -380,11 +399,12 @@ local function render(entry)
                                   color = { 0.9, 0.8, 0.4 } })
     end
 
-    -- Quest description / flavor text, captured when the giver was viewed.
-    -- Shown regardless of which data branch follows. Italic-ish parchment tone.
-    local stored = entry.questID and resolveBaked(entry.questID) or nil
-    if stored and stored.description and stored.description ~= "" then
-        y = addLine(content, y, { text = stored.description,
+    -- Quest description / flavor text. Resolved across all sources so an entry
+    -- that has (say) wiki objectives but no wiki description still shows the
+    -- API-baked text. Italic-ish parchment tone.
+    local desc = bestDescription(entry.questID)
+    if desc and desc ~= "" then
+        y = addLine(content, y, { text = desc,
                                   color = { 0.82, 0.78, 0.64 }, spacingBefore = 8 })
     end
 
@@ -396,20 +416,44 @@ local function render(entry)
                 .. "available. Pick it up (or talk to its giver) to load rewards "
                 .. "and objectives.",
             color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
-    elseif not (HaveQuestRewardData and HaveQuestRewardData(entry.questID)) then
-        -- Live data not cached yet. Fall back to anything the harvester baked,
-        -- and still kick off the async load so fresh data replaces it when ready.
+    elseif HaveQuestRewardData and HaveQuestRewardData(entry.questID) then
+        -- Reward data is cached: render the full live view.
+        y = renderObjectives(content, y, entry.questID)
+        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
+        local ry, hadRewards = renderRewards(content, y, entry.questID)
+        y = ry
+        if not hadRewards then
+            y = addLine(content, y, { text = "No rewards listed for this quest.",
+                                      color = { 0.6, 0.6, 0.6 }, spacingBefore = 4 })
+        end
+    else
+        -- Not cached. Prefer harvested data; otherwise wait for the async load.
         local bakedY = renderBaked(content, y, entry.questID)
         if bakedY then
             y = bakedY
+        elseif loadResult[entry.questID] ~= nil then
+            -- Load finished but HaveQuestRewardData is still false. That flag can
+            -- be unreliable, so try the live API anyway (it often returns the
+            -- objectives, and sometimes rewards). Fall back to a clear note rather
+            -- than looping on "Loading..." forever.
+            local startY = y
+            y = renderObjectives(content, y, entry.questID)
+            local hadObjectives = y > startY
+            local ry, hadRewards = renderRewards(content, y, entry.questID)
+            y = ry
+            if not hadRewards then
+                y = addLine(content, y, {
+                    text = hadObjectives
+                        and "Rewards become available once you pick this quest up in-game."
+                        or  "No reward or objective details are available yet. Pick it up "
+                            .. "in-game (or harvest it) to load the full details.",
+                    color = { 0.55, 0.55, 0.6 }, spacingBefore = 8 })
+            end
         else
+            -- Still waiting on the server; requestData() will re-render on arrival.
             y = addLine(content, y, { text = "Loading details...",
                                       color = { 0.7, 0.7, 0.7 }, spacingBefore = 8 })
         end
-    else
-        y = renderObjectives(content, y, entry.questID)
-        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
-        y = renderRewards(content, y, entry.questID)
     end
 
     content:SetHeight(math.max(y, 10))
@@ -420,6 +464,9 @@ end
 -- ---------------------------------------------------------------------------
 loader:SetScript("OnEvent", function(_, event, questID, success)
     if event ~= "QUEST_DATA_LOAD_RESULT" then return end
+    -- Remember the load finished (even on failure) so render() can stop looping
+    -- on "Loading..." for quests the client simply has no reward data for.
+    loadResult[questID] = success and true or false
     if questID ~= pendingQuestID then return end
     pendingQuestID = nil
     -- Only re-render if this is still the quest the user is looking at.
@@ -431,10 +478,29 @@ end)
 local function requestData(questID)
     if not questID then return end
     if HaveQuestRewardData and HaveQuestRewardData(questID) then return end  -- already cached
-    if not C_QuestLog.RequestLoadQuestByID then return end
+    if loadResult[questID] ~= nil then return end  -- already attempted this session
+    if not C_QuestLog.RequestLoadQuestByID then
+        loadResult[questID] = false  -- can't ask the server; treat as terminal
+        return
+    end
     pendingQuestID = questID
     loader:RegisterEvent("QUEST_DATA_LOAD_RESULT")
     C_QuestLog.RequestLoadQuestByID(questID)
+
+    -- Safety net: if QUEST_DATA_LOAD_RESULT never arrives for this quest, stop the
+    -- "Loading..." state after a few seconds and fall through to the terminal note.
+    if C_Timer and C_Timer.After then
+        C_Timer.After(4, function()
+            if loadResult[questID] == nil then
+                loadResult[questID] = false
+                if pendingQuestID == questID then pendingQuestID = nil end
+                if lastEntry and lastEntry.questID == questID
+                and panel and panel:IsShown() then
+                    render(lastEntry)
+                end
+            end
+        end)
+    end
 end
 
 -- ---------------------------------------------------------------------------

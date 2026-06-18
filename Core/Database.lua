@@ -15,8 +15,12 @@ local ACCOUNT_DEFAULTS = {
     version = DT.VERSION,
     settings = {
         expansionOrder = "NEWEST",  -- NEWEST first or OLDEST first (All view)
+        showWorldQuests = false,    -- show genuine world quests (Blizzard tracks these natively; off by default)
         showInactiveWQ = false,     -- show world quests that exist but aren't currently up
         showSeasonal = false,       -- show holiday/seasonal dailies (only up during their festival)
+        showProfessions = true,     -- show profession dailies (Cooking, Fishing, gathering WQs, ...)
+        showBattlePets = true,      -- show battle pet dailies / pet battle world quests
+        showRaces = false,          -- show skyriding/dragonriding race courses (off by default; lots of variants)
     },
     -- Per-section collapsed state for the modern UI, keyed by a stable group key
     -- (e.g. an expansion key or zone name). ui.collapsed[key] = true when folded.
