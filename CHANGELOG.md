@@ -2,6 +2,64 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.2] - 2026-06-18
+
+A Beta-prep release: a dedicated **Filters** menu, themed UI controls, an
+**Expand/Collapse-all** toggle, and a thorough **data-quality pass** that cleans
+up phantom "completed" quests. The developer harvester was also moved out of the
+shipped addon.
+
+### Added
+- **Filters button + panel.** A new **Filters** button on the title bar opens a
+  panel of content toggles — **Holiday / Seasonal**, **Profession**, **Battle
+  Pet**, **Skyriding** — separate from the gear/Settings panel. The two panels are
+  mutually exclusive (opening one closes the other).
+- **Expand / Collapse all (All tab).** A toggle at the right of the sub-bar folds
+  or unfolds every expansion section at once. Its label flips between
+  *Collapse All* and *Expand All* to match the current state.
+
+### Changed
+- **Themed UI controls.** The **Pinned** and **Filters** title-bar buttons and the
+  **Browse** dropdowns are now custom dark-themed widgets matching the rest of the
+  window, replacing the stock gold Blizzard button/dropdown art. The Browse menus
+  use a custom popup with hover highlighting and a selection marker (no more
+  taint-prone `UIDropDownMenu`).
+- **Simpler Filters.** The old Settings list of six "Show …" checkboxes is reduced
+  to the four content filters above (in the Filters panel); the **world quests**
+  and **inactive world quests** toggles were removed. Genuine world quests are now
+  always hidden (Blizzard tracks them natively); the Settings panel keeps only the
+  *Newest expansions first* sort.
+- **All-tab summary.** The sub-bar now reads *N quests, M completed* instead of
+  *N quests, M discovered* — "discovered" had become meaningless now that the
+  catalog ships real quest IDs for nearly every entry.
+
+### Fixed
+- **Phantom "completed" quests removed.** The All tab counted many quests as
+  completed that you'd never done this reset — they were one-time-completion
+  quests permanently flagged by the game. Cleaned up across three sources:
+  - **Gap batch reviewed (`ChecklistDataExtra.lua`, 650 → 600).** Removed the WoD
+    garrison stable "X Training: Y" one-time quests and a dev placeholder; fixed
+    ~280 skyriding races' expansion tags; resolved 95 expansion misclassifications
+    (e.g. Eversong dailies → Midnight, Twilight Highlands → Cataclysm) where a
+    reused zone name had skewed the guess.
+  - **Curated ID bugs corrected.** *Tending the Garden* (28733 → 28751), *Angler's
+    Challenge* (74908 → 74119) and *Filming the Caldera* (74908 → 74389) pointed at
+    the wrong quest IDs, so they resolved completion against the wrong quest.
+  - **Calling parents dropped.** The four covenant *"A Calling in …"* parent quests
+    flagged complete permanently; removed from the world-quest catalog (the 97 real
+    rotating callings stay).
+
+### Developer
+- **Harvester un-shipped.** `Core/Harvester.lua` and `UI/HarvestPanel.lua` (the
+  **Tools** button + `/qt harvest` dev tooling) were moved out of the addon to a
+  sibling `_harvester/` folder, so they no longer ship to end users. The engine is
+  still reachable for data baking by dropping the files back in.
+- **Generators hardened.** `build-gap-entries.js` now excludes one-time/placeholder
+  quests, fixes race typing/expansion, and uses the addon's authoritative ID bands;
+  `build-db2-catalog.js` drops the permanently-flagged Calling parents. Added a
+  read-only `review-gap-entries.js` audit tool. Added a repo `.gitignore` that keeps
+  AI-agent files out of commits.
+
 ## [0.4.1] - 2026-06-18
 
 A polish release: a new **Pinned** companion panel, the **QuestTally logo** in the

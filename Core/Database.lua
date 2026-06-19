@@ -91,6 +91,16 @@ function DT.DB:ToggleCollapsed(key)
     return self.account.ui.collapsed[key] == true
 end
 
+-- Explicit set (nil clears the entry so "expanded" stays the absent default).
+function DT.DB:SetCollapsed(key, collapsed)
+    self.account.ui.collapsed[key] = collapsed and true or nil
+end
+
+-- Clear all fold state -> every section expanded.
+function DT.DB:ExpandAll()
+    wipe(self.account.ui.collapsed)
+end
+
 -- Record (or refresh) a daily we've seen live. `now` is the current server
 -- time in seconds (passed in so this module stays free of time calls).
 -- Returns true if this was the first time we'd ever seen this quest.

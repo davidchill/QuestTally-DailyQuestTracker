@@ -113,7 +113,6 @@ local function printHelp()
     print("  |cffffd100/qt hide|r       - close the window")
     print("  |cffffd100/qt reset|r      - reset window position")
     print("  |cffffd100/qt stats|r      - checklist & discovery summary")
-    print("  |cffffd100/qt harvest|r    - open the harvester panel (buttons for everything)")
     print("  |cffffd100/qt help|r       - show this help")
     print("  aliases: |cffffd100/questtally|r, |cffffd100/dailies|r")
 end
@@ -150,11 +149,23 @@ end
 -- Handle the `/qt harvest ...` subcommands. `rest` is the text after "harvest";
 -- it may carry its own arguments (e.g. "discover 1 5000").
 local function handleHarvest(rest)
+    -- The harvester is a DEV-ONLY data-baking tool, moved out of the shipped
+    -- addon to ../_harvester/ (see that folder's README). When its files aren't
+    -- loaded -- i.e. every released build -- DT.Harvester is absent and these
+    -- commands silently no-op. Drop the files back in + re-add them to the .toc
+    -- to re-enable for a baking session; no other code changes needed.
+    if not DT.Harvester then return end
+
     local sub, args = (rest or ""):match("^(%S*)%s*(.-)$")
 
-    -- Bare "/qt harvest" (or "panel") opens the button panel -- no commands to memorize.
+    -- Bare "/qt harvest" (or "panel") opens the button panel if it's loaded;
+    -- otherwise fall back to the text command list.
     if sub == "" or sub == "panel" or sub == "tools" then
-        if DT.HarvestPanel then DT.HarvestPanel:Toggle() end
+        if DT.HarvestPanel then
+            DT.HarvestPanel:Toggle()
+        else
+            printHarvestHelp()
+        end
         return
     end
 

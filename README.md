@@ -5,10 +5,10 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.4.1** — built and tested against Retail patch **12.0.x**.
-> Catalog covers **~2,100 dailies across every expansion** (wiki + Blizzard-API
-> gap-fill) plus **~3,600 world quests** (Legion → Midnight, hidden by default),
-> all from first-party sources.
+> **Version 0.4.2** — built and tested against Retail patch **12.0.x**.
+> Catalog covers **~2,000 dailies across every expansion** (wiki + Blizzard-API
+> gap-fill) plus **~3,600 world quests** (Legion → Midnight) from first-party
+> sources.
 >
 > *Formerly named **DailyGrind**. The addon was renamed to QuestTally in 0.1.1;
 > the old slash commands (`/grind`, `/ddt`) are replaced by **`/qt`**.*
@@ -36,15 +36,16 @@ available, tracking completion, and helping you finish them, organized by
   - 🟡 **Available** · 🔵 **In Progress** · 🟢 **Ready to Turn In** ·
     ⚪ **Done Today** · ⚫ **Not Active** *(world quest not currently up)* ·
     🟣 **Not Yet Seen**
-- **World quests hidden by default.** Blizzard already tracks world quests
-  natively on the map, so QuestTally focuses on the dailies it *doesn't* surface
-  well. The full ~3,600 catalog is one toggle away in Settings.
-- **Clutter, out of the way.** Holiday dailies, profession dailies, battle-pet
-  dailies, and skyriding races each have their own Settings toggle (races and
-  holidays **hidden by default**), so the list stays focused year-round.
-- **Settings panel.** A **gear button** on the title bar toggles world quests,
-  inactive world quests, holiday quests, profession dailies, battle-pet dailies,
-  skyriding races, and newest-expansions-first ordering.
+- **World quests stay hidden.** Blizzard already tracks world quests natively on
+  the map, so QuestTally focuses on the dailies it *doesn't* surface well.
+- **Filters menu.** A **Filters** button on the title bar toggles the content
+  categories — **Holiday / Seasonal**, **Profession**, **Battle Pet**, and
+  **Skyriding** (Skyriding and Holiday are **hidden by default**) — so the list
+  stays focused year-round.
+- **Settings panel.** A **gear button** on the title bar holds the **Newest
+  expansions first** sort toggle.
+- **Expand / collapse all.** On the **All** tab, a one-click toggle folds or
+  unfolds every expansion section at once.
 - **Quest givers & coordinates — baked in.** Dailies ship with their **giver name
   and (where the wiki has them) map coordinates**, so the tooltip shows the giver
   and **right-click drops a travel waypoint**. Talking to a giver captures it
@@ -60,8 +61,9 @@ available, tracking completion, and helping you finish them, organized by
   track the quest**, **Shift-click** to copy the **Wowhead link**.
 - **First-party data only.** All quest data comes from Blizzard's client database,
   Blizzard's official **Game Data API**, the openly-licensed community wiki, or
-  your live game — never scraped from a commercial site. A developer **harvester**
-  (`/qt harvest`) reads fresh data from your own client.
+  your live game — never scraped from a commercial site. (A developer-only **harvester**,
+  kept outside the shipped addon, reads fresh data from the live client to refresh
+  the catalogs.)
 - **TitanPanel support (optional).** If [TitanPanel](https://www.curseforge.com/wow/addons/titan-panel)
   is installed, a bar button shows a live **"Dailies: done/total"** summary with
   a per-status tooltip. Works fully without Titan.
@@ -86,7 +88,6 @@ Open the window with **`/qt`** (or `/questtally`, `/dailies`).
 | `/qt show` / `hide` | Open / close the window |
 | `/qt reset` | Reset the window position to center |
 | `/qt stats` | Checklist & discovery summary |
-| `/qt harvest` | Open the harvester panel (developer data tools) |
 | `/qt help` | List commands |
 
 ## How it works
@@ -101,8 +102,9 @@ entry up with real-time status:
    `Core/WikiDetails.lua` ships their rewards, objectives, descriptions, and giver
    coordinates. Both are imported from warcraft.wiki.gg (CC BY-SA).
 2. **Gap-fill + corrections (Blizzard Game Data API).** `Core/ChecklistDataExtra.lua`
-   adds **~650 more dailies** the wiki list missed (found by sweeping the official
-   API for `is_daily` quests), and the same API corrected **452 zones** in the wiki
+   adds **~600 more dailies** the wiki list missed (found by sweeping the official
+   API for `is_daily` quests, then reviewed to drop one-time quests and fix
+   expansion tags), and the same API corrected **452 zones** in the wiki
    list. `Core/ApiDetails.lua` ships **~2,000 quest descriptions** so the gap
    dailies show their flavor text.
 3. **World-quest catalog (Blizzard's database).** `Core/WorldQuestData.lua` ships
@@ -128,9 +130,10 @@ is generated from the **client itself**:
   from Blizzard's retail client DB2 (`QuestV2CliTask` + `QuestInfo` +
   `ContentTuning` + `QuestPOIBlob`) via [wago.tools](https://wago.tools) and bakes
   `Core/WorldQuestData.lua`. This covers the world-quest era (Legion → Midnight).
-- The in-game **harvester** (`Core/Harvester.lua`, the **Tools** panel) covers
-  what DB2 can't: regular hub/turn-in dailies (pre-Legion and modern non-WQ),
-  recognized by checklist title-match and read live, plus `C_TaskQuest` sweeps.
+- The in-game **harvester** (`_harvester/Harvester.lua`, kept outside the shipped
+  addon) covers what DB2 can't: regular hub/turn-in dailies (pre-Legion and modern
+  non-WQ), recognized by checklist title-match and read live, plus `C_TaskQuest`
+  sweeps. Drop it back into the addon to run a fresh harvest.
 - `_generator/build-checklist-from-wiki.js` imports the daily-quest master list
   from warcraft.wiki.gg (CC BY-SA) — real quest IDs, zones, givers, rewards,
   objectives, descriptions, and giver coordinates — baking `Core/ChecklistData.lua`
@@ -176,7 +179,6 @@ QuestTally/
 │   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery
-│   ├── Harvester.lua        First-party data harvester (dev tool; Tools panel)
 │   ├── Zones.lua            Map/zone resolution + current-zone lookup
 │   ├── ZoneMap.lua          Pre-mapped continent/zone per category
 │   ├── Checklist.lua        Title↔ID matching engine + zone resolution
@@ -184,8 +186,7 @@ QuestTally/
 ├── UI/
 │   ├── MainFrame.lua        The tracker window (3 modes, dark theme + DT.UI.Skin)
 │   ├── DetailPanel.lua      Per-quest details pane, right side (rewards/objectives/desc)
-│   ├── PinnedPanel.lua      Pinned-quests pane, left side (middle-clicked favourites)
-│   └── HarvestPanel.lua     Harvester button panel (developer tool)
+│   └── PinnedPanel.lua      Pinned-quests pane, left side (middle-clicked favourites)
 ├── Media/
 │   └── QuestTally-Logo.tga  Title-bar logo (baked from the first-party art)
 └── Integrations/
@@ -193,8 +194,9 @@ QuestTally/
 ```
 
 The `_generator/` folder (Node tools that bake harvested data into shipped Lua)
-sits at the repo root, alongside this addon folder. It's dev-only and not part
-of the installed addon.
+and `_harvester/` folder (the in-game harvester files, kept out of the shipped
+addon) sit alongside this addon folder. Both are dev-only and not part of the
+installed addon.
 
 ## Credits
 

@@ -307,7 +307,7 @@ e[#e+1]={id=28697,rawTitle="Ghostbuster",expansion="CATA",type="Faction",side="H
 e[#e+1]={id=28697,rawTitle="The Forgotten",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Captain Prug",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28700,rawTitle="Taking the Overlook Back",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Private Sarlosk",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28721,rawTitle="Walk A Mile In Their Shoes",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Commander Larmash",zoneName="Tol Barad Peninsula"}
-e[#e+1]={id=28733,rawTitle="Tending the Garden",expansion="CATA",type="Faction",side="Both",category="Hillsbrad Foothills",zoneName="Hillsbrad Foothills"}
+e[#e+1]={id=28751,rawTitle="Tending the Garden",expansion="CATA",type="Faction",side="Both",category="Hillsbrad Foothills",zoneName="Hillsbrad Foothills"}
 e[#e+1]={id=28736,rawTitle="Fire From the Sky",expansion="CATA",type="Faction",side="Both",category="Uldum",giver="Weathered Nomad",zoneName="Uldum"}
 e[#e+1]={id=28935,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Detective Snap Snagglebolt",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=28935,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Inspector Snip Snagglebolt",zoneName="Elwynn Forest",seasonal=true}
@@ -1386,8 +1386,8 @@ e[#e+1]={id=74517,rawTitle="All Terrain Snail",expansion="DRAGONFLIGHT",type="Fa
 e[#e+1]={id=74518,rawTitle="Resistance Training",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zaralek Cavern",giver="Briggul",zoneName="Zaralek Cavern"}
 e[#e+1]={id=74519,rawTitle="Good for Goo",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zaralek Cavern",giver="Briggul",zoneName="Zaralek Cavern"}
 e[#e+1]={id=74520,rawTitle="Less Cargo",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zaralek Cavern",giver="Briggul",zoneName="Zaralek Cavern"}
-e[#e+1]={id=74908,rawTitle="Angler's Challenge",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Turik",zoneName="The Forbidden Reach"}
-e[#e+1]={id=74908,rawTitle="Filming the Caldera",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Cataloger Daela",zoneName="The Forbidden Reach"}
+e[#e+1]={id=74119,rawTitle="Angler's Challenge",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Turik",zoneName="The Forbidden Reach"}
+e[#e+1]={id=74389,rawTitle="Filming the Caldera",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Cataloger Daela",zoneName="The Forbidden Reach"}
 e[#e+1]={id=75237,rawTitle="Reach West",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Kraxxus",zoneName="The Forbidden Reach"}
 e[#e+1]={id=75261,rawTitle="Reach Center",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Kraxxus",zoneName="The Forbidden Reach"}
 e[#e+1]={id=75263,rawTitle="Reach South",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Forbidden Reach",giver="Kraxxus",zoneName="The Forbidden Reach"}

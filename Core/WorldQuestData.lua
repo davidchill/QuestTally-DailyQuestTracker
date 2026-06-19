@@ -2989,10 +2989,6 @@ w[62241]={n="Training Regimen",e="SHADOWLANDS",m=1533,t="World Quest"}
 w[62258]={n="Soaring Over Bastion",e="SHADOWLANDS",m=1533,t="World Quest"}
 w[62280]={n="Limbo",e="SHADOWLANDS",m=1533,t="World Quest"}
 w[62451]={n="Assault on the Vestibule",e="SHADOWLANDS",m=1533,t="World Quest"}
-w[62691]={n="A Calling in Revendreth",e="SHADOWLANDS",m=1700,t="Calling Quest"}
-w[62692]={n="A Calling in Bastion",e="SHADOWLANDS",m=1707,t="Calling Quest"}
-w[62693]={n="A Calling in Ardenweald",e="SHADOWLANDS",m=1701,t="Calling Quest"}
-w[62694]={n="A Calling in Maldraxxus",e="SHADOWLANDS",m=1698,t="Calling Quest"}
 w[64273]={n="Containing the Helsworn",e="SHADOWLANDS",m=1543,t="Rare Elite World Quest"}
 w[64531]={n="Mor'geth",e="SHADOWLANDS",m=1543,t="Epic Elite World Quest"}
 w[64768]={n="Lightsprocket's Artifact Hunt",e="DRAGONFLIGHT",m=2022,t="World Quest"}

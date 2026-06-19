@@ -1,0 +1,10 @@
+# AI / agent files -- keep these out of the addon repo (kept locally for context only)
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp

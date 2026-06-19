@@ -316,14 +316,17 @@ end
 -- battle-pet entries per the user's settings. Applied to the full entry list
 -- before grouping so the filter holds in every view mode.
 local function applyKindFilters(entries)
-    local showWQ    = DT.DB:GetSetting("showWorldQuests")
     local showProf  = DT.DB:GetSetting("showProfessions")
     local showPets  = DT.DB:GetSetting("showBattlePets")
     local showRaces = DT.DB:GetSetting("showRaces")
     local kept = {}
     for _, e in ipairs(entries) do
+        -- Genuine world quests are always hidden: Blizzard surfaces and tracks
+        -- them natively on the world map, so QuestTally stays focused on dailies.
+        -- (The user toggle for these was removed from the Beta Filters panel, so
+        -- this is hardcoded rather than read from a now-unsettable setting.)
         local drop = isPlaceholderQuest(e)
-                  or (not showWQ and isWorldQuest(e))
+                  or isWorldQuest(e)
                   or (not showRaces and isRace(e))
                   or (not showPets and isBattlePet(e))
                   or (not showProf and isProfession(e))
@@ -524,14 +527,16 @@ end
 
 local function buildAllMode()
     local entries = applyKindFilters(DT.Checklist:GetEntries())
-    -- Count from the filtered list so the summary matches what's on screen
-    -- (hiding world quests drops the total substantially).
-    local discovered = 0
+    -- Count completed from the filtered list so the summary matches the rows on
+    -- screen (hiding world quests drops the total substantially). "Discovered"
+    -- was dropped: the catalog now ships real quest IDs, so nearly every entry
+    -- counted as discovered, making it ~equal to the total and uninformative.
+    local completed = 0
     for _, e in ipairs(entries) do
-        if e.status ~= DT.STATUS.UNDISCOVERED then discovered = discovered + 1 end
+        if e.status == DT.STATUS.COMPLETED then completed = completed + 1 end
     end
     return groupByExpansion(entries),
-           string.format("All  |cff707070— %d quests, |r|cff66cc66%d discovered|r", #entries, discovered)
+           string.format("All  |cff707070— %d quests, |r|cff66cc66%d completed|r", #entries, completed)
 end
 
 -- ---------------------------------------------------------------------------
@@ -716,54 +721,50 @@ end
 -- ---------------------------------------------------------------------------
 local function refreshDropdownLabels()
     if not mainFrame then return end
-    UIDropDownMenu_SetText(mainFrame.continentDD, DT.UI.browseContinent or "Continent")
-    UIDropDownMenu_SetText(mainFrame.zoneDD, DT.UI.browseZone or "All Zones")
+    mainFrame.continentDD:SetText(DT.UI.browseContinent or "Continent")
+    mainFrame.zoneDD:SetText(DT.UI.browseZone or "All Zones")
 end
 
-local function addEmptyNotice(level)
-    local info = UIDropDownMenu_CreateInfo()
-    info.text = "No dailies available"
-    info.disabled = true
-    info.notClickable = true
-    UIDropDownMenu_AddButton(info, level)
-end
-
-local function initContinentDropdown(self, level)
-    if #browseTree == 0 then addEmptyNotice(level); return end
-    for _, c in ipairs(browseTree) do
-        local info = UIDropDownMenu_CreateInfo()
-        info.text = c.name
-        info.value = c.name
-        info.checked = (c.name == DT.UI.browseContinent)
-        info.func = function()
-            DT.UI.browseContinent = c.name
-            DT.UI.browseZone = nil
-            DT.UI:Refresh()
-        end
-        UIDropDownMenu_AddButton(info, level)
+-- Menu builders: each returns an array of { text=, checked=, func=, disabled= }
+-- entries consumed by the custom themed dropdown (see createDropdown).
+local function buildContinentMenu()
+    local entries = {}
+    if #browseTree == 0 then
+        entries[1] = { text = "No dailies available", disabled = true }
+        return entries
     end
+    for _, c in ipairs(browseTree) do
+        entries[#entries + 1] = {
+            text = c.name,
+            checked = (c.name == DT.UI.browseContinent),
+            func = function()
+                DT.UI.browseContinent = c.name
+                DT.UI.browseZone = nil
+                DT.UI:Refresh()
+            end,
+        }
+    end
+    return entries
 end
 
-local function initZoneDropdown(self, level)
-    -- "All Zones" entry first.
-    local allInfo = UIDropDownMenu_CreateInfo()
-    allInfo.text = "All Zones"
-    allInfo.checked = (DT.UI.browseZone == nil)
-    allInfo.func = function() DT.UI.browseZone = nil; DT.UI:Refresh() end
-    UIDropDownMenu_AddButton(allInfo, level)
-
+local function buildZoneMenu()
+    local entries = { {
+        text = "All Zones",
+        checked = (DT.UI.browseZone == nil),
+        func = function() DT.UI.browseZone = nil; DT.UI:Refresh() end,
+    } }
     for _, c in ipairs(browseTree) do
         if c.name == DT.UI.browseContinent then
             for _, z in ipairs(c.zones) do
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = string.format("%s (%d)", z.name, z.count)
-                info.value = z.name
-                info.checked = (z.name == DT.UI.browseZone)
-                info.func = function() DT.UI.browseZone = z.name; DT.UI:Refresh() end
-                UIDropDownMenu_AddButton(info, level)
+                entries[#entries + 1] = {
+                    text = string.format("%s (%d)", z.name, z.count),
+                    checked = (z.name == DT.UI.browseZone),
+                    func = function() DT.UI.browseZone = z.name; DT.UI:Refresh() end,
+                }
             end
         end
     end
+    return entries
 end
 
 -- ---------------------------------------------------------------------------
@@ -772,6 +773,26 @@ end
 local function setMode(mode)
     DT.UI.mode = mode
     DT.UI:Refresh()
+end
+
+-- Expand/collapse-all support for the All tab. Collapsing the top-level
+-- expansion headers hides their sub-groups too, so flipping just those gives a
+-- fully-collapsed view; expanding clears all fold state so everything opens.
+local function anyExpansionExpanded()
+    for _, exp in ipairs(DT.EXPANSIONS) do
+        if not DT.DB:IsCollapsed("EXP:" .. exp.key) then return true end
+    end
+    return false
+end
+
+local function setAllExpansionsCollapsed(collapse)
+    if collapse then
+        for _, exp in ipairs(DT.EXPANSIONS) do
+            DT.DB:SetCollapsed("EXP:" .. exp.key, true)
+        end
+    else
+        DT.DB:ExpandAll()
+    end
 end
 
 local function updateModeButtons()
@@ -792,6 +813,18 @@ local function updateModeButtons()
     mainFrame.scroll:ClearAllPoints()
     mainFrame.scroll:SetPoint("TOPLEFT", 12, browsing and -86 or -54)
     mainFrame.scroll:SetPoint("BOTTOMRIGHT", -18, 32)
+
+    -- The All tab shows the expand/collapse-all toggle at the right of the
+    -- sub-bar; the reset countdown shifts left to make room when it's visible.
+    local isAll = (DT.UI.mode == "ALL")
+    mainFrame.collapseAllBtn:SetShown(isAll)
+    mainFrame.reset:ClearAllPoints()
+    if isAll then
+        mainFrame.collapseAllBtn:SetText(anyExpansionExpanded() and "Collapse All" or "Expand All")
+        mainFrame.reset:SetPoint("RIGHT", mainFrame.collapseAllBtn, "LEFT", -10, 0)
+    else
+        mainFrame.reset:SetPoint("RIGHT", mainFrame.subBar, "RIGHT", -10, 0)
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -947,6 +980,170 @@ local function createScrollFrame(parent, width)
     return scroll, content, bar
 end
 
+-- A flat themed button matching the title/tab surfaces: subtle vertical
+-- gradient, 1px edge, automatic hover highlight, light text. Replaces the stock
+-- gold UIPanelButtonTemplate so the title-bar buttons and Browse dropdowns read
+-- as part of the dark theme. The caller sets the anchor and scripts.
+local function createThemedButton(parent, text, w, h)
+    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    b:SetSize(w, h or 18)
+    if b.SetBackdrop then
+        b:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        b:SetBackdropColor(0, 0, 0, 0)  -- the gradient fill provides the colour
+        b:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    end
+    b.fill = makeStrip(b, "BACKGROUND", THEME.tabActive, THEME.tabActive2)
+    b.fill:SetPoint("TOPLEFT", 1, -1)
+    b.fill:SetPoint("BOTTOMRIGHT", -1, 1)
+
+    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    b.label:SetPoint("CENTER")
+    b.label:SetText(text or "")
+    b.label:SetTextColor(0.85, 0.85, 0.82)
+
+    b.hl = makeStrip(b, "HIGHLIGHT", { 1, 1, 1, 0.06 })
+    b.hl:SetPoint("TOPLEFT", 1, -1)
+    b.hl:SetPoint("BOTTOMRIGHT", -1, 1)
+
+    function b:SetText(t) self.label:SetText(t) end
+    return b
+end
+
+-- Custom themed dropdown, replacing UIDropDownMenuTemplate (whose menu list is a
+-- shared global frame that can't be cleanly skinned). A single popup frame is
+-- shared by every dropdown; a screen-wide catcher closes it on an outside click.
+local dropMenu
+local function ensureDropMenu()
+    if dropMenu then return dropMenu end
+    local catcher = CreateFrame("Button", nil, UIParent)
+    catcher:SetAllPoints(UIParent)
+    catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+    catcher:SetFrameLevel(1)
+    catcher:RegisterForClicks("AnyUp")
+    catcher:Hide()
+
+    local m = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    m:SetFrameStrata("FULLSCREEN_DIALOG")
+    m:SetFrameLevel(20)
+    m:SetClampedToScreen(true)
+    m:EnableMouse(true)
+    if m.SetBackdrop then
+        m:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        m:SetBackdropColor(0.10, 0.11, 0.14, 0.98)
+        m:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    end
+    m:Hide()
+    catcher:SetScript("OnClick", function() m:Hide() end)
+    m:SetScript("OnHide", function() catcher:Hide() end)
+    m.catcher = catcher
+    m.rows = {}
+    dropMenu = m
+    return m
+end
+
+local function getMenuRow(m, i)
+    local r = m.rows[i]
+    if r then return r end
+    r = CreateFrame("Button", nil, m)
+    r:SetHeight(18)
+    r.hl = r:CreateTexture(nil, "HIGHLIGHT")
+    r.hl:SetAllPoints()
+    r.hl:SetColorTexture(1, 1, 1, 0.08)
+    -- Small green dot marks the current selection (matches the progress accent).
+    r.check = r:CreateTexture(nil, "ARTWORK")
+    r.check:SetSize(5, 5)
+    r.check:SetPoint("LEFT", 8, 0)
+    r.check:SetColorTexture(THEME.progress[1], THEME.progress[2], THEME.progress[3], 1)
+    r.label = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    r.label:SetPoint("LEFT", 18, 0)
+    r.label:SetPoint("RIGHT", -10, 0)
+    r.label:SetJustifyH("LEFT")
+    r.label:SetWordWrap(false)
+    m.rows[i] = r
+    return r
+end
+
+local MENU_PAD = 6
+local MENU_ROW_H = 18
+local function openDropMenu(dd)
+    local m = ensureDropMenu()
+    local entries = dd.builder and dd.builder() or {}
+    local y = -MENU_PAD
+    for i, e in ipairs(entries) do
+        local r = getMenuRow(m, i)
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", m, "TOPLEFT", 3, y)
+        r:SetPoint("TOPRIGHT", m, "TOPRIGHT", -3, y)
+        r.label:SetText(e.text)
+        r.check:SetShown(e.checked and not e.disabled)
+        if e.disabled then
+            r.label:SetTextColor(0.5, 0.5, 0.5)
+            r.hl:Hide()
+            r:EnableMouse(false)
+            r:SetScript("OnClick", nil)
+        else
+            r.label:SetTextColor(0.90, 0.90, 0.88)
+            r.hl:Show()
+            r:EnableMouse(true)
+            r:SetScript("OnClick", function()
+                m:Hide()
+                if e.func then e.func() end
+            end)
+        end
+        r:Show()
+        y = y - MENU_ROW_H
+    end
+    for i = #entries + 1, #m.rows do m.rows[i]:Hide() end
+
+    m:SetWidth(math.max(dd:GetWidth(), 140))
+    m:SetHeight(-y + MENU_PAD)
+    m:ClearAllPoints()
+    m:SetPoint("TOPLEFT", dd, "BOTTOMLEFT", 0, -2)
+    m.catcher:Show()
+    m:Show()
+end
+
+local function createDropdown(parent, width)
+    local dd = createThemedButton(parent, "", width, 22)
+    -- Left-align the label and leave room for the chevron at the right.
+    dd.label:ClearAllPoints()
+    dd.label:SetPoint("LEFT", 8, 0)
+    dd.label:SetPoint("RIGHT", -16, 0)
+    dd.label:SetJustifyH("LEFT")
+    dd.label:SetWordWrap(false)
+
+    -- Down chevron ("v") drawn as two short strokes, echoing the close-button X.
+    local function stroke(rot, ox)
+        local t = dd:CreateTexture(nil, "OVERLAY")
+        t:SetTexture("Interface\\Buttons\\WHITE8X8")
+        t:SetVertexColor(0.75, 0.75, 0.78, 1)
+        t:SetSize(5, 1.5)
+        t:SetPoint("CENTER", dd, "RIGHT", -10 + ox, 0)
+        t:SetRotation(rot)
+        return t
+    end
+    stroke(-0.7854, -1.4)  -- "\" left half
+    stroke(0.7854, 1.4)    -- "/" right half
+
+    function dd:SetBuilder(fn) self.builder = fn end
+    dd:SetScript("OnClick", function(self)
+        local m = ensureDropMenu()
+        if m:IsShown() and m.owner == self then
+            m:Hide()
+        else
+            m.owner = self
+            openDropMenu(self)
+        end
+    end)
+    return dd
+end
+
 local function createMainFrame()
     local f = CreateFrame("Frame", "QuestTallyFrame", UIParent, "BackdropTemplate")
     f:SetSize(372, 470)
@@ -1020,31 +1217,31 @@ local function createMainFrame()
     f.settingsBtn:SetScript("OnEnter", function(self) self.cog:SetVertexColor(1, 1, 1) end)
     f.settingsBtn:SetScript("OnLeave", function(self) self.cog:SetVertexColor(0.85, 0.85, 0.82) end)
     f.settingsBtn:SetScript("OnClick", function()
+        if f.filters then f.filters:Hide() end
         if f.settings then f.settings:SetShown(not f.settings:IsShown()) end
     end)
 
-    -- Small "Tools" button opens the harvester panel (the dev data-baking tools).
-    f.toolsBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    f.toolsBtn:SetSize(44, 18)
-    f.toolsBtn:SetText("Tools")
-    f.toolsBtn:SetPoint("RIGHT", f.settingsBtn, "LEFT", -4, 0)
-    f.toolsBtn:SetScript("OnClick", function()
-        if DT.HarvestPanel then DT.HarvestPanel:Toggle() end
+    -- "Filters" button toggles the content-filter panel (which KINDS of quests to
+    -- show). Mirrors the gear/Settings pattern; the two overlays are mutually
+    -- exclusive so only one is open at a time.
+    f.filtersBtn = createThemedButton(f, "Filters", 52, 18)
+    f.filtersBtn:SetPoint("RIGHT", f.settingsBtn, "LEFT", -4, 0)
+    f.filtersBtn:SetScript("OnClick", function()
+        if f.settings then f.settings:Hide() end
+        if f.filters then f.filters:SetShown(not f.filters:IsShown()) end
     end)
-    f.toolsBtn:SetScript("OnEnter", function(self)
+    f.filtersBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
-        GameTooltip:SetText("Harvester tools", 1, 1, 1)
-        GameTooltip:AddLine("Bake quest data from your client (dev).", 0.7, 0.7, 0.7)
+        GameTooltip:SetText("Filters", 1, 1, 1)
+        GameTooltip:AddLine("Choose which kinds of quests to show.", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
-    f.toolsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.filtersBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     -- "Pinned" button toggles the companion panel of middle-clicked favourites,
     -- docked to the left edge of the window.
-    f.pinnedBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    f.pinnedBtn:SetSize(52, 18)
-    f.pinnedBtn:SetText("Pinned")
-    f.pinnedBtn:SetPoint("RIGHT", f.toolsBtn, "LEFT", -4, 0)
+    f.pinnedBtn = createThemedButton(f, "Pinned", 52, 18)
+    f.pinnedBtn:SetPoint("RIGHT", f.filtersBtn, "LEFT", -4, 0)
     f.pinnedBtn:SetScript("OnClick", function()
         if DT.Pinned then DT.Pinned:Toggle() end
     end)
@@ -1075,16 +1272,24 @@ local function createMainFrame()
     f.reset:SetPoint("RIGHT", f.subBar, "RIGHT", -10, 0)
     f.reset:SetJustifyH("RIGHT")
 
-    -- Browse dropdowns (shown only in browse mode), sitting under the sub-bar.
-    f.continentDD = CreateFrame("Frame", "QuestTallyContinentDD", f, "UIDropDownMenuTemplate")
-    f.continentDD:SetPoint("TOPLEFT", f.subBar, "BOTTOMLEFT", -6, -2)
-    UIDropDownMenu_SetWidth(f.continentDD, 120)
-    UIDropDownMenu_Initialize(f.continentDD, initContinentDropdown)
+    -- Expand/collapse-all toggle (All tab only; shown/positioned in
+    -- updateModeButtons). Flips every expansion section open or closed.
+    f.collapseAllBtn = createThemedButton(f, "Collapse All", 84, 16)
+    f.collapseAllBtn:SetPoint("RIGHT", f.subBar, "RIGHT", -8, 0)
+    f.collapseAllBtn:SetScript("OnClick", function()
+        setAllExpansionsCollapsed(anyExpansionExpanded())
+        DT.UI:Refresh()
+    end)
+    f.collapseAllBtn:Hide()
 
-    f.zoneDD = CreateFrame("Frame", "QuestTallyZoneDD", f, "UIDropDownMenuTemplate")
-    f.zoneDD:SetPoint("LEFT", f.continentDD, "RIGHT", 4, 0)
-    UIDropDownMenu_SetWidth(f.zoneDD, 120)
-    UIDropDownMenu_Initialize(f.zoneDD, initZoneDropdown)
+    -- Browse dropdowns (shown only in browse mode), sitting under the sub-bar.
+    f.continentDD = createDropdown(f, 132)
+    f.continentDD:SetPoint("TOPLEFT", f.subBar, "BOTTOMLEFT", 10, -3)
+    f.continentDD:SetBuilder(buildContinentMenu)
+
+    f.zoneDD = createDropdown(f, 176)
+    f.zoneDD:SetPoint("LEFT", f.continentDD, "RIGHT", 6, 0)
+    f.zoneDD:SetBuilder(buildZoneMenu)
 
     -- Scroll list (its top is repositioned per mode in updateModeButtons). The
     -- custom scrollbar is anchored to the scroll frame's right edge, so it tracks
@@ -1131,73 +1336,83 @@ local function createMainFrame()
         f.modeButtons[#f.modeButtons+1] = b
     end
 
-    -- Settings panel: a small dark overlay of toggles, opened by the gear button.
-    local sp = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    sp:SetSize(244, 236)
-    sp:SetPoint("TOPRIGHT", f.titleBar, "BOTTOMRIGHT", -6, -6)
-    sp:SetFrameStrata("DIALOG")
-    sp:EnableMouse(true)  -- swallow clicks so they don't fall through to the list
-    if sp.SetBackdrop then
-        sp:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
-        })
-        sp:SetBackdropColor(0.10, 0.11, 0.14, 0.98)
-        sp:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    -- Dark overlay panels of checkbox toggles, opened from the title bar. Both
+    -- the Filters panel and the Settings (gear) panel share this builder; each
+    -- anchors to the title bar's bottom-right and sizes itself to its rows.
+    local function createTogglePanel(titleText)
+        local p = CreateFrame("Frame", nil, f, "BackdropTemplate")
+        p:SetWidth(244)
+        p:SetPoint("TOPRIGHT", f.titleBar, "BOTTOMRIGHT", -6, -6)
+        p:SetFrameStrata("DIALOG")
+        p:EnableMouse(true)  -- swallow clicks so they don't fall through to the list
+        if p.SetBackdrop then
+            p:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+            })
+            p:SetBackdropColor(0.10, 0.11, 0.14, 0.98)
+            p:SetBackdropBorderColor(unpack(THEME.panelEdge))
+        end
+
+        local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOPLEFT", 12, -10)
+        title:SetText(titleText)
+        title:SetTextColor(0.95, 0.95, 0.92)
+
+        p.checks = {}
+        p.cy = -34
+        function p:AddCheck(label, getFn, setFn)
+            local cb = CreateFrame("CheckButton", nil, self, "UICheckButtonTemplate")
+            cb:SetSize(22, 22)
+            cb:SetPoint("TOPLEFT", 10, self.cy)
+            local lbl = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            lbl:SetPoint("LEFT", cb, "RIGHT", 2, 0)
+            lbl:SetPoint("RIGHT", self, "RIGHT", -8, 0)
+            lbl:SetJustifyH("LEFT")
+            lbl:SetText(label)
+            cb.sync = function() cb:SetChecked(getFn() and true or false) end
+            cb:SetScript("OnClick", function(s)
+                setFn(s:GetChecked() and true or false)
+                DT.UI:Refresh()
+            end)
+            self.checks[#self.checks + 1] = cb
+            self.cy = self.cy - 26
+        end
+        -- Size to contents and re-sync rows whenever shown.
+        function p:Finish()
+            self:SetHeight(-self.cy + 8)
+            self:SetScript("OnShow", function(s)
+                for _, cb in ipairs(s.checks) do cb.sync() end
+            end)
+            self:Hide()
+        end
+        return p
     end
 
-    local spTitle = sp:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    spTitle:SetPoint("TOPLEFT", 12, -10)
-    spTitle:SetText("Settings")
-    spTitle:SetTextColor(0.95, 0.95, 0.92)
-
-    sp.checks = {}
-    local cy = -34
-    local function addCheck(label, getFn, setFn)
-        local cb = CreateFrame("CheckButton", nil, sp, "UICheckButtonTemplate")
-        cb:SetSize(22, 22)
-        cb:SetPoint("TOPLEFT", 10, cy)
-        local lbl = sp:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        lbl:SetPoint("LEFT", cb, "RIGHT", 2, 0)
-        lbl:SetPoint("RIGHT", sp, "RIGHT", -8, 0)
-        lbl:SetJustifyH("LEFT")
-        lbl:SetText(label)
-        cb.sync = function() cb:SetChecked(getFn() and true or false) end
-        cb:SetScript("OnClick", function(self)
-            setFn(self:GetChecked() and true or false)
-            DT.UI:Refresh()
-        end)
-        sp.checks[#sp.checks + 1] = cb
-        cy = cy - 26
-    end
-
-    addCheck("Show holiday / seasonal quests",
+    -- Filters panel: which KINDS of quests appear in the list. Opened by the
+    -- "Filters" button in the title bar.
+    local fp = createTogglePanel("Filters")
+    fp:AddCheck("Holiday / Seasonal",
         function() return DT.DB:GetSetting("showSeasonal") end,
         function(v) DT.DB:SetSetting("showSeasonal", v) end)
-    addCheck("Show world quests (Blizzard-tracked)",
-        function() return DT.DB:GetSetting("showWorldQuests") end,
-        function(v) DT.DB:SetSetting("showWorldQuests", v) end)
-    addCheck("Show inactive world quests",
-        function() return DT.DB:GetSetting("showInactiveWQ") end,
-        function(v) DT.DB:SetSetting("showInactiveWQ", v) end)
-    addCheck("Show profession dailies",
+    fp:AddCheck("Profession",
         function() return DT.DB:GetSetting("showProfessions") end,
         function(v) DT.DB:SetSetting("showProfessions", v) end)
-    addCheck("Show battle pet dailies",
+    fp:AddCheck("Battle Pet",
         function() return DT.DB:GetSetting("showBattlePets") end,
         function(v) DT.DB:SetSetting("showBattlePets", v) end)
-    addCheck("Show skyriding races",
+    fp:AddCheck("Skyriding",
         function() return DT.DB:GetSetting("showRaces") end,
         function(v) DT.DB:SetSetting("showRaces", v) end)
-    addCheck("Newest expansions first",
+    fp:Finish()
+    f.filters = fp
+
+    -- Settings panel: non-filter options (sort order, etc.), opened by the gear.
+    local sp = createTogglePanel("Settings")
+    sp:AddCheck("Newest expansions first",
         function() return DT.DB:GetSetting("expansionOrder") == "NEWEST" end,
         function(v) DT.DB:SetSetting("expansionOrder", v and "NEWEST" or "OLDEST") end)
-
-    -- Re-sync checkbox states whenever the panel is shown.
-    sp:SetScript("OnShow", function(self)
-        for _, cb in ipairs(self.checks) do cb.sync() end
-    end)
-    sp:Hide()
+    sp:Finish()
     f.settings = sp
 
     return f
@@ -1414,6 +1629,7 @@ end
 function DT.UI:Hide()
     if mainFrame then
         if mainFrame.settings then mainFrame.settings:Hide() end
+        if mainFrame.filters then mainFrame.filters:Hide() end
         mainFrame:Hide()
     end
     -- The side panes are children of the main frame (so they hide with it), but
