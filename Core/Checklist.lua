@@ -88,8 +88,10 @@ local function bakedFor(entry)
     return bakedByTitle[entry.matchKey]
 end
 
--- Effective location: live (learned) zone if discovered, else the wiki-provided
--- zone, else the pre-mapped default. Returns (continent, zone).
+-- Effective location: live (learned) zone if discovered, else a curated per-quest
+-- override (capital-city profession dailies whose catalog zoneName is a
+-- placeholder), else the wiki-provided zone, else the pre-mapped default.
+-- Returns (continent, zone).
 local function effectiveLocation(entry, resolved, baked)
     local mapID = (resolved and resolved.mapID) or (baked and baked.m)
     if mapID and DT.Zones then
@@ -98,8 +100,16 @@ local function effectiveLocation(entry, resolved, baked)
             return z.continentName or entry.defContinent, z.zoneName
         end
     end
-    if entry.zoneName then return entry.defContinent, entry.zoneName end
-    return entry.defContinent, entry.defZone
+    local ov = DT.ZoneMap and DT.ZoneMap:Override(entry.id)
+    if ov then return ov[1], ov[2] end
+    -- Sort by the zone's real continent/island where we know it, so Cataclysm's
+    -- "Azeroth" stand-in continent never surfaces (its zones already live under
+    -- Eastern Kingdoms / Kalimdor / Tol Barad / Deepholm). Falls back to the
+    -- pre-mapped per-expansion default for everything else.
+    local zone = entry.zoneName or entry.defZone
+    local label = (DT.Zones and DT.Zones:ZoneLabel(entry)) or zone
+    local continent = (DT.ZoneMap and DT.ZoneMap:ContinentForZone(label)) or entry.defContinent
+    return continent, zone
 end
 
 -- Public: ensure the index is built (safe to call repeatedly).

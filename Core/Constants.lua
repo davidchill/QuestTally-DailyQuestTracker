@@ -6,7 +6,7 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.4.2"
+DT.VERSION = "0.4.3"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
@@ -78,6 +78,20 @@ DT.EXPANSION_COLORS = {
     MIDNIGHT     = { 0.56, 0.36, 0.66 }, -- void violet
     OTHER        = { 0.45, 0.45, 0.50 }, -- slate
 }
+
+-- Breadcrumb / location accent colors, shared by the tracker sub-bar and the
+-- detail panel so a "Continent — Zone" path reads the same everywhere. The
+-- continent is a muted cool grey (the broader parent context); the zone is the
+-- brighter blue accent (the specific, emphasised part).
+DT.ZONE_ACCENT      = { 0.36, 0.62, 0.92 }
+DT.CONTINENT_ACCENT = { 0.64, 0.69, 0.80 }
+
+-- Format an {r,g,b} color (0-1 components) as an "RRGGBB" hex string for inline
+-- |cff..|r color codes.
+function DT.ToHex(c)
+    return string.format("%02x%02x%02x",
+        math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255))
+end
 
 -- Short human label for each status, shown in the list.
 DT.STATUS_LABEL = {

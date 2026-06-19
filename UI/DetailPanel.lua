@@ -18,6 +18,12 @@ local LINE_PAD = 14          -- left/right inset for content
 local panel                  -- created lazily on first Show
 local lastEntry              -- the entry currently displayed (for re-render on load)
 
+-- Faction tint for the faction line: Alliance blue, Horde red.
+local FACTION_COLORS = {
+    Alliance = { 0.30, 0.55, 1.00 },
+    Horde    = { 0.90, 0.27, 0.27 },
+}
+
 -- One hidden frame listens for the async "quest data is ready" event.
 local loader = CreateFrame("Frame")
 local pendingQuestID         -- the questID we're currently waiting on (if any)
@@ -269,10 +275,53 @@ local function normalizeBaked(e)
     return d
 end
 
+-- Wiki objective strings arrive as one raw blob carrying three things mashed
+-- together: leftover image markup ("[400px|]thumb|Caption. "), the main
+-- objective sentence(s), and a "*"-delimited list of sub-objectives / provided
+-- items. Split that into clean renderable pieces:
+--   { { text = <main sentence>, heading = true }, { text = <bullet> }, ... }
+-- The heading entry renders as a plain line; the bullets get a "- " prefix and a
+-- deeper indent in renderBaked, matching how warcraft.wiki lays the quest out.
+local function parseWikiObjectives(raw)
+    if not raw or raw == "" then return nil end
+    local s = raw
+
+    -- Strip leading thumbnail captions, e.g. "thumb|Final Doubt. " possibly with
+    -- a size prefix ("400px|thumb|...") and possibly several in a row. Each ends
+    -- at the first ". " so the real objective sentence is left intact.
+    while true do
+        local stripped = s:gsub("^%s*%d*%a*|?thumb|.-%.%s+", "", 1)
+        if stripped == s then break end
+        s = stripped
+    end
+    -- Drop any stray image markup that wasn't a clean leading caption.
+    s = s:gsub("%d+px|thumb|", ""):gsub("thumb|", "")
+    s = strtrim(s)
+    if s == "" then return nil end
+
+    -- Everything before the first "*" is the main objective; the rest is the
+    -- "*"-delimited bullet list.
+    local main, rest = s:match("^(.-)%s*%*(.*)$")
+    if not main then main, rest = s, nil end
+
+    local out = {}
+    main = strtrim(main)
+    if main ~= "" then out[#out + 1] = { text = main, heading = true } end
+    if rest then
+        for item in rest:gmatch("[^%*]+") do
+            item = strtrim(item)
+            if item ~= "" then out[#out + 1] = { text = item } end
+        end
+    end
+    if #out == 0 then return nil end
+    return out
+end
+
 -- Convert a shipped DT.WikiDetails entry (from warcraft.wiki, compact keys) into
--- the renderer shape. Objectives/description are single strings on the wiki.
+-- the renderer shape. Objectives arrive as one raw wiki string (parsed into clean
+-- lines above); the description is a plain string.
 local function normalizeWiki(e)
-    local d = { objectives = e.o and { e.o } or nil, description = e.de }
+    local d = { objectives = parseWikiObjectives(e.o), description = e.de }
     if e.r or e.mo then
         local r = { money = e.mo }
         if e.r then
@@ -316,6 +365,25 @@ local function bestDescription(questID)
     return nil
 end
 
+-- Render a baked objectives list (no header). Items are either plain strings
+-- (harvested/live objectives -> "- " bullets) or { text, heading } tables from
+-- the wiki parser: heading is the main sentence (no bullet), the rest are
+-- deeper-indented sub-objectives. Returns the new y-cursor.
+local function renderObjectiveLines(content, y, list)
+    for _, txt in ipairs(list) do
+        if type(txt) == "table" then
+            if txt.heading then
+                y = addLine(content, y, { text = txt.text, color = { 0.85, 0.85, 0.85 }, indent = 6 })
+            else
+                y = addLine(content, y, { text = "- " .. txt.text, color = { 0.85, 0.85, 0.85 }, indent = 14 })
+            end
+        else
+            y = addLine(content, y, { text = "- " .. txt, color = { 0.85, 0.85, 0.85 }, indent = 6 })
+        end
+    end
+    return y
+end
+
 -- Render the harvested fallback for an entry. Returns the new y-cursor, or nil
 -- if there's no baked data to show.
 local function renderBaked(content, y, questID)
@@ -326,9 +394,7 @@ local function renderBaked(content, y, questID)
                               color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
     if details.objectives and #details.objectives > 0 then
         y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
-        for _, txt in ipairs(details.objectives) do
-            y = addLine(content, y, { text = "- " .. txt, color = { 0.85, 0.85, 0.85 }, indent = 6 })
-        end
+        y = renderObjectiveLines(content, y, details.objectives)
     end
     if details.rewards then
         y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
@@ -337,19 +403,35 @@ local function renderBaked(content, y, questID)
     return y
 end
 
--- Render objectives, if the API can give them for this quest. Returns y-cursor.
+-- True if an API objective string carries a real description, not just a bare
+-- "0/1" progress count. The API returns count-only text ("0/1") for quests the
+-- player hasn't picked up yet, which is useless on its own -- in that case the
+-- caller should fall back to the baked wiki/harvest objective text.
+local function objectiveHasText(s)
+    if not s or s == "" then return false end
+    return strtrim((s:gsub("^%s*%d+%s*/%s*%d+%s*", ""))) ~= ""
+end
+
+-- Render objectives from the live API, if it can give descriptive text for this
+-- quest. Returns y-cursor, hadAny. hadAny is false when the API only had bare
+-- counts (so the caller can fall back to baked objectives).
 local function renderObjectives(content, y, questID)
     local objectives = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(questID)
-    if not objectives or #objectives == 0 then return y end
+    if not objectives or #objectives == 0 then return y, false end
+
+    -- Keep only objectives that actually describe something.
+    local shown = {}
+    for _, obj in ipairs(objectives) do
+        if obj and objectiveHasText(obj.text) then shown[#shown + 1] = obj end
+    end
+    if #shown == 0 then return y, false end
 
     y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
-    for _, obj in ipairs(objectives) do
-        if obj and obj.text and obj.text ~= "" then
-            local color = obj.finished and { 0.4, 1, 0.4 } or { 0.85, 0.85, 0.85 }
-            y = addLine(content, y, { text = "- " .. obj.text, color = color, indent = 6 })
-        end
+    for _, obj in ipairs(shown) do
+        local color = obj.finished and { 0.4, 1, 0.4 } or { 0.85, 0.85, 0.85 }
+        y = addLine(content, y, { text = "- " .. obj.text, color = color, indent = 6 })
     end
-    return y
+    return y, true
 end
 
 -- ---------------------------------------------------------------------------
@@ -379,11 +461,41 @@ local function render(entry)
     panel.pill:SetColorTexture(c[1], c[2], c[3], 0.20)
     panel.pill:SetWidth((panel.pillText:GetStringWidth() or 20) + 12)
 
-    -- Meta line: zone / faction / expansion.
+    -- Faction line: its own row above the breadcrumb, tinted to the faction. Only
+    -- shown when the quest is faction-specific (not "Both"); the meta line then
+    -- re-anchors below it (or back to the pill when there's no faction line).
+    local hasFaction = entry.side and entry.side ~= "Both"
+    if hasFaction then
+        local fc = FACTION_COLORS[entry.side] or { 0.8, 0.8, 0.8 }
+        panel.faction:SetText(entry.side)
+        panel.faction:SetTextColor(fc[1], fc[2], fc[3])
+        panel.faction:Show()
+    else
+        panel.faction:Hide()
+    end
+    panel.meta:ClearAllPoints()
+    panel.meta:SetPoint("TOPLEFT", hasFaction and panel.faction or panel.pill,
+        "BOTTOMLEFT", 0, hasFaction and -4 or -7)
+    panel.meta:SetPoint("RIGHT", panel.title, "RIGHT")
+
+    -- Meta breadcrumb: Expansion • Continent • Zone, each coloured to match the
+    -- rest of the UI -- the expansion in its All-tab section colour (the accent
+    -- lightened the same way the section title is), the continent muted, the zone
+    -- the blue accent. Zone uses the shared canonical label so it agrees with the
+    -- list's grouping.
     local bits = {}
-    if entry.zoneName then bits[#bits + 1] = entry.zoneName end
-    if entry.side and entry.side ~= "Both" then bits[#bits + 1] = entry.side end
-    if exp then bits[#bits + 1] = exp.name end
+    if exp then
+        local ec = DT.EXPANSION_COLORS[entry.expansion] or DT.EXPANSION_COLORS.OTHER
+        local lit = { math.min(1, ec[1] + 0.28), math.min(1, ec[2] + 0.28), math.min(1, ec[3] + 0.28) }
+        bits[#bits + 1] = "|cff" .. DT.ToHex(lit) .. exp.name .. "|r"
+    end
+    if entry.continentName then
+        bits[#bits + 1] = "|cff" .. DT.ToHex(DT.CONTINENT_ACCENT) .. entry.continentName .. "|r"
+    end
+    local zlabel = DT.Zones and DT.Zones:ZoneLabel(entry) or nil
+    if zlabel then
+        bits[#bits + 1] = "|cff" .. DT.ToHex(DT.ZONE_ACCENT) .. zlabel .. "|r"
+    end
     panel.meta:SetText(table.concat(bits, "  |cff808080•|r  "))
 
     -- Quest giver: live-captured coords win; else the wiki's coords; else its
@@ -417,8 +529,17 @@ local function render(entry)
                 .. "and objectives.",
             color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
     elseif HaveQuestRewardData and HaveQuestRewardData(entry.questID) then
-        -- Reward data is cached: render the full live view.
-        y = renderObjectives(content, y, entry.questID)
+        -- Reward data is cached: render the full live view. The live API gives
+        -- accurate rewards, but the client only loads objective *text* for quests
+        -- in your log -- for an Available quest it returns a bare "0/1" with no
+        -- name. In that case show a note rather than a meaningless count.
+        local hadObj
+        y, hadObj = renderObjectives(content, y, entry.questID)
+        if not hadObj then
+            y = addLine(content, y, {
+                text = "Objectives become available once you pick this quest up in-game.",
+                color = { 0.6, 0.6, 0.6 }, spacingBefore = 8 })
+        end
         y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
         local ry, hadRewards = renderRewards(content, y, entry.questID)
         y = ry
@@ -436,9 +557,8 @@ local function render(entry)
             -- be unreliable, so try the live API anyway (it often returns the
             -- objectives, and sometimes rewards). Fall back to a clear note rather
             -- than looping on "Loading..." forever.
-            local startY = y
-            y = renderObjectives(content, y, entry.questID)
-            local hadObjectives = y > startY
+            local hadObjectives
+            y, hadObjectives = renderObjectives(content, y, entry.questID)
             local ry, hadRewards = renderRewards(content, y, entry.questID)
             y = ry
             if not hadRewards then
@@ -561,9 +681,18 @@ local function createPanel()
     p.pillText = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     p.pillText:SetPoint("LEFT", p.pill, "LEFT", 6, 0)
 
+    -- Faction line (Alliance/Horde) on its own row above the breadcrumb, tinted to
+    -- the faction. Hidden for "Both"; render() re-anchors the meta line to the pill
+    -- in that case so there's no empty gap.
+    p.faction = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    p.faction:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
+    p.faction:SetJustifyH("LEFT")
+
+    -- Meta breadcrumb (Expansion • Continent • Zone). Anchored in render() below
+    -- either the faction line or the pill; the right edge tracks the title.
     p.meta = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     p.meta:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
-    p.meta:SetPoint("TOPRIGHT", p.title, "BOTTOMRIGHT", 0, -7)
+    p.meta:SetPoint("RIGHT", p.title, "RIGHT")
     p.meta:SetJustifyH("LEFT")
     p.meta:SetWordWrap(true)
 

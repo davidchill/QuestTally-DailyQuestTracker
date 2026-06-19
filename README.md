@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.4.2** — built and tested against Retail patch **12.0.x**.
+> **Version 0.4.3** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~2,000 dailies across every expansion** (wiki + Blizzard-API
 > gap-fill) plus **~3,600 world quests** (Legion → Midnight) from first-party
 > sources.
@@ -44,12 +44,15 @@ available, tracking completion, and helping you finish them, organized by
   stays focused year-round.
 - **Settings panel.** A **gear button** on the title bar holds the **Newest
   expansions first** sort toggle.
-- **Expand / collapse all.** On the **All** tab, a one-click toggle folds or
-  unfolds every expansion section at once.
+- **Expand / collapse all.** On the **All** and **Browse** tabs, a one-click toggle
+  folds or unfolds every section on screen at once.
 - **Quest givers & coordinates — baked in.** Dailies ship with their **giver name
   and (where the wiki has them) map coordinates**, so the tooltip shows the giver
   and **right-click drops a travel waypoint**. Talking to a giver captures it
   **live**, which overrides the baked data.
+- **TomTom support (optional).** With [TomTom](https://www.curseforge.com/wow/addons/tomtom)
+  installed, **Shift+Left-click** a quest to drop a TomTom waypoint (with the arrow)
+  at its giver. Works fully without TomTom.
 - **Quest details — baked in.** Click a quest to see its **rewards** (money,
   items, currencies), **objectives**, **description**, and **giver + location** —
   even for quests you haven't picked up.
@@ -58,7 +61,8 @@ available, tracking completion, and helping you finish them, organized by
 - **Faction-aware.** Only your character's faction's dailies are shown.
 - **Reset timer, row actions.** Time until daily reset; **left-click** for
   details, **middle-click** to **pin**, **right-click** to **travel to the giver /
-  track the quest**, **Shift-click** to copy the **Wowhead link**.
+  track the quest**, **Shift+Left-click** for a **TomTom waypoint** (if installed),
+  **Shift+Right-click** to copy the **Wowhead link**.
 - **First-party data only.** All quest data comes from Blizzard's client database,
   Blizzard's official **Game Data API**, the openly-licensed community wiki, or
   your live game — never scraped from a commercial site. (A developer-only **harvester**,
@@ -180,7 +184,7 @@ QuestTally/
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery
 │   ├── Zones.lua            Map/zone resolution + current-zone lookup
-│   ├── ZoneMap.lua          Pre-mapped continent/zone per category
+│   ├── ZoneMap.lua          Pre-mapped continent/zone per category + per-quest overrides
 │   ├── Checklist.lua        Title↔ID matching engine + zone resolution
 │   └── Core.lua             Events, init, slash commands
 ├── UI/
@@ -190,7 +194,8 @@ QuestTally/
 ├── Media/
 │   └── QuestTally-Logo.tga  Title-bar logo (baked from the first-party art)
 └── Integrations/
-    └── TitanPanel.lua       Optional TitanPanel bar plugin (no-op without Titan)
+    ├── TitanPanel.lua       Optional TitanPanel bar plugin (no-op without Titan)
+    └── TomTom.lua           Optional TomTom waypoint integration (no-op without TomTom)
 ```
 
 The `_generator/` folder (Node tools that bake harvested data into shipped Lua)

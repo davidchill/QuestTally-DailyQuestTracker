@@ -256,49 +256,12 @@ local SUB_BADGE = {
     [SUB_GARRISON]    = "Garrison",
 }
 
--- Aliases that fold sub-hubs and name variants onto the real Blizzard zone, so
--- they group with their parent (and match the API's area names). These are the
--- "skipped zones" the completeness sweep couldn't place geographically.
-local ZONE_ALIASES = {
-    ["Molten Front"]                          = "Mount Hyjal",
-    ["Mount Hyjal; Molten Front"]             = "Mount Hyjal",
-    ["Landfall"]                              = "Krasarang Wilds",
-    ["Shrine of Seven Stars"]                 = "Vale of Eternal Blossoms",
-    ["Argent Tournament"]                     = "Icecrown",
-    ["Argent Tournament Grounds"]             = "Icecrown",
-    ["Jade Forest"]                           = "The Jade Forest",
-    ["Waking Shores"]                         = "The Waking Shores",
-    ["Little Scales Daycare"]                 = "The Waking Shores",
-    ["Shadowmoon Valley (alternate universe)"] = "Shadowmoon Valley",
-    ["Lunarfall"]                             = "Shadowmoon Valley",
-    ["Coilfang Reservoir"]                    = "Zangarmarsh",
-    ["Garrison"]                              = "Garrison Support",
-}
-
--- A real zone name for grouping. Handles bad catalog data: a character level
--- leaked into zoneName ("52"/"70") -> fall back to category (the true zone for
--- fixed entries). A world quest's category is a *subtype*, never a zone, so we
--- don't fall back to it there. Known sub-hubs are aliased to their parent zone,
--- and multi-zone wiki strings ("A; B; C") collapse to the category or first zone.
+-- Canonical zone label for grouping. Defined once in Core (DT.Zones:ZoneLabel)
+-- so the Current Zone / All / Browse views, their dropdowns and filters all share
+-- the SAME normalization (sub-hub aliases, junk-data cleanup). This is just a
+-- thin local alias for terse call sites below.
 local function zoneLabel(e)
-    local z = e.zoneName
-    if not z or z:find("^%d+$") then
-        if e.type ~= "WorldQuest" and e.category and not e.category:find("^%d+$") then
-            return e.category
-        end
-        return nil
-    end
-    if ZONE_ALIASES[z] then return ZONE_ALIASES[z] end
-    if z:find(";") then
-        -- Garbled multi-zone value: a clean content category reads better than a
-        -- semicolon list; otherwise take the first listed zone.
-        if e.category and not e.category:find("^%d+$") and not e.category:find(";") then
-            return e.category
-        end
-        local first = (z:match("^[^;]+") or z):gsub("%s+$", "")
-        return first
-    end
-    return z
+    return DT.Zones:ZoneLabel(e)
 end
 
 -- Blizzard ships internal test / placeholder quests in the DB2 catalog, e.g.
@@ -438,8 +401,13 @@ local function groupByExpansion(entries)
     return display
 end
 
--- Group entries by zone name -> display list. Zones share a neutral blue accent.
-local ZONE_ACCENT = { 0.36, 0.62, 0.92 }
+-- Zone/continent accent colours and the hex helper live in Constants so the
+-- tracker sub-bar and the detail panel share one source (local aliases here keep
+-- the call sites below terse). Zones use the blue accent; the continent is the
+-- muted parent tone in breadcrumbs.
+local ZONE_ACCENT = DT.ZONE_ACCENT
+local CONTINENT_ACCENT = DT.CONTINENT_ACCENT
+local toHex = DT.ToHex
 local function groupByZone(entries)
     local groups, names = {}, {}
     for _, e in ipairs(entries) do
@@ -477,7 +445,7 @@ local function buildZoneMode()
     -- normalized zoneLabel (which folds sub-hubs/aliases like "Molten Front" ->
     -- "Mount Hyjal" and cleans numeric/multi-zone strings), not the raw catalog
     -- zoneName. Otherwise this tab silently drops quests those tabs group here.
-    local target = ZONE_ALIASES[zone.zoneName] or zone.zoneName
+    local target = DT.Zones.ZONE_ALIASES[zone.zoneName] or zone.zoneName
     local entries = {}
     for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
         if zoneLabel(e) == target then entries[#entries+1] = e end
@@ -496,8 +464,17 @@ local function buildZoneMode()
         display[#display+1] = { type = "message",
             text = "No known dailies mapped to this zone yet." }
     end
-    local sub = zone.zoneName
-    if zone.continentName then sub = sub .. "  |cff707070— " .. zone.continentName .. "|r" end
+    -- Breadcrumb reads as a path, broad -> specific: "Eastern Kingdoms — Elwynn
+    -- Forest". The continent is muted (parent context); the current zone is the
+    -- blue zone accent so it matches the section header just below it.
+    local zoneText = "|cff" .. toHex(ZONE_ACCENT) .. zone.zoneName .. "|r"
+    local sub
+    if zone.continentName then
+        sub = "|cff" .. toHex(CONTINENT_ACCENT) .. zone.continentName .. "|r"
+            .. "  |cff707070—|r  " .. zoneText
+    else
+        sub = zoneText
+    end
     return display, sub
 end
 
@@ -510,10 +487,13 @@ local function buildBrowseMode()
         DT.UI.browseContinent = browseTree[1].name
     end
 
+    -- Filter on the SAME canonical names the dropdowns are built from (BuildTree
+    -- uses ZoneLabel and "Other" for a missing continent), so a selected zone
+    -- always matches its section header and the per-zone counts are accurate.
     local entries = {}
     for _, e in ipairs(all) do
-        if e.continentName == DT.UI.browseContinent
-        and (not DT.UI.browseZone or e.zoneName == DT.UI.browseZone) then
+        if (e.continentName or "Other") == DT.UI.browseContinent
+        and (not DT.UI.browseZone or (zoneLabel(e) or "Unknown") == DT.UI.browseZone) then
             entries[#entries+1] = e
         end
     end
@@ -630,9 +610,24 @@ local function acquireRow(parent)
             end
             local e = self.entry
             if not e then return end
-            -- Shift-click: copyable Wowhead link (needs a known quest ID).
             if IsShiftKeyDown() then
-                if e.questID then DT.UI:ShowWowheadLink(e.questID) end
+                if button == "LeftButton" then
+                    -- Shift+Left: drop a TomTom waypoint at the quest giver.
+                    local ok, reason = DT.TomTom and DT.TomTom:AddGiverWaypoint(e)
+                    if ok then
+                        print(string.format("|cff33ff99QuestTally|r: TomTom waypoint set to %s.",
+                            (e.giver and e.giver.name) or (e.title or "the quest giver")))
+                    elseif reason == "nolocation" then
+                        print("|cff33ff99QuestTally|r: no known giver location for this "
+                            .. "quest yet — visit its giver once so QuestTally can learn it.")
+                    else  -- "notomtom" or DT.TomTom missing
+                        print("|cff33ff99QuestTally|r: TomTom isn't installed — install it "
+                            .. "to set waypoints with Shift+Left Click.")
+                    end
+                elseif button == "RightButton" then
+                    -- Shift+Right: copyable Wowhead link (needs a known quest ID).
+                    if e.questID then DT.UI:ShowWowheadLink(e.questID) end
+                end
                 return
             end
             if button == "LeftButton" then
@@ -692,7 +687,10 @@ local function acquireRow(parent)
                 else
                     GameTooltip:AddLine("Right-click: track quest", 0.5, 0.8, 1)
                 end
-                GameTooltip:AddLine("Shift-click: Wowhead link", 0.5, 0.8, 1)
+                if DT.TomTom and DT.TomTom:IsAvailable() and e.giver and e.giver.x then
+                    GameTooltip:AddLine("Shift-left-click: TomTom waypoint", 0.5, 0.8, 1)
+                end
+                GameTooltip:AddLine("Shift-right-click: Wowhead link", 0.5, 0.8, 1)
             else
                 GameTooltip:AddLine("Not yet seen in-game; pick it up to track it live.", 0.6, 0.55, 0.7)
             end
@@ -775,22 +773,35 @@ local function setMode(mode)
     DT.UI:Refresh()
 end
 
--- Expand/collapse-all support for the All tab. Collapsing the top-level
--- expansion headers hides their sub-groups too, so flipping just those gives a
--- fully-collapsed view; expanding clears all fold state so everything opens.
-local function anyExpansionExpanded()
-    for _, exp in ipairs(DT.EXPANSIONS) do
-        if not DT.DB:IsCollapsed("EXP:" .. exp.key) then return true end
+-- Expand/collapse-all support. Works off the top-level (level 1) section keys
+-- that are actually on screen, so the one toggle serves both the All tab
+-- (expansions) and the Browse tab (zones). Refreshed from the display each build.
+local currentTopKeys = {}
+
+local function setCurrentTopKeys(display)
+    wipe(currentTopKeys)
+    for _, item in ipairs(display) do
+        if item.type == "section" and (item.level or 1) == 1 and item.key then
+            currentTopKeys[#currentTopKeys + 1] = item.key
+        end
+    end
+end
+
+local function anyTopSectionExpanded()
+    for _, key in ipairs(currentTopKeys) do
+        if not DT.DB:IsCollapsed(key) then return true end
     end
     return false
 end
 
-local function setAllExpansionsCollapsed(collapse)
+local function setAllTopCollapsed(collapse)
     if collapse then
-        for _, exp in ipairs(DT.EXPANSIONS) do
-            DT.DB:SetCollapsed("EXP:" .. exp.key, true)
+        -- Collapse only the sections in view (their sub-groups hide with them).
+        for _, key in ipairs(currentTopKeys) do
+            DT.DB:SetCollapsed(key, true)
         end
     else
+        -- Expanding clears all fold state so nested sub-groups open too.
         DT.DB:ExpandAll()
     end
 end
@@ -814,13 +825,15 @@ local function updateModeButtons()
     mainFrame.scroll:SetPoint("TOPLEFT", 12, browsing and -86 or -54)
     mainFrame.scroll:SetPoint("BOTTOMRIGHT", -18, 32)
 
-    -- The All tab shows the expand/collapse-all toggle at the right of the
-    -- sub-bar; the reset countdown shifts left to make room when it's visible.
-    local isAll = (DT.UI.mode == "ALL")
-    mainFrame.collapseAllBtn:SetShown(isAll)
+    -- The All and Browse tabs (both grouped/collapsible) show the
+    -- expand/collapse-all toggle at the right of the sub-bar; the reset countdown
+    -- shifts left to make room when it's visible. The Current Zone tab has a
+    -- single section, so the toggle would be pointless there.
+    local hasGroups = (DT.UI.mode == "ALL" or DT.UI.mode == "BROWSE")
+    mainFrame.collapseAllBtn:SetShown(hasGroups)
     mainFrame.reset:ClearAllPoints()
-    if isAll then
-        mainFrame.collapseAllBtn:SetText(anyExpansionExpanded() and "Collapse All" or "Expand All")
+    if hasGroups then
+        mainFrame.collapseAllBtn:SetText(anyTopSectionExpanded() and "Collapse All" or "Expand All")
         mainFrame.reset:SetPoint("RIGHT", mainFrame.collapseAllBtn, "LEFT", -10, 0)
     else
         mainFrame.reset:SetPoint("RIGHT", mainFrame.subBar, "RIGHT", -10, 0)
@@ -1205,17 +1218,43 @@ local function createMainFrame()
     f.close:SetPoint("RIGHT", f.titleBar, "RIGHT", -6, 0)
     f.close:SetScript("OnClick", function() DT.UI:Hide() end)
 
-    -- Settings (gear) button: opens the options panel.
-    f.settingsBtn = CreateFrame("Button", nil, f)
-    f.settingsBtn:SetSize(18, 18)
-    f.settingsBtn:SetPoint("RIGHT", f.close, "LEFT", -2, 0)
+    -- Settings (gear) button: opens the options panel. Wrapped in the same dark
+    -- themed chip as the Filters/Pinned buttons (gradient fill, 1px edge, hover
+    -- highlight) so it reads as part of the UI instead of a bare stock icon.
+    f.settingsBtn = CreateFrame("Button", nil, f, "BackdropTemplate")
+    f.settingsBtn:SetSize(22, 18)
+    f.settingsBtn:SetPoint("RIGHT", f.close, "LEFT", -4, 0)
+    if f.settingsBtn.SetBackdrop then
+        f.settingsBtn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        f.settingsBtn:SetBackdropColor(0, 0, 0, 0)  -- gradient fill provides the colour
+        f.settingsBtn:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    end
+    f.settingsBtn.fill = makeStrip(f.settingsBtn, "BACKGROUND", THEME.tabActive, THEME.tabActive2)
+    f.settingsBtn.fill:SetPoint("TOPLEFT", 1, -1)
+    f.settingsBtn.fill:SetPoint("BOTTOMRIGHT", -1, 1)
     local cog = f.settingsBtn:CreateTexture(nil, "ARTWORK")
-    cog:SetAllPoints()
+    cog:SetSize(13, 13)
+    cog:SetPoint("CENTER")
     cog:SetTexture("Interface\\Buttons\\UI-OptionsButton")
     cog:SetVertexColor(0.85, 0.85, 0.82)
     f.settingsBtn.cog = cog
-    f.settingsBtn:SetScript("OnEnter", function(self) self.cog:SetVertexColor(1, 1, 1) end)
-    f.settingsBtn:SetScript("OnLeave", function(self) self.cog:SetVertexColor(0.85, 0.85, 0.82) end)
+    f.settingsBtn.hl = makeStrip(f.settingsBtn, "HIGHLIGHT", { 1, 1, 1, 0.06 })
+    f.settingsBtn.hl:SetPoint("TOPLEFT", 1, -1)
+    f.settingsBtn.hl:SetPoint("BOTTOMRIGHT", -1, 1)
+    f.settingsBtn:SetScript("OnEnter", function(self)
+        self.cog:SetVertexColor(1, 1, 1)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("Settings", 1, 1, 1)
+        GameTooltip:AddLine("Sort order and other options.", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    f.settingsBtn:SetScript("OnLeave", function(self)
+        self.cog:SetVertexColor(0.85, 0.85, 0.82)
+        GameTooltip:Hide()
+    end)
     f.settingsBtn:SetScript("OnClick", function()
         if f.filters then f.filters:Hide() end
         if f.settings then f.settings:SetShown(not f.settings:IsShown()) end
@@ -1231,7 +1270,7 @@ local function createMainFrame()
         if f.filters then f.filters:SetShown(not f.filters:IsShown()) end
     end)
     f.filtersBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Filters", 1, 1, 1)
         GameTooltip:AddLine("Choose which kinds of quests to show.", 0.7, 0.7, 0.7)
         GameTooltip:Show()
@@ -1246,7 +1285,7 @@ local function createMainFrame()
         if DT.Pinned then DT.Pinned:Toggle() end
     end)
     f.pinnedBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Pinned quests", 1, 1, 1)
         GameTooltip:AddLine("Show/hide your middle-clicked favourites.", 0.7, 0.7, 0.7)
         GameTooltip:Show()
@@ -1277,7 +1316,7 @@ local function createMainFrame()
     f.collapseAllBtn = createThemedButton(f, "Collapse All", 84, 16)
     f.collapseAllBtn:SetPoint("RIGHT", f.subBar, "RIGHT", -8, 0)
     f.collapseAllBtn:SetScript("OnClick", function()
-        setAllExpansionsCollapsed(anyExpansionExpanded())
+        setAllTopCollapsed(anyTopSectionExpanded())
         DT.UI:Refresh()
     end)
     f.collapseAllBtn:Hide()
@@ -1341,7 +1380,7 @@ local function createMainFrame()
     -- anchors to the title bar's bottom-right and sizes itself to its rows.
     local function createTogglePanel(titleText)
         local p = CreateFrame("Frame", nil, f, "BackdropTemplate")
-        p:SetWidth(244)
+        p:SetWidth(180)  -- provisional; Finish() shrinks/grows this to fit the rows
         p:SetPoint("TOPRIGHT", f.titleBar, "BOTTOMRIGHT", -6, -6)
         p:SetFrameStrata("DIALOG")
         p:EnableMouse(true)  -- swallow clicks so they don't fall through to the list
@@ -1361,15 +1400,18 @@ local function createMainFrame()
 
         p.checks = {}
         p.cy = -34
+        p.maxLabelW = title:GetStringWidth() or 0  -- widest row drives the panel width
         function p:AddCheck(label, getFn, setFn)
             local cb = CreateFrame("CheckButton", nil, self, "UICheckButtonTemplate")
             cb:SetSize(22, 22)
             cb:SetPoint("TOPLEFT", 10, self.cy)
             local lbl = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             lbl:SetPoint("LEFT", cb, "RIGHT", 2, 0)
-            lbl:SetPoint("RIGHT", self, "RIGHT", -8, 0)
             lbl:SetJustifyH("LEFT")
             lbl:SetText(label)
+            -- Track the natural (unwrapped) label width so Finish() can size the
+            -- panel to its content instead of a fixed, mostly-empty width.
+            self.maxLabelW = math.max(self.maxLabelW, lbl:GetStringWidth() or 0)
             cb.sync = function() cb:SetChecked(getFn() and true or false) end
             cb:SetScript("OnClick", function(s)
                 setFn(s:GetChecked() and true or false)
@@ -1378,8 +1420,13 @@ local function createMainFrame()
             self.checks[#self.checks + 1] = cb
             self.cy = self.cy - 26
         end
-        -- Size to contents and re-sync rows whenever shown.
+        -- Size to contents (both axes) and re-sync rows whenever shown. Width is
+        -- the widest label plus the checkbox column and padding, clamped so the
+        -- panel never gets uncomfortably narrow or runs off the frame.
         function p:Finish()
+            -- 10 (left pad) + 22 (checkbox) + 2 (gap) + label + 12 (right pad)
+            local w = 10 + 22 + 2 + self.maxLabelW + 12
+            self:SetWidth(math.max(150, math.min(280, math.ceil(w))))
             self:SetHeight(-self.cy + 8)
             self:SetScript("OnShow", function(s)
                 for _, cb in ipairs(s.checks) do cb.sync() end
@@ -1569,8 +1616,7 @@ local function renderDisplay(display)
             row.title:SetText(pin .. (e.title or ("Quest " .. (e.questID or "?"))))
             row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
 
-            local hex = string.format("%02x%02x%02x",
-                math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255))
+            local hex = toHex(c)
             row.status:ClearAllPoints()
             row.status:SetPoint("RIGHT", -8, 0)
             row.status:SetText("|cff" .. hex .. (DT.STATUS_LABEL[e.status] or "") .. "|r")
@@ -1610,6 +1656,9 @@ function DT.UI:Refresh()
     local reset = DT.QuestLog:FormatDuration(DT.QuestLog:GetSecondsUntilReset())
     mainFrame.reset:SetText("resets |cffffd100" .. reset .. "|r")
 
+    -- Record the on-screen top-level sections so the expand/collapse-all toggle
+    -- (and its label state) operate on exactly what's displayed.
+    setCurrentTopKeys(display)
     updateModeButtons()
     renderDisplay(display)
 

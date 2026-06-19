@@ -339,29 +339,29 @@ e[#e+1]={id=29166,rawTitle="Supplies for the Other Side",expansion="CATA",type="
 e[#e+1]={id=29177,rawTitle="Vigilance on Wings",expansion="CATA",type="Faction",side="Both",category="Mount Hyjal",giver="Farden Talonshrike",zoneName="Mount Hyjal"}
 e[#e+1]={id=29179,rawTitle="Hostile Elements",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
 e[#e+1]={id=29189,rawTitle="Wicked Webs",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Deldren Ravenelm",zoneName="Molten Front"}
-e[#e+1]={id=29205,rawTitle="The Forlorn Spire",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
-e[#e+1]={id=29206,rawTitle="Into the Fire",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
-e[#e+1]={id=29210,rawTitle="Enduring the Heat",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Marin Bladewing",zoneName="Various"}
-e[#e+1]={id=29211,rawTitle="Solar Core Destruction",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Marin Bladewing",zoneName="Various"}
-e[#e+1]={id=29243,rawTitle="Strike at the Heart",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Shalis Darkhunter",zoneName="Various"}
-e[#e+1]={id=29246,rawTitle="Relieving the Pain",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
-e[#e+1]={id=29247,rawTitle="Treating the Wounds",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
-e[#e+1]={id=29248,rawTitle="Releasing the Pressure",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
-e[#e+1]={id=29263,rawTitle="A Bitter Pill",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
-e[#e+1]={id=29264,rawTitle="Flamewakers of the Molten Flow",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Thisalee Crow",zoneName="Various"}
-e[#e+1]={id=29265,rawTitle="Fire Flowers",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Thisalee Crow",zoneName="Various"}
-e[#e+1]={id=29273,rawTitle="How Hot",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Tholo Whitehoof",zoneName="Various"}
-e[#e+1]={id=29274,rawTitle="Hounds of Shannox",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Anren Shadowseeker",zoneName="Various"}
-e[#e+1]={id=29275,rawTitle="Fandral's Methods",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Anren Shadowseeker",zoneName="Various"}
-e[#e+1]={id=29276,rawTitle="The Flame Spider Queen",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Tholo Whitehoof",zoneName="Various"}
-e[#e+1]={id=29278,rawTitle="Living Obsidium",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
-e[#e+1]={id=29287,rawTitle="Mother's Malice",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
-e[#e+1]={id=29287,rawTitle="Peaked Interest",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
-e[#e+1]={id=29288,rawTitle="Starting Young",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
-e[#e+1]={id=29293,rawTitle="Singed Wings",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Arthorn Windsong",zoneName="Various"}
-e[#e+1]={id=29297,rawTitle="Bye Bye Burdy",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
-e[#e+1]={id=29299,rawTitle="Some Like It Hot",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="Avrilla",zoneName="Mount Hyjal"}
-e[#e+1]={id=29304,rawTitle="The Dogs of War",expansion="MOP",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
+e[#e+1]={id=29205,rawTitle="The Forlorn Spire",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
+e[#e+1]={id=29206,rawTitle="Into the Fire",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
+e[#e+1]={id=29210,rawTitle="Enduring the Heat",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Marin Bladewing",zoneName="Various"}
+e[#e+1]={id=29211,rawTitle="Solar Core Destruction",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Marin Bladewing",zoneName="Various"}
+e[#e+1]={id=29243,rawTitle="Strike at the Heart",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Shalis Darkhunter",zoneName="Various"}
+e[#e+1]={id=29246,rawTitle="Relieving the Pain",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
+e[#e+1]={id=29247,rawTitle="Treating the Wounds",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
+e[#e+1]={id=29248,rawTitle="Releasing the Pressure",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Dorda'en Nightweaver",zoneName="Mount Hyjal"}
+e[#e+1]={id=29263,rawTitle="A Bitter Pill",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
+e[#e+1]={id=29264,rawTitle="Flamewakers of the Molten Flow",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Thisalee Crow",zoneName="Various"}
+e[#e+1]={id=29265,rawTitle="Fire Flowers",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Thisalee Crow",zoneName="Various"}
+e[#e+1]={id=29273,rawTitle="How Hot",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Tholo Whitehoof",zoneName="Various"}
+e[#e+1]={id=29274,rawTitle="Hounds of Shannox",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Anren Shadowseeker",zoneName="Various"}
+e[#e+1]={id=29275,rawTitle="Fandral's Methods",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Anren Shadowseeker",zoneName="Various"}
+e[#e+1]={id=29276,rawTitle="The Flame Spider Queen",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Tholo Whitehoof",zoneName="Various"}
+e[#e+1]={id=29278,rawTitle="Living Obsidium",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
+e[#e+1]={id=29289,rawTitle="Mother's Malice",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
+e[#e+1]={id=29287,rawTitle="Peaked Interest",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
+e[#e+1]={id=29288,rawTitle="Starting Young",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Morthis Whisperwing",zoneName="Various"}
+e[#e+1]={id=29293,rawTitle="Singed Wings",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Arthorn Windsong",zoneName="Various"}
+e[#e+1]={id=29297,rawTitle="Bye Bye Burdy",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Ricket",zoneName="Various"}
+e[#e+1]={id=29299,rawTitle="Some Like It Hot",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="Avrilla",zoneName="Mount Hyjal"}
+e[#e+1]={id=29304,rawTitle="The Dogs of War",expansion="CATA",type="Faction",side="Both",category="Firelands Invasion",giver="General Taldris Moonfall",zoneName="Molten Front"}
 e[#e+1]={id=29313,rawTitle="The Secret to Perfect Kimchi",expansion="MOP",type="Profession",side="Alliance",category="Cooking",giver="Alegorn",zoneName="Various"}
 e[#e+1]={id=29314,rawTitle="Remembering the Ancestors",expansion="MOP",type="Profession",side="Alliance",category="Cooking",giver="Alegorn",zoneName="Various"}
 e[#e+1]={id=29315,rawTitle="Fungus Among Us",expansion="MOP",type="Profession",side="Horde",category="Cooking",giver="Eunice Burch",zoneName="Undercity"}

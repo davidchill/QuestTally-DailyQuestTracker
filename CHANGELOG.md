@@ -2,6 +2,62 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.3] - 2026-06-18
+
+A polish + data-accuracy release: **TomTom integration**, colored **breadcrumbs**,
+a unified **Browse** organization, and a thorough **zone/continent cleanup** that
+removes the "Azeroth" pseudo-continent and sorts capital-city dailies and the
+whole Firelands Invasion to their real locations (cross-checked against Wowhead).
+
+### Added
+- **TomTom integration.** With [TomTom](https://www.curseforge.com/wow/addons/tomtom)
+  installed, **Shift+Left Click** a quest drops a TomTom waypoint (with the crazy
+  arrow) at its giver. No-op without TomTom (prints an install note). The **Wowhead
+  link moved to Shift+Right Click**.
+- **Expand / Collapse all on the Browse tab.** The sub-bar toggle now works on
+  Browse (zones) as well as the All tab (expansions), operating on whatever
+  top-level sections are on screen.
+- **Location breadcrumbs.** The Current Zone sub-bar reads **Continent — Zone**
+  (continent muted, zone in the blue accent). The detail panel meta line reads
+  **Expansion • Continent • Zone**, with the expansion in its All-tab section
+  color, and **faction on its own line** above it (Alliance blue / Horde red).
+
+### Changed
+- **Unified Browse organization.** The zone normalizer (`ZoneLabel` + aliases)
+  moved into Core so the Browse dropdowns, the filter, and the section headers all
+  use the **same** names — aliased zones no longer double-list and placeholder
+  zones no longer appear as phantom dropdown entries. Per-zone counts now match
+  what's shown.
+- **"Azeroth" continent removed.** Cataclysm's "Azeroth" stand-in continent is
+  gone; its zones now sort to their real continent/island — **Eastern Kingdoms**
+  (Twilight Highlands, Hillsbrad, Stormwind City), **Kalimdor** (Mount Hyjal,
+  Uldum, Winterspring, Stonetalon, Orgrimmar), and the **Tol Barad** / **Deepholm**
+  buckets.
+- **Capital-city profession dailies sorted by giver's city.** ~38 cooking/fishing
+  dailies that shipped with placeholder zones ("Cooking"/"Fishing"/"Various") now
+  group under the city their giver lives in — Stormwind, Orgrimmar, Darnassus,
+  Thunder Bluff, Dalaran, Valley of the Four Winds, Krasarang Wilds, or the
+  Garrison — confirmed against Wowhead.
+- **Themed Settings gear.** The gear button is now a dark themed chip (matching the
+  Pinned/Filters buttons) with a tooltip, instead of a bare stock icon.
+- **Tidier Filters panel.** The Filters/Settings dropdown sizes its width to its
+  contents instead of a fixed, mostly-empty width. Title-bar tooltips now anchor
+  above the buttons so they don't cover the list.
+
+### Fixed
+- **Firelands Invasion consolidated to Mount Hyjal.** ~35 Firelands/Molten Front
+  dailies were scattered across wrong continents and placeholder zones — and 22
+  were mis-tagged **Mists of Pandaria** (they're patch 4.2 **Cataclysm**). All are
+  now correctly Cataclysm and grouped under **Mount Hyjal** in both Browse and All.
+- **Duplicate quest ID fixed.** The catalog had two rows sharing id **29287**; it's
+  now **29287 = "Peaked Interest"** and **29289 = "Mother's Malice"** (both real
+  4.2 Molten Front dailies).
+- **Quest objectives now format correctly.** Wiki-sourced objectives that dumped
+  raw image markup (`thumb|…`) and an unsplit `*` list on one line are now parsed
+  into a clean objective + indented sub-objectives. For an Available quest the live
+  API only returns a bare "0/1" with no description, so the panel shows a clear
+  note instead of a meaningless count.
+
 ## [0.4.2] - 2026-06-18
 
 A Beta-prep release: a dedicated **Filters** menu, themed UI controls, an
