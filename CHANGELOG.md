@@ -2,6 +2,35 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.6] - 2026-06-19
+
+A **bug-fix** release that finishes off the detail-panel objectives loading the
+0.4.5 fix only partially solved: objectives now appear on the **first** open of a
+quest — no more clicking away and back — and the brief placeholder flash while
+they load is gone.
+
+### Fixed
+- **Objectives now load on the first open (for real this time).** Opening a daily
+  you haven't picked up could still show the "Objectives become available once you
+  pick this quest up in-game" note until you navigated to another quest and back.
+  Root cause: the panel's "is this quest's data already cached?" check treated a
+  bare progress count (`0/8` with no text) as if the objectives were loaded, so it
+  **skipped the server request entirely** — meaning the load event that drives the
+  re-render never fired. The check now requires real objective *text*, so the load
+  is requested up front and the panel refreshes the moment the objectives arrive.
+- **No more placeholder flash.** While a quest's objectives are still streaming in,
+  the panel now shows a neutral **"Loading objectives…"** instead of flashing the
+  definitive "pick it up in-game" note for a split second before the real
+  objectives appear. The definitive note is shown only after the load finishes and
+  the quest genuinely has no objective text. A short bounded poll (≈2s) re-renders
+  as soon as the text lands, then stops on its own.
+
+### Docs
+- **architecture.md** corrected: the main-window description was updated from the
+  old "flat dark panel" to the current themed look (gradients/bevels), and now
+  documents the third-level **sub-zone** nesting and all three title-bar buttons
+  (Pinned / Filters / Settings gear).
+
 ## [0.4.5] - 2026-06-19
 
 A **navigation & polish** release: the list now nests a third level deep —

@@ -32,6 +32,11 @@ local pendingQuestID         -- the questID we're currently waiting on (if any)
 -- no reward data for it" — the latter must show a terminal state, not loop on
 -- the "Loading..." message forever.
 local loadResult = {}
+-- The questID whose objective *text* we're still polling for after its data
+-- loaded (set while the poll is active, nil once text arrives or we give up).
+-- Lets render() show "Loading objectives..." instead of flashing the definitive
+-- "pick it up in-game" note during the brief gap before the text lands.
+local objectivePoll
 
 -- ---------------------------------------------------------------------------
 -- Line-widget pool. Each "line" is a row that can show an optional icon plus
@@ -549,8 +554,17 @@ local function render(entry)
         local hadObj
         y, hadObj = renderObjectives(content, y, entry.questID)
         if not hadObj then
+            -- No objective text yet. If the async load is still in flight, say so
+            -- (a neutral "Loading...") rather than flashing the definitive "pick it
+            -- up in-game" note for a split second before the objectives land. Only
+            -- once the load has finished (loadResult set) and text still didn't
+            -- arrive do we show the real placeholder.
+            local stillLoading = loadResult[entry.questID] == nil
+                or objectivePoll == entry.questID
             y = addLine(content, y, {
-                text = "Objectives become available once you pick this quest up in-game.",
+                text = stillLoading
+                    and "Loading objectives..."
+                    or  "Objectives become available once you pick this quest up in-game.",
                 color = { 0.6, 0.6, 0.6 }, spacingBefore = 8 })
         end
         y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
@@ -592,6 +606,45 @@ local function render(entry)
     content:SetHeight(math.max(y, 10))
 end
 
+-- True when the live API can give descriptive objective text for this quest
+-- (not just a bare "0/1" count). Mirrors the filter renderObjectives uses.
+local function hasObjectiveText(questID)
+    local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(questID)
+    if not objs then return false end
+    for _, obj in ipairs(objs) do
+        if obj and objectiveHasText(obj.text) then return true end
+    end
+    return false
+end
+
+-- Re-render the panel for `questID`, then keep polling for a short window if the
+-- objective *text* hasn't arrived yet. For a quest you haven't picked up, the
+-- client streams the objective text a tick or two AFTER QUEST_DATA_LOAD_RESULT
+-- fires, so a single re-render lands too early and shows the "Objectives become
+-- available..." placeholder. Without this poll the only way to see them was to
+-- click away and back (by then the text had cached). Bounded so quests that
+-- genuinely have no objective text settle on the placeholder instead of looping.
+local function rerenderUntilObjectives(questID, tries)
+    -- Stop if the user navigated away from this quest.
+    if not (lastEntry and lastEntry.questID == questID
+            and panel and panel:IsShown()) then
+        objectivePoll = nil
+        return
+    end
+    -- Done once the text has arrived, or after a bounded number of retries.
+    local done = hasObjectiveText(questID) or (tries or 0) >= 8
+    objectivePoll = done and nil or questID  -- keep render() in "Loading" mode while waiting
+    render(lastEntry)
+    if done then return end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.25, function()
+            rerenderUntilObjectives(questID, (tries or 0) + 1)
+        end)
+    else
+        objectivePoll = nil
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- Async load: ask the server for a quest's data, then re-render when it lands.
 -- ---------------------------------------------------------------------------
@@ -602,9 +655,10 @@ loader:SetScript("OnEvent", function(_, event, questID, success)
     loadResult[questID] = success and true or false
     if questID ~= pendingQuestID then return end
     pendingQuestID = nil
-    -- Only re-render if this is still the quest the user is looking at.
+    -- Only re-render if this is still the quest the user is looking at. The
+    -- objective text may trail the load event, so poll briefly for it.
     if lastEntry and lastEntry.questID == questID and panel and panel:IsShown() then
-        render(lastEntry)
+        rerenderUntilObjectives(questID, 0)
     end
 end)
 
@@ -616,9 +670,14 @@ local function requestData(questID)
     -- stuck on the "Objectives become available..." placeholder until the user
     -- clicked away and back -- requesting the load lets QUEST_DATA_LOAD_RESULT (or
     -- the safety timer) re-render once the objectives land.
-    local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(questID)
-    if HaveQuestRewardData and HaveQuestRewardData(questID) and objs and #objs > 0 then
-        return  -- fully cached (rewards + objectives)
+    -- Only treat the quest as fully cached when we have reward data AND real
+    -- objective *text*. GetQuestObjectives returns a bare count ("0/8" with no
+    -- description) for a quest you haven't picked up, so the old `#objs > 0`
+    -- check wrongly declared it cached and skipped the load -- leaving the panel
+    -- on the "Objectives become available..." placeholder until a manual reopen.
+    if HaveQuestRewardData and HaveQuestRewardData(questID)
+    and hasObjectiveText(questID) then
+        return  -- fully cached (rewards + real objective text)
     end
     if loadResult[questID] ~= nil then return end  -- already attempted this session
     if not C_QuestLog.RequestLoadQuestByID then
