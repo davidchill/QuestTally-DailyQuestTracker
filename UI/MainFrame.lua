@@ -313,28 +313,6 @@ local function lighten(c, amt)
     return math.min(1, c[1] + amt), math.min(1, c[2] + amt), math.min(1, c[3] + amt)
 end
 
--- Build one collapsible section header item plus (when expanded) its quest rows.
--- level: 1 = top-level (expansion / zone), 2 = nested sub-group. The nesting
--- level only affects how the header is indented and styled in renderDisplay.
-local function emitSection(display, opts)
-    local collapsed = DT.DB:IsCollapsed(opts.key)
-    display[#display+1] = {
-        type = "section",
-        level = opts.level or 1,
-        text = opts.text,
-        done = opts.done,
-        total = opts.total,
-        color = opts.color,
-        key = opts.key,
-        collapsed = collapsed,
-    }
-    if not collapsed then
-        for _, e in ipairs(opts.list) do
-            display[#display+1] = { type = "quest", entry = e }
-        end
-    end
-end
-
 -- Split an expansion's entries into ordered zone sub-groups (alphabetical, with
 -- the catch-all "Other" sinking to the bottom). Quest *type* — Profession, Battle
 -- Pet, PvP, Incursion — is conveyed by a per-row tag rather than a separate
@@ -357,6 +335,58 @@ local function subgroupEntries(entries)
     return ordered
 end
 
+-- Emit a zone section that may contain nested sub-zone groups one level deeper.
+-- Entries carrying a `subZone` (e.g. "Molten Front" within "Mount Hyjal") are
+-- split into their own collapsible sub-section under the zone; entries without
+-- one render directly under the zone, above the sub-zone sections. `opts.level`
+-- is the zone's own nesting level (1 in Browse, 2 in the All view), so sub-zones
+-- sit at level+1. Computes its own done/total and sorts, so callers don't.
+local function emitZoneWithSubzones(display, opts)
+    -- All/Browse start every section folded by default (opts.defaultClosed); the
+    -- Current Zone view leaves its single zone open (normal IsCollapsed).
+    local isCollapsed = opts.defaultClosed and DT.DB.IsCollapsedByDefault or DT.DB.IsCollapsed
+    local collapsed = isCollapsed(DT.DB, opts.key)
+    display[#display+1] = {
+        type = "section", level = opts.level,
+        text = opts.text, done = doneCount(opts.list), total = #opts.list,
+        color = opts.color, key = opts.key, collapsed = collapsed,
+    }
+    if collapsed then return end
+
+    -- Partition into direct (no sub-zone) and per-sub-zone buckets.
+    local direct, subNames, subGroups = {}, {}, {}
+    for _, e in ipairs(opts.list) do
+        local sz = e.subZone
+        if sz then
+            if not subGroups[sz] then subGroups[sz] = {}; subNames[#subNames+1] = sz end
+            subGroups[sz][#subGroups[sz] + 1] = e
+        else
+            direct[#direct + 1] = e
+        end
+    end
+
+    -- Direct quests first, then sub-zone sub-sections (alphabetical).
+    table.sort(direct, sortEntries)
+    for _, e in ipairs(direct) do display[#display+1] = { type = "quest", entry = e } end
+    table.sort(subNames)
+    for _, sz in ipairs(subNames) do
+        local list = subGroups[sz]
+        table.sort(list, sortEntries)
+        local key = opts.key .. "::SZ::" .. sz
+        local szCollapsed = isCollapsed(DT.DB, key)
+        display[#display+1] = {
+            type = "section", level = opts.level + 1,
+            text = sz, done = doneCount(list), total = #list,
+            color = opts.color, key = key, collapsed = szCollapsed,
+        }
+        if not szCollapsed then
+            -- subZoneDepth indents these rows one step in renderDisplay, so they
+            -- read as belonging to the sub-zone rather than the parent zone.
+            for _, e in ipairs(list) do display[#display+1] = { type = "quest", entry = e, subZoneDepth = 1 } end
+        end
+    end
+end
+
 -- Group entries by expansion, then by zone / themed sub-group within each
 -- expansion -> nested display list of section/quest items.
 local function groupByExpansion(entries)
@@ -372,7 +402,7 @@ local function groupByExpansion(entries)
         local exp = DT.EXPANSION_BY_KEY[key]
         local expColor = DT.EXPANSION_COLORS[key] or DT.EXPANSION_COLORS.OTHER
         local expKey = "EXP:" .. key
-        local expCollapsed = DT.DB:IsCollapsed(expKey)
+        local expCollapsed = DT.DB:IsCollapsedByDefault(expKey)  -- All tab starts folded
 
         -- Expansion header (level 1). Counts roll up the whole expansion.
         display[#display+1] = {
@@ -382,18 +412,17 @@ local function groupByExpansion(entries)
             color = expColor, key = expKey, collapsed = expCollapsed,
         }
 
-        -- Nested zone / themed sub-groups (level 2), only when expanded.
+        -- Nested zone sub-groups (level 2), each of which may itself nest its
+        -- sub-zones (level 3); only built when the expansion is expanded.
         if not expCollapsed then
             for _, sub in ipairs(subgroupEntries(list)) do
-                table.sort(sub.list, sortEntries)
-                emitSection(display, {
+                emitZoneWithSubzones(display, {
                     level = 2,
                     text  = sub.name,
                     list  = sub.list,
-                    total = #sub.list,
-                    done  = doneCount(sub.list),
                     color = expColor,  -- zone sub-headers inherit the expansion tint
                     key   = expKey .. "::" .. sub.name,
+                    defaultClosed = true,
                 })
             end
         end
@@ -418,15 +447,13 @@ local function groupByZone(entries)
     table.sort(names)
     local display = {}
     for _, zn in ipairs(names) do
-        local list = groups[zn]
-        table.sort(list, sortEntries)
-        emitSection(display, {
+        emitZoneWithSubzones(display, {
+            level = 1,
             text  = zn,
-            list  = list,
-            total = #list,
-            done  = doneCount(list),
+            list  = groups[zn],
             color = ZONE_ACCENT,
             key   = "ZONE:" .. zn,
+            defaultClosed = true,  -- Browse tab starts folded
         })
     end
     return display
@@ -450,15 +477,15 @@ local function buildZoneMode()
     for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
         if zoneLabel(e) == target then entries[#entries+1] = e end
     end
-    table.sort(entries, sortEntries)
     local display = {}
-    emitSection(display, {
+    emitZoneWithSubzones(display, {
+        level = 1,
         text  = zone.zoneName,
         list  = entries,
-        total = #entries,
-        done  = doneCount(entries),
         color = ZONE_ACCENT,
-        key   = "ZONE:" .. zone.zoneName,
+        -- Distinct "CZONE:" key so this view's fold state is independent of the
+        -- Browse tab (which folds by default under the shared "ZONE:" key).
+        key   = "CZONE:" .. zone.zoneName,
     })
     if #entries == 0 then
         display[#display+1] = { type = "message",
@@ -613,7 +640,14 @@ local function acquireRow(parent)
             if IsShiftKeyDown() then
                 if button == "LeftButton" then
                     -- Shift+Left: drop a TomTom waypoint at the quest giver.
-                    local ok, reason = DT.TomTom and DT.TomTom:AddGiverWaypoint(e)
+                    -- NOTE: guard with an explicit `if`, not `DT.TomTom and ...`.
+                    -- The `and` operator truncates its right side to ONE value, so
+                    -- it would drop AddGiverWaypoint's second return (`reason`),
+                    -- making every failure look like "notomtom".
+                    local ok, reason
+                    if DT.TomTom then
+                        ok, reason = DT.TomTom:AddGiverWaypoint(e)
+                    end
                     if ok then
                         print(string.format("|cff33ff99QuestTally|r: TomTom waypoint set to %s.",
                             (e.giver and e.giver.name) or (e.title or "the quest giver")))
@@ -785,6 +819,10 @@ local function setCurrentTopKeys(display)
             currentTopKeys[#currentTopKeys + 1] = item.key
         end
     end
+    -- The display has now been fully built (every section key recorded), so the
+    -- one-shot "expand all" pass is done; clear it so later rebuilds fold new
+    -- sections by default again.
+    DT.DB._expandPass = nil
 end
 
 local function anyTopSectionExpanded()
@@ -801,8 +839,12 @@ local function setAllTopCollapsed(collapse)
             DT.DB:SetCollapsed(key, true)
         end
     else
-        -- Expanding clears all fold state so nested sub-groups open too.
+        -- Expanding clears all fold state, and flags the upcoming rebuild as an
+        -- "expand pass" so even never-yet-built sub-sections open (default-folded
+        -- sections would otherwise re-fold). The flag is cleared once the rebuild
+        -- has recorded every key (see setCurrentTopKeys).
         DT.DB:ExpandAll()
+        DT.DB._expandPass = true
     end
 end
 
@@ -1487,9 +1529,10 @@ local function renderDisplay(display)
         row:SetPoint("TOPLEFT", 0, -y)
 
         if item.type == "section" then
-            local sub = (item.level or 1) == 2
-            local indent = sub and SUBSECTION_INDENT or 0
-            local h = sub and SUBSECTION_HEIGHT or SECTION_HEIGHT
+            local level = item.level or 1
+            local sub = level >= 2          -- level 2 (zone) or 3 (sub-zone): inset + lighter
+            local indent = (level - 1) * SUBSECTION_INDENT  -- each level steps in further
+            local h = (level == 1) and SECTION_HEIGHT or SUBSECTION_HEIGHT
             row:SetSize(CONTENT_WIDTH, h)
             row.entry = nil
             row.sectionKey = item.key
@@ -1578,6 +1621,13 @@ local function renderDisplay(display)
             row.headerTop:Hide(); row.headerBot:Hide()
             row.dot:Show()
 
+            -- Indent rows that belong to a sub-zone so they sit under its header
+            -- rather than lining up with the parent zone's quests. Re-anchored every
+            -- render because rows are pooled (a reused row may have been indented).
+            local qIndent = (item.subZoneDepth or 0) * SUBSECTION_INDENT
+            row.dot:ClearAllPoints()
+            row.dot:SetPoint("LEFT", 12 + qIndent, 0)
+
             local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
             row.dot:SetColorTexture(c[1], c[2], c[3], 1)
 
@@ -1589,7 +1639,7 @@ local function renderDisplay(display)
             if kind then
                 tagText, tagColor = SUB_BADGE[kind], SUBGROUP_ACCENT[kind]
             end
-            local titleAnchor, titleGap, titleWidth = row.dot, 7, CONTENT_WIDTH - 120
+            local titleAnchor, titleGap, titleWidth = row.dot, 7, CONTENT_WIDTH - 120 - qIndent
             if tagText then
                 row.badge:Show()
                 row.badge:SetText(tagText)

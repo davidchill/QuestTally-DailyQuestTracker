@@ -461,34 +461,47 @@ local function render(entry)
     panel.pill:SetColorTexture(c[1], c[2], c[3], 0.20)
     panel.pill:SetWidth((panel.pillText:GetStringWidth() or 20) + 12)
 
-    -- Faction line: its own row above the breadcrumb, tinted to the faction. Only
-    -- shown when the quest is faction-specific (not "Both"); the meta line then
-    -- re-anchors below it (or back to the pill when there's no faction line).
+    -- Breadcrumb rows, stacked one per line:
+    --   1. Faction  2. Expansion  3. Continent | Zone
+    -- Each row anchors below the previous *visible* row, so a hidden faction or
+    -- expansion line leaves no empty gap. Colours match the rest of the UI -- the
+    -- faction tinted to its side, the expansion in its All-tab section colour (the
+    -- accent lightened the same way the section title is), the continent muted, and
+    -- the zone the blue accent. Zone uses the shared canonical label so it agrees
+    -- with the list's grouping.
+    local anchor, gap = panel.pill, -7
+
+    -- Faction line: only shown when the quest is faction-specific (not "Both").
     local hasFaction = entry.side and entry.side ~= "Both"
     if hasFaction then
         local fc = FACTION_COLORS[entry.side] or { 0.8, 0.8, 0.8 }
         panel.faction:SetText(entry.side)
         panel.faction:SetTextColor(fc[1], fc[2], fc[3])
         panel.faction:Show()
+        anchor, gap = panel.faction, -4
     else
         panel.faction:Hide()
     end
-    panel.meta:ClearAllPoints()
-    panel.meta:SetPoint("TOPLEFT", hasFaction and panel.faction or panel.pill,
-        "BOTTOMLEFT", 0, hasFaction and -4 or -7)
-    panel.meta:SetPoint("RIGHT", panel.title, "RIGHT")
 
-    -- Meta breadcrumb: Expansion • Continent • Zone, each coloured to match the
-    -- rest of the UI -- the expansion in its All-tab section colour (the accent
-    -- lightened the same way the section title is), the continent muted, the zone
-    -- the blue accent. Zone uses the shared canonical label so it agrees with the
-    -- list's grouping.
-    local bits = {}
+    -- Expansion line.
+    panel.expansion:ClearAllPoints()
+    panel.expansion:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, gap)
+    panel.expansion:SetPoint("RIGHT", panel.title, "RIGHT")
     if exp then
         local ec = DT.EXPANSION_COLORS[entry.expansion] or DT.EXPANSION_COLORS.OTHER
         local lit = { math.min(1, ec[1] + 0.28), math.min(1, ec[2] + 0.28), math.min(1, ec[3] + 0.28) }
-        bits[#bits + 1] = "|cff" .. DT.ToHex(lit) .. exp.name .. "|r"
+        panel.expansion:SetText("|cff" .. DT.ToHex(lit) .. exp.name .. "|r")
+        panel.expansion:Show()
+        anchor, gap = panel.expansion, -4
+    else
+        panel.expansion:Hide()
     end
+
+    -- Continent | Zone line.
+    panel.meta:ClearAllPoints()
+    panel.meta:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, gap)
+    panel.meta:SetPoint("RIGHT", panel.title, "RIGHT")
+    local bits = {}
     if entry.continentName then
         bits[#bits + 1] = "|cff" .. DT.ToHex(DT.CONTINENT_ACCENT) .. entry.continentName .. "|r"
     end
@@ -496,7 +509,7 @@ local function render(entry)
     if zlabel then
         bits[#bits + 1] = "|cff" .. DT.ToHex(DT.ZONE_ACCENT) .. zlabel .. "|r"
     end
-    panel.meta:SetText(table.concat(bits, "  |cff808080•|r  "))
+    panel.meta:SetText(table.concat(bits, "  |cff808080|||r  "))
 
     -- Quest giver: live-captured coords win; else the wiki's coords; else its
     -- location text; else just the name.
@@ -597,7 +610,16 @@ end)
 
 local function requestData(questID)
     if not questID then return end
-    if HaveQuestRewardData and HaveQuestRewardData(questID) then return end  -- already cached
+    -- "Ready" requires BOTH reward data AND live objectives. Reward data is often
+    -- cached while the objective text hasn't loaded yet (typical for an Available
+    -- quest you haven't picked up). Bailing on reward data alone left the panel
+    -- stuck on the "Objectives become available..." placeholder until the user
+    -- clicked away and back -- requesting the load lets QUEST_DATA_LOAD_RESULT (or
+    -- the safety timer) re-render once the objectives land.
+    local objs = C_QuestLog.GetQuestObjectives and C_QuestLog.GetQuestObjectives(questID)
+    if HaveQuestRewardData and HaveQuestRewardData(questID) and objs and #objs > 0 then
+        return  -- fully cached (rewards + objectives)
+    end
     if loadResult[questID] ~= nil then return end  -- already attempted this session
     if not C_QuestLog.RequestLoadQuestByID then
         loadResult[questID] = false  -- can't ask the server; treat as terminal
@@ -681,15 +703,24 @@ local function createPanel()
     p.pillText = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     p.pillText:SetPoint("LEFT", p.pill, "LEFT", 6, 0)
 
-    -- Faction line (Alliance/Horde) on its own row above the breadcrumb, tinted to
-    -- the faction. Hidden for "Both"; render() re-anchors the meta line to the pill
-    -- in that case so there's no empty gap.
+    -- Breadcrumb is split across stacked rows (each anchored in render()):
+    --   1. Faction (Alliance/Horde) -- hidden for "Both"
+    --   2. Expansion
+    --   3. Continent | Zone
+    -- The faction line is tinted to the faction; render() re-anchors the rows that
+    -- follow so a hidden faction line leaves no empty gap.
     p.faction = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     p.faction:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
     p.faction:SetJustifyH("LEFT")
 
-    -- Meta breadcrumb (Expansion • Continent • Zone). Anchored in render() below
-    -- either the faction line or the pill; the right edge tracks the title.
+    -- Expansion line on its own row.
+    p.expansion = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    p.expansion:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
+    p.expansion:SetPoint("RIGHT", p.title, "RIGHT")
+    p.expansion:SetJustifyH("LEFT")
+
+    -- Continent | Zone breadcrumb. Anchored in render() below the expansion line;
+    -- the right edge tracks the title.
     p.meta = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     p.meta:SetPoint("TOPLEFT", p.pill, "BOTTOMLEFT", 0, -7)
     p.meta:SetPoint("RIGHT", p.title, "RIGHT")

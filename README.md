@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.4.4** — built and tested against Retail patch **12.0.x**.
+> **Version 0.4.5** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~2,000 dailies across every expansion** (wiki + Blizzard-API
 > gap-fill) plus **~3,600 world quests** (Legion → Midnight) from first-party
 > sources.
@@ -21,9 +21,12 @@ available, tracking completion, and helping you finish them, organized by
   database). Grouped by **expansion → zone**.
 - **Modern window.** A dark panel with subtle gradients and bevels (not flat),
   the **QuestTally logo** in the title bar, **collapsible sections color-coded to
-  each expansion's logo** that **nest by zone**, an overall **progress counter**,
-  per-section `done / total` counts, custom themed scrollbars and close buttons,
-  and bottom tabs. Movable, with remembered position and persisted fold state.
+  each expansion's logo** that **nest by zone — and again by sub-zone** (e.g.
+  *Molten Front* within *Mount Hyjal*, with sub-zone quests indented), an overall
+  **progress counter**, per-section `done / total` counts, custom themed scrollbars
+  and close buttons, and bottom tabs. **Sections start collapsed** on the All and
+  Browse tabs so you drill into just what you need. Movable, with remembered
+  position and persisted fold state.
 - **Pinned panel.** Middle-click any quest to **pin** it; a companion panel docks
   to the left of the window listing your pins (status + zone). Left-click a pinned
   row to open its details, right-click to un-pin. Toggle it with the title-bar
@@ -109,8 +112,8 @@ entry up with real-time status:
    adds **~600 more dailies** the wiki list missed (found by sweeping the official
    API for `is_daily` quests, then reviewed to drop one-time quests and fix
    expansion tags), and the same API corrected **452 zones** in the wiki
-   list. `Core/ApiDetails.lua` ships **~2,000 quest descriptions** so the gap
-   dailies show their flavor text.
+   list. `Core/ApiDetails.lua` ships **~2,100 quest descriptions** so nearly every
+   tracked daily (99.7%) shows its flavor text.
 3. **World-quest catalog (Blizzard's database).** `Core/WorldQuestData.lua` ships
    **~3,600 world quests** (Legion → Midnight) — title, expansion, zone — mined
    from Blizzard's own retail client database (DB2, via wago.tools). Hidden by

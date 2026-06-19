@@ -298,6 +298,7 @@ function DT.Checklist:GetEntries(opts)
                     pinned        = questID and DT.DB:IsPinned(questID) or false,
                     continentName = continentName,
                     zoneName      = zoneName,
+                    subZone       = entry.subZone,  -- nests under its zone in the UI
                     giver         = giver,
                 }
             end

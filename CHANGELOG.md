@@ -2,6 +2,53 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.5] - 2026-06-19
+
+A **navigation & polish** release: the list now nests a third level deep —
+**sub-zones within zones** (e.g. *Molten Front* inside *Mount Hyjal*) — sections
+**start collapsed** so you drill into just what you need, the detail panel loads
+objectives and flavor text reliably, and a broad accuracy pass cleared the
+"Various" zone bucket and backfilled missing quest descriptions.
+
+### Added
+- **Sub-zone sub-sections.** Quests whose giver sits in a named sub-zone now nest
+  in their own collapsible section *within* the parent zone, **indented a step** so
+  they read as belonging there. Shipped for **7 sub-zones / 185 quests**: Molten
+  Front (Mount Hyjal), Argent Tournament Grounds (Icecrown), Lion's Landing &
+  Domination Point (Krasarang Wilds), Shrine of Seven Stars & Shrine of Two Moons
+  (Vale of Eternal Blossoms), and Little Scales Daycare (Valdrakken).
+- **Quest descriptions backfilled.** ~86 dailies that shipped without flavor text
+  now have it (sourced from warcraft.wiki.gg), bringing description coverage to
+  **2,115 / 2,122 tracked quests (99.7%)** — the remaining few genuinely have no
+  in-game offer text.
+- **More giver coordinates.** The Argent Tournament Horde givers, the Firelands
+  Sanctuary-of-Malorne dailies, and others gained verified giver coordinates, so
+  **Shift+Left-click drops a TomTom waypoint** where it previously couldn't.
+
+### Changed
+- **Sections start collapsed** on the **All** and **Browse** tabs — every section
+  and sub-section — so the list opens compact. Your manual toggles and the
+  expand/collapse-all button still work and persist (expand-all opens everything in
+  one click). The **Current Zone** tab stays open.
+- **Detail-panel breadcrumb split across three lines** — Faction / Expansion /
+  Continent | Zone — for easier reading.
+- **"Various"-zone cleanup.** ~80 dailies left the placeholder "Various" bucket for
+  their real giver zone — Argent Tournament → **Icecrown**, Dalaran fishing →
+  **Dalaran**, the Landfall campaign → **Krasarang Wilds** (with corrected
+  coordinates), Firelands Invasion → **Mount Hyjal**, Razgar → **Orgrimmar**,
+  the Alegorn/Astaia cooking & fishing dailies → **Darnassus**, and more (all
+  Wowhead-verified). The MoP "A Worthy Challenge" dungeon dailies now group under
+  the **shrine where you pick them up** (Vale of Eternal Blossoms) instead of their
+  target dungeon.
+
+### Fixed
+- **Objectives load on first open.** The detail panel no longer shows the "pick
+  this quest up" placeholder until you click away and back — it requests the quest's
+  objectives up front and refreshes as soon as they arrive.
+- **TomTom "not installed" false alarm.** A Lua multi-return bug made *every*
+  waypoint failure read as "TomTom isn't installed"; the correct message (and the
+  waypoint itself, for quests with known giver coordinates) now works.
+
 ## [0.4.4] - 2026-06-19
 
 A **data-accuracy** release: the Browse tab's **World / Continent sorting** now

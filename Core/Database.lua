@@ -24,7 +24,9 @@ local ACCOUNT_DEFAULTS = {
     },
     -- Per-section collapsed state for the modern UI, keyed by a stable group key
     -- (e.g. an expansion key or zone name). ui.collapsed[key] = true when folded.
-    ui = { collapsed = {} },
+    -- collapseSeen tracks which keys have had the "start folded" default applied,
+    -- so it's applied exactly once per section (not re-forced on every rebuild).
+    ui = { collapsed = {}, collapseSeen = {} },
     framePosition = nil,            -- { point, x, y } once the user moves the window
     -- Auto-learned daily quests, account-wide. The addon fills this in from live
     -- play: every daily-frequency quest the player has seen, with its REAL id.
@@ -79,6 +81,20 @@ end
 -- Modern-UI section fold state. Keyed by a stable group key (expansion key,
 -- zone name, status, ...). Absent/false means expanded.
 function DT.DB:IsCollapsed(key)
+    return self.account.ui.collapsed[key] == true
+end
+
+-- Like IsCollapsed, but a key's FIRST appearance defaults to collapsed (folded),
+-- and that default is remembered. Used by the All/Browse builders so every section
+-- and sub-section starts folded; the user's later toggles persist, and expand-all
+-- (which wipes `collapsed` but not `collapseSeen`) keeps sections open on rebuild.
+function DT.DB:IsCollapsedByDefault(key)
+    if not self.account.ui.collapseSeen[key] then
+        self.account.ui.collapseSeen[key] = true
+        -- During an "expand all" pass, newly-built sections default OPEN so the
+        -- single rebuild cascades fully open; otherwise they default folded.
+        self.account.ui.collapsed[key] = (not self._expandPass) and true or nil
+    end
     return self.account.ui.collapsed[key] == true
 end
 
