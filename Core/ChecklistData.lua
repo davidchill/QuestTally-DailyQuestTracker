@@ -54,7 +54,7 @@ e[#e+1]={id=11502,rawTitle="In Defense of Halaa",expansion="TBC",type="Faction",
 e[#e+1]={id=11503,rawTitle="Enemies Old and New",expansion="TBC",type="Faction",side="Horde",category="Nagrand",giver="Karrtog",zoneName="Nagrand"}
 e[#e+1]={id=11505,rawTitle="Spirits of Auchindoun",expansion="TBC",type="Faction",side="Alliance",category="Terokkar Forest",giver="Exorcist Sullivan",zoneName="Terokkar Forest"}
 e[#e+1]={id=11506,rawTitle="Spirits of Auchindoun",expansion="TBC",type="Faction",side="Horde",category="Terokkar Forest",giver="Exorcist Vaisha",zoneName="Terokkar Forest"}
-e[#e+1]={id=11514,rawTitle="Maintaining the Sunwell Portal",expansion="TBC",type="Faction",side="Both",category="Blade's Edge Mountains",giver="Exarch Nasuun",zoneName="Blade's Edge Mountains"}
+e[#e+1]={id=11514,rawTitle="Maintaining the Sunwell Portal",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Exarch Nasuun",zoneName="Shattrath City"}
 e[#e+1]={id=11515,rawTitle="Blood for Blood",expansion="TBC",type="Faction",side="Both",category="Hellfire Peninsula",giver="Magistrix Seyla",zoneName="Hellfire Peninsula"}
 e[#e+1]={id=11516,rawTitle="Blast the Gateway",expansion="TBC",type="Faction",side="Both",category="Hellfire Peninsula",giver="Magistrix Seyla",zoneName="Hellfire Peninsula"}
 e[#e+1]={id=11523,rawTitle="Arm the Wards!",expansion="TBC",type="Faction",side="Both",category="Isle of Quel'Danas (Burning Crusade)",giver="Captain Theris Dawnhearth",zoneName="Isle of Quel'Danas"}
@@ -149,14 +149,14 @@ e[#e+1]={id=13046,rawTitle="Feeding Arngrim",expansion="WRATH",type="Faction",si
 e[#e+1]={id=13069,rawTitle="Shoot 'Em Up",expansion="WRATH",type="Faction",side="Both",category="Icecrown",giver="The Leaper",zoneName="Icecrown"}
 e[#e+1]={id=13071,rawTitle="Vile Like Fire!",expansion="WRATH",type="Faction",side="Both",category="Icecrown",giver="Vile",zoneName="Icecrown"}
 e[#e+1]={id=13100,rawTitle="Infused Mushroom Meatloaf",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
-e[#e+1]={id=13100,rawTitle="Sewer Stew",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
+e[#e+1]={id=13114,rawTitle="Sewer Stew",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
 e[#e+1]={id=13101,rawTitle="Convention at the Legerdemain",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
 e[#e+1]={id=13102,rawTitle="Sewer Stew",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
 e[#e+1]={id=13107,rawTitle="Mustard Dogs!",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
 e[#e+1]={id=13112,rawTitle="Infused Mushroom Meatloaf",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
 e[#e+1]={id=13113,rawTitle="Convention at the Legerdemain",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
 e[#e+1]={id=13115,rawTitle="Cheese for Glowergold",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
-e[#e+1]={id=13115,rawTitle="Cheese for Glowergold",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
+e[#e+1]={id=13103,rawTitle="Cheese for Glowergold",expansion="WRATH",type="Profession",side="Alliance",category="Cooking",giver="Katherine Lee",zoneName="Dalaran"}
 e[#e+1]={id=13116,rawTitle="Mustard Dogs!",expansion="WRATH",type="Profession",side="Horde",category="Cooking",giver="Awilo Lon'gomba",zoneName="Dalaran"}
 e[#e+1]={id=13233,rawTitle="No Mercy!",expansion="WRATH",type="Faction",side="Alliance",category="Icecrown",giver="High Captain Justin Bartlett",zoneName="Icecrown"}
 e[#e+1]={id=13234,rawTitle="Make Them Pay!",expansion="WRATH",type="Faction",side="Horde",category="Icecrown",giver="Sky-Reaver Korm Blackscar",zoneName="Icecrown"}
@@ -211,7 +211,6 @@ e[#e+1]={id=13832,rawTitle="Jewel Of The Sewers",expansion="WRATH",type="Profess
 e[#e+1]={id=13833,rawTitle="Blood is Thicker",expansion="WRATH",type="Profession",side="Both",category="Fishing",giver="Marcia Chase",zoneName="Various"}
 e[#e+1]={id=13834,rawTitle="Dangerously Delicious",expansion="WRATH",type="Profession",side="Both",category="Fishing",giver="Marcia Chase",zoneName="Various"}
 e[#e+1]={id=13836,rawTitle="Disarmed!",expansion="WRATH",type="Profession",side="Both",category="Fishing",giver="Marcia Chase",zoneName="Various"}
-e[#e+1]={id=13836,rawTitle="Monsterbelly Appetite",expansion="WRATH",type="Profession",side="Both",category="Fishing",giver="Marcia Chase",zoneName="Various"}
 e[#e+1]={id=13846,rawTitle="Contributin' To The Cause",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Squire Artie",zoneName="Argent Tournament Grounds"}
 e[#e+1]={id=14076,rawTitle="Breakfast Of Champions",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Savinia Loresong",zoneName="Various"}
 e[#e+1]={id=14077,rawTitle="The Light's Mercy",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Narasi Snowdawn",zoneName="Various"}
@@ -220,7 +219,7 @@ e[#e+1]={id=14090,rawTitle="Gormok Wants His Snobolds",expansion="WRATH",type="F
 e[#e+1]={id=14092,rawTitle="Breakfast Of Champions",expansion="WRATH",type="Faction",side="Horde",category="Argent Tournament",giver="Tylos Dawnrunner",zoneName="Icecrown"}
 e[#e+1]={id=14095,rawTitle="Identifying the Remains",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Kraken Tooth",zoneName="Argent Tournament"}
 e[#e+1]={id=14096,rawTitle="You've Really Done It This Time, Kul",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Narasi Snowdawn",zoneName="Various"}
-e[#e+1]={id=14101,rawTitle="Deathspeaker Kharos",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="High Crusader Adelard",zoneName="Icecrown"}
+e[#e+1]={id=14105,rawTitle="Deathspeaker Kharos",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="High Crusader Adelard",zoneName="Icecrown"}
 e[#e+1]={id=14101,rawTitle="Drottinn Hrothgar",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="High Crusader Adelard",zoneName="Icecrown"}
 e[#e+1]={id=14102,rawTitle="Mistcaller Yngvar",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="High Crusader Adelard",zoneName="Icecrown"}
 e[#e+1]={id=14104,rawTitle="Ornolf The Scarred",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="High Crusader Adelard",zoneName="Icecrown"}
@@ -233,13 +232,11 @@ e[#e+1]={id=14145,rawTitle="What Do You Feed a Yeti, Anyway?",expansion="WRATH",
 e[#e+1]={id=14152,rawTitle="Rescue at Sea",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Narasi Snowdawn",zoneName="Various"}
 e[#e+1]={id=14488,rawTitle="You've Been Served",expansion="WRATH",type="Event",side="Both",category="Love is in the Air",giver="Investigator Fezzen Brasstacks",zoneName="80",seasonal=true}
 e[#e+1]={id=24597,rawTitle="A Gift for the Emissary of Stormwind",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
-e[#e+1]={id=24597,rawTitle="A Gift for the King of Stormwind",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24609,rawTitle="A Gift for a Lord of Ironforge",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24610,rawTitle="A Gift for the High Priestess of Elune",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24611,rawTitle="A Gift for the Prophet",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24612,rawTitle="A Gift for the Emissary of Orgrimmar",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24613,rawTitle="A Gift for the Banshee Queen",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
-e[#e+1]={id=24614,rawTitle="A Gift for the High Chieftain",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24614,rawTitle="A Gift for the High Chieftain",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24615,rawTitle="A Gift for the Regent Lord of Quel'Thalas",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Kwee Q. Peddlefeet",zoneName="During Love is in the Air event: Darnassus; Ironforge; Stormwind City; Exodar; Orgrimmar; Thunder Bluff; Undercity; Silvermoon City",seasonal=true}
 e[#e+1]={id=24629,rawTitle="A Perfect Puff of Perfume",expansion="CATA",type="Event",side="Both",category="Love is in the Air",giver="Public Relations Agent",zoneName="Various",seasonal=true}
@@ -247,7 +244,6 @@ e[#e+1]={id=24635,rawTitle="A Cloudlet of Classy Cologne",expansion="CATA",type=
 e[#e+1]={id=24636,rawTitle="Bonbon Blitz",expansion="CATA",type="Event",side="Both",category="Love is in the Air",giver="Public Relations Agent",zoneName="Various",seasonal=true}
 e[#e+1]={id=24651,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Detective Snap Snagglebolt",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=24664,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Inspector Snip Snagglebolt",zoneName="Elwynn Forest",seasonal=true}
-e[#e+1]={id=24666,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Detective Snap Snagglebolt",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=24666,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Inspector Snip Snagglebolt",zoneName="Elwynn Forest",seasonal=true}
 e[#e+1]={id=25105,rawTitle="Nibbler! No!",expansion="CATA",type="Faction",side="Alliance",category="Jewelcrafting",giver="Isabel Jones",zoneName="Stormwind City"}
 e[#e+1]={id=25154,rawTitle="A Present for Lila",expansion="CATA",type="Faction",side="Alliance",category="Jewelcrafting",giver="Marith Lazuria",zoneName="Orgrimmar"}
@@ -304,13 +300,12 @@ e[#e+1]={id=28680,rawTitle="Boosting Morale",expansion="CATA",type="Faction",sid
 e[#e+1]={id=28695,rawTitle="WANTED: Foreman Wellson",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Private Sarlosk",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28696,rawTitle="Bombs Away!",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Private Sarlosk",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28697,rawTitle="Ghostbuster",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Private Sarlosk",zoneName="Tol Barad Peninsula"}
-e[#e+1]={id=28697,rawTitle="The Forgotten",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Captain Prug",zoneName="Tol Barad Peninsula"}
+e[#e+1]={id=28689,rawTitle="The Forgotten",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Captain Prug",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28700,rawTitle="Taking the Overlook Back",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Private Sarlosk",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28721,rawTitle="Walk A Mile In Their Shoes",expansion="CATA",type="Faction",side="Horde",category="Tol Barad Peninsula",giver="Commander Larmash",zoneName="Tol Barad Peninsula"}
 e[#e+1]={id=28751,rawTitle="Tending the Garden",expansion="CATA",type="Faction",side="Both",category="Hillsbrad Foothills",zoneName="Hillsbrad Foothills"}
 e[#e+1]={id=28736,rawTitle="Fire From the Sky",expansion="CATA",type="Faction",side="Both",category="Uldum",giver="Weathered Nomad",zoneName="Uldum"}
 e[#e+1]={id=28935,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Horde",category="Love is in the Air",giver="Detective Snap Snagglebolt",zoneName="Durotar",seasonal=true}
-e[#e+1]={id=28935,rawTitle="Crushing the Crown",expansion="CATA",type="Event",side="Alliance",category="Love is in the Air",giver="Inspector Snip Snagglebolt",zoneName="Elwynn Forest",seasonal=true}
 e[#e+1]={id=29035,rawTitle="A Cub's Cravings",expansion="CATA",type="Faction",side="Alliance",category="Winterspring",giver="Winterspring Cub (quest item)",zoneName="Winterspring"}
 e[#e+1]={id=29037,rawTitle="'Borrowing' From the Winterfall",expansion="CATA",type="Faction",side="Alliance",category="Winterspring",giver="Winterspring Cub (quest item)",zoneName="Winterspring"}
 e[#e+1]={id=29038,rawTitle="Hunting Practice",expansion="CATA",type="Faction",side="Alliance",category="Winterspring",giver="Winterspring Cub (quest item)",zoneName="Winterspring"}
@@ -599,7 +594,7 @@ e[#e+1]={id=31111,rawTitle="Eradicating the Zan'thik",expansion="MOP",type="Fact
 e[#e+1]={id=31113,rawTitle="Assault Fire Camp Gai-Cho",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
 e[#e+1]={id=31114,rawTitle="Assault Deadtalker's Plateau",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
 e[#e+1]={id=31116,rawTitle="Spirit Dust",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
-e[#e+1]={id=31116,rawTitle="The Deadtalker Cipher",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
+e[#e+1]={id=31118,rawTitle="The Deadtalker Cipher",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
 e[#e+1]={id=31117,rawTitle="Uruk!",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes"}
 e[#e+1]={id=31119,rawTitle="The Enemy of My Enemy... Is Still My Enemy!",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Master Snowdrift",zoneName="Townlong Steppes"}
 e[#e+1]={id=31120,rawTitle="Cheng Bo!",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes"}
@@ -640,9 +635,9 @@ e[#e+1]={id=31291,rawTitle="Uncovering the Past",expansion="MOP",type="Faction",
 e[#e+1]={id=31293,rawTitle="Mogu Make Poor House Guests",expansion="MOP",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Rook Stonetoe",zoneName="Vale of Eternal Blossoms"}
 e[#e+1]={id=31295,rawTitle="Mogu within the Ruins of Guo-Lai",expansion="MOP",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Che Wildwalker",zoneName="Vale of Eternal Blossoms"}
 e[#e+1]={id=31297,rawTitle="Setting Sun Garrison",expansion="MOP",type="Faction",side="Both",category="Vale of Eternal Blossoms",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=31443,rawTitle="Flying Tiger Gourami",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Flying Tiger Gourami",zoneName="Fishing"}
-e[#e+1]={id=31446,rawTitle="Mimic Octopus",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Mimic Octopus",zoneName="Fishing"}
-e[#e+1]={id=31446,rawTitle="Spinefish Alpha",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Spinefish Alpha",zoneName="Fishing"}
+e[#e+1]={id=31443,rawTitle="Flying Tiger Gourami",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Nat Pagle",zoneName="Krasarang Wilds"}
+e[#e+1]={id=31446,rawTitle="Mimic Octopus",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Nat Pagle",zoneName="Krasarang Wilds"}
+e[#e+1]={id=31444,rawTitle="Spinefish Alpha",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Nat Pagle",zoneName="Krasarang Wilds"}
 e[#e+1]={id=31487,rawTitle="Sonic Disruption",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",giver="Kaz'tik the Manipulator",zoneName="Dread Wastes"}
 e[#e+1]={id=31491,rawTitle="The Ten Foot Pole",expansion="MOP",type="Faction",side="Both",category="Kun-Lai Summit",giver="Lin Tenderpaw",zoneName="Various"}
 e[#e+1]={id=31492,rawTitle="The Torch of Strength",expansion="MOP",type="Faction",side="Both",category="Kun-Lai Summit",giver="Lin Tenderpaw",zoneName="Kun-Lai Summit"}
@@ -988,7 +983,7 @@ e[#e+1]={id=35075,rawTitle="Abyssal Gulper Eel",expansion="WOD",type="Profession
 e[#e+1]={id=36511,rawTitle="Jawless Skulker",expansion="WOD",type="Profession",side="Alliance",category="Fishing",giver="Ron Ashton",zoneName="Fishing"}
 e[#e+1]={id=36513,rawTitle="Fat Sleeper",expansion="WOD",type="Profession",side="Alliance",category="Fishing",giver="Ron Ashton",zoneName="Fishing"}
 e[#e+1]={id=36514,rawTitle="Blind Lake Sturgeon",expansion="WOD",type="Profession",side="Alliance",category="Fishing",giver="Ron Ashton",zoneName="Fishing"}
-e[#e+1]={id=36514,rawTitle="Blind Lake Sturgeon",expansion="WOD",type="Profession",side="Horde",category="Fishing",giver="Mak'jin",zoneName="Frostfire Ridge"}
+e[#e+1]={id=35073,rawTitle="Blind Lake Sturgeon",expansion="WOD",type="Profession",side="Horde",category="Fishing",giver="Mak'jin",zoneName="Frostfire Ridge"}
 e[#e+1]={id=36515,rawTitle="Blackwater Whiptail",expansion="WOD",type="Profession",side="Alliance",category="Fishing",giver="Ron Ashton",zoneName="Fishing"}
 e[#e+1]={id=36517,rawTitle="Abyssal Gulper Eel",expansion="WOD",type="Profession",side="Alliance",category="Fishing",giver="Ron Ashton",zoneName="Fishing"}
 e[#e+1]={id=36648,rawTitle="Assault on Stonefury Cliffs",expansion="WOD",type="Faction",side="Alliance",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
@@ -1426,7 +1421,6 @@ e[#e+1]={id=78726,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Eve
 e[#e+1]={id=78752,rawTitle="Proof of Demise: Titan Rune Protocol Gamma",expansion="TWW",type="Faction",side="Both",category="Dalaran",giver="Archmage Lan'dalock",zoneName="Various"}
 e[#e+1]={id=78753,rawTitle="Proof of Demise: Threats to Azeroth",expansion="TWW",type="Faction",side="Both",category="Dalaran",giver="Archmage Lan'dalock",zoneName="Various"}
 e[#e+1]={id=78938,rawTitle="Champion of the Waterlords",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Memory of a Duke",zoneName="Searing Gorge"}
-e[#e+1]={id=78979,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Event",side="Alliance",category="Love is in the Air",giver="Ying",zoneName="Elwynn Forest",seasonal=true}
 e[#e+1]={id=78979,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Ning",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=78986,rawTitle="Getaway to Scenic Grizzly Hills!",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Aurora Vabsley",zoneName="Various",seasonal=true}
 e[#e+1]={id=78987,rawTitle="Getaway to Scenic Nagrand!",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Aurora Vabsley",zoneName="Various",seasonal=true}

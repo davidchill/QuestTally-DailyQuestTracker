@@ -183,34 +183,149 @@ function DT.ZoneMap:Override(questID)
     return questID and QUEST_ZONE_OVERRIDE[questID] or nil
 end
 
--- The real continent/island for a zone, keyed by its normalized ZoneLabel. This
--- replaces Cataclysm's "Azeroth" stand-in continent: every Cata zone is sorted to
--- the actual Eastern Kingdoms / Kalimdor (or its own island bucket, Tol Barad /
--- Deepholm, matching how the reputation-mapped quests already group). Zones not
--- listed fall through to the per-expansion default, so other expansions are
--- unaffected. These names are unambiguous (no zone here exists on two continents).
+-- The real continent/island for a zone, keyed by its normalized ZoneLabel. The
+-- continent is a fact of the zone's geography, NOT of the expansion that added the
+-- quest -- and the two often disagree. A Dragonflight skyriding race in Hellfire
+-- Peninsula, a TWW race course in Zul'Drak, a MoP battle-pet daily in Icecrown:
+-- all carry a modern `expansion` tag but sit in old-world zones. Resolving the
+-- continent from the zone NAME (here) instead of the per-expansion default keeps
+-- the Browse/All dropdowns sorted by true geography and immune to tag drift.
+--
+-- This table is comprehensive across every zone the static checklist references.
+-- A handful of zone NAMES exist on TWO continents (the TBC vs WoD Shadowmoon
+-- Valley/Nagrand, the WotLK vs Legion Dalaran); those CANNOT be keyed by name
+-- alone and live in AMBIGUOUS_ZONE_CONTINENT below instead. Verified against
+-- Wowhead. Tol Barad and Deepholm keep their own island/elemental-plane buckets,
+-- matching how the reputation-mapped quests already group.
 local ZONE_CONTINENT = {
     -- Eastern Kingdoms
-    ["Twilight Highlands"]   = "Eastern Kingdoms",
-    ["Hillsbrad Foothills"]  = "Eastern Kingdoms",
-    ["Stormwind City"]       = "Eastern Kingdoms",
+    ["Twilight Highlands"]       = "Eastern Kingdoms",
+    ["Hillsbrad Foothills"]      = "Eastern Kingdoms",
+    ["Stormwind City"]           = "Eastern Kingdoms",
+    ["Elwynn Forest"]            = "Eastern Kingdoms",
+    ["Dun Morogh"]               = "Eastern Kingdoms",
+    ["Ironforge"]                = "Eastern Kingdoms",
+    ["Undercity"]                = "Eastern Kingdoms",
+    ["Gnomeregan"]               = "Eastern Kingdoms",
+    ["Deadwind Pass"]            = "Eastern Kingdoms",
+    ["Duskwood"]                 = "Eastern Kingdoms",
+    ["Redridge Mountains"]       = "Eastern Kingdoms",
+    ["Burning Steppes"]          = "Eastern Kingdoms",
+    ["Searing Gorge"]            = "Eastern Kingdoms",
+    ["Northern Stranglethorn"]   = "Eastern Kingdoms",
+    ["Cape of Stranglethorn"]    = "Eastern Kingdoms",
+    ["Swamp of Sorrows"]         = "Eastern Kingdoms",
+    ["The Hinterlands"]          = "Eastern Kingdoms",
+    ["Eastern Plaguelands"]      = "Eastern Kingdoms",
+    ["Isle of Quel'Danas"]       = "Eastern Kingdoms",
+    ["Eversong Woods"]           = "Eastern Kingdoms",
+    ["Darkmoon Island"]          = "Eastern Kingdoms",
+    ["Blackrock Depths"]         = "Eastern Kingdoms",
+    ["Scholomance"]              = "Eastern Kingdoms",
+    ["Scarlet Halls"]            = "Eastern Kingdoms",
     -- Kalimdor
-    ["Mount Hyjal"]          = "Kalimdor",
-    ["Uldum"]                = "Kalimdor",
-    ["Winterspring"]         = "Kalimdor",
-    ["Stonetalon Mountains"] = "Kalimdor",
-    ["Orgrimmar"]            = "Kalimdor",
+    ["Mount Hyjal"]              = "Kalimdor",
+    ["Uldum"]                    = "Kalimdor",
+    ["Winterspring"]             = "Kalimdor",
+    ["Stonetalon Mountains"]     = "Kalimdor",
+    ["Orgrimmar"]                = "Kalimdor",
+    ["Thunder Bluff"]            = "Kalimdor",
+    ["Darnassus"]                = "Kalimdor",
+    ["Durotar"]                  = "Kalimdor",
+    ["Dustwallow Marsh"]         = "Kalimdor",
+    ["Tanaris"]                  = "Kalimdor",
+    -- Outland (Shadowmoon Valley / Nagrand are ambiguous -- see below)
+    ["Hellfire Peninsula"]       = "Outland",
+    ["Terokkar Forest"]          = "Outland",
+    ["Blade's Edge Mountains"]   = "Outland",
+    ["Netherstorm"]              = "Outland",
+    ["Zangarmarsh"]              = "Outland",
+    ["Shattrath City"]           = "Outland",
+    -- Northrend (Dalaran is ambiguous -- see below)
+    ["Borean Tundra"]            = "Northrend",
+    ["Howling Fjord"]            = "Northrend",
+    ["Dragonblight"]             = "Northrend",
+    ["Grizzly Hills"]            = "Northrend",
+    ["Zul'Drak"]                 = "Northrend",
+    ["Sholazar Basin"]           = "Northrend",
+    ["The Storm Peaks"]          = "Northrend",
+    ["Crystalsong Forest"]       = "Northrend",
+    ["Icecrown"]                 = "Northrend",
+    -- Pandaria
+    ["The Jade Forest"]          = "Pandaria",
+    ["Jade Forest"]              = "Pandaria",
+    ["Valley of the Four Winds"] = "Pandaria",
+    ["Krasarang Wilds"]          = "Pandaria",
+    ["Kun-Lai Summit"]           = "Pandaria",
+    ["Townlong Steppes"]         = "Pandaria",
+    ["Dread Wastes"]             = "Pandaria",
+    ["Vale of Eternal Blossoms"] = "Pandaria",
+    ["Timeless Isle"]            = "Pandaria",
+    ["Isle of Thunder"]          = "Pandaria",
+    ["Isle of Giants"]           = "Pandaria",
+    ["Unga Ingoo"]               = "Pandaria",
+    ["Mogu'shan Palace"]         = "Pandaria",
+    ["Gate of the Setting Sun"]  = "Pandaria",
+    ["Temple of the Jade Serpent"] = "Pandaria",
+    ["Siege of Niuzao Temple"]   = "Pandaria",
+    ["Shado-Pan Monastery"]      = "Pandaria",
+    -- Draenor (Shadowmoon Valley / Nagrand are ambiguous -- see below)
+    ["Frostfire Ridge"]          = "Draenor",
+    ["Tanaan Jungle"]            = "Draenor",
+    ["Iron Docks"]               = "Draenor",
+    ["Shadowmoon Burial Grounds"] = "Draenor",
+    ["Garrison Support"]         = "Draenor",
+    -- The Shadowlands
+    ["Bastion"]                  = "The Shadowlands",
+    ["Maldraxxus"]               = "The Shadowlands",
+    ["Ardenweald"]               = "The Shadowlands",
+    ["The Maw"]                  = "The Shadowlands",
+    ["Korthia"]                  = "The Shadowlands",
+    ["Zereth Mortis"]            = "The Shadowlands",
+    ["Torghast, Tower of the Damned"] = "The Shadowlands",
+    -- Dragon Isles
+    ["The Waking Shores"]        = "Dragon Isles",
+    ["Ohn'ahran Plains"]         = "Dragon Isles",
+    ["The Azure Span"]           = "Dragon Isles",
+    ["Thaldraszus"]              = "Dragon Isles",
+    ["Valdrakken"]               = "Dragon Isles",
+    ["Zaralek Cavern"]           = "Dragon Isles",
+    ["The Forbidden Reach"]      = "Dragon Isles",
+    ["Emerald Dream"]            = "Dragon Isles",
+    ["Obsidian Citadel"]         = "Dragon Isles",
+    -- Kul Tiras / Zandalar
+    ["Mechagon"]                 = "Kul Tiras / Zandalar",
+    ["Zuldazar"]                 = "Kul Tiras / Zandalar",
+    -- Khaz Algar
+    ["Azj-Kahet"]                = "Khaz Algar",
+    ["Hallowfall"]               = "Khaz Algar",
+    ["Siren Isle"]               = "Khaz Algar",
+    ["Infinite Bazaars"]         = "Khaz Algar",
     -- Distinct island / elemental-plane buckets (already used for the
     -- reputation-mapped quests in these zones).
-    ["Tol Barad"]            = "Tol Barad",
-    ["Tol Barad Peninsula"]  = "Tol Barad",
-    ["Deepholm"]             = "Deepholm",
+    ["Tol Barad"]                = "Tol Barad",
+    ["Tol Barad Peninsula"]      = "Tol Barad",
+    ["Deepholm"]                 = "Deepholm",
+}
+
+-- Zone NAMES that exist on two continents -- the flat map above can't tell them
+-- apart, so the EXPANSION breaks the tie. Each gives the per-expansion continent
+-- plus a default for every other tag (TBC/MoP-era reuse of the Outland originals,
+-- WotLK for Dalaran). Verified against Wowhead.
+local AMBIGUOUS_ZONE_CONTINENT = {
+    ["Shadowmoon Valley"] = { WOD = "Draenor",       LEGION = "Draenor", default = "Outland" },
+    ["Nagrand"]           = { WOD = "Draenor",                           default = "Outland" },
+    ["Dalaran"]           = { LEGION = "Broken Isles",                   default = "Northrend" },
 }
 
 -- Public: real continent/island for a normalized zone label, or nil if we don't
--- pin one (caller then keeps the per-expansion default).
-function DT.ZoneMap:ContinentForZone(zoneLabel)
-    return zoneLabel and ZONE_CONTINENT[zoneLabel] or nil
+-- pin one (caller then keeps the per-expansion default). `expansion` disambiguates
+-- the few zone names that exist on two continents.
+function DT.ZoneMap:ContinentForZone(zoneLabel, expansion)
+    if not zoneLabel then return nil end
+    local amb = AMBIGUOUS_ZONE_CONTINENT[zoneLabel]
+    if amb then return amb[expansion or ""] or amb.default end
+    return ZONE_CONTINENT[zoneLabel]
 end
 
 -- Resolve an entry to (continentName, zoneName). Order: events bucket ->

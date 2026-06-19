@@ -2,6 +2,52 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.4.4] - 2026-06-19
+
+A **data-accuracy** release: the Browse tab's **World / Continent sorting** now
+follows real geography, the **"Other / Unknown"** bucket is eliminated, duplicate
+quest IDs are corrected, and the Burning Crusade dailies gained giver coordinates —
+all cross-checked against Wowhead.
+
+### Added
+- **66 missing dailies promoted into the catalog.** Harvested dailies the master
+  list didn't carry — and that fell into Browse's **"Other / Unknown"** bucket —
+  are now first-class entries sorted by their real zone: the TBC heroic-dungeon
+  **WANTED** bounties (Shattrath City), **Shattered Sun Offensive** (Isle of
+  Quel'Danas), the **Argent Tournament** set (Icecrown), Cataclysm **Stormwind
+  fishing**, **Molten Front** (Mount Hyjal), **Darkmoon Faire** games, and the MoP
+  **Anglers / Ironpaw** dailies. Six multi-city holiday dailies (Pilgrim's Bounty,
+  Hallow's End) now live in **Holidays & Events**.
+- **Quest-giver coordinates for the Burning Crusade dailies.** ~33 TBC dailies
+  gained giver map coordinates, so **Shift+Left-click drops a TomTom waypoint** at
+  the giver where it previously couldn't. New detail records were also created for
+  several TBC quests that had none, with their givers identified.
+
+### Changed
+- **World / Continent sorting now follows geography, not the expansion tag.** A
+  quest's continent is resolved from its **zone** instead of the expansion that
+  introduced it, so dailies set in old-world zones no longer misfile — e.g. a
+  **Dragonflight skyriding race in Hellfire Peninsula** now sorts under **Outland**
+  instead of the Dragon Isles, TWW races in Northrend zones sort under
+  **Northrend**, and Midnight-tagged Eversong Woods quests leave the catch-all
+  bucket for **Eastern Kingdoms**. Duplicate-named zones (Shadowmoon Valley,
+  Nagrand, Dalaran) are disambiguated by expansion. ~315 entries across 70
+  zone-groups were re-bucketed. Holiday dailies stay grouped under **Holidays &
+  Events** rather than scattering to the zone they occupy.
+
+### Fixed
+- **The "Other / Unknown" Browse bucket is gone** (was 68 dailies) — every one now
+  sorts to a real continent and zone (see Added).
+- **Duplicate quest IDs.** 14 quest IDs that each pointed at two different quests
+  are corrected: faction-paired dailies (Dalaran cooking, WoD garrison fishing)
+  re-pointed to their correct per-faction IDs, genuine two-quests-one-ID collisions
+  split apart, and stale renamed-quest titles dropped ("Monsterbelly Appetite" is
+  now "Disarmed!"; "A Gift for the King of Stormwind" is now "…Emissary of
+  Stormwind" since Varian's death).
+- **MoP Anglers fishing givers and zones.** Nat Pagle's rare-fish dailies (Flying
+  Tiger Gourami, Mimic Octopus, Spinefish Alpha) listed the *fish* as the quest
+  giver and "Fishing" as the zone — now correctly **Nat Pagle, Krasarang Wilds**.
+
 ## [0.4.3] - 2026-06-18
 
 A polish + data-accuracy release: **TomTom integration**, colored **breadcrumbs**,

@@ -261,7 +261,6 @@ e[#e+1]={id=73027,rawTitle="Aerie Chasm Cruise - Advanced",expansion="DRAGONFLIG
 e[#e+1]={id=75958,rawTitle="Aerie Chasm Cruise - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=73028,rawTitle="Aerie Chasm Cruise - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=75959,rawTitle="Aerie Chasm Cruise - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
-e[#e+1]={id=74119,rawTitle="Angler's Challenge",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Forbidden Reach",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=73033,rawTitle="Caldera Coaster",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=73034,rawTitle="Caldera Coaster - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=75962,rawTitle="Caldera Coaster - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
@@ -460,10 +459,10 @@ e[#e+1]={id=63989,rawTitle="Oozing with Character",expansion="SHADOWLANDS",type=
 e[#e+1]={id=64194,rawTitle="War Prototype",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=57284,rawTitle="Blade of Blades",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",zoneName="Maldraxxus",src="api"}
 e[#e+1]={id=60283,rawTitle="Specter Of War: Visectus",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",zoneName="Maldraxxus",src="api"}
-e[#e+1]={id=11513,rawTitle="Intercepting the Mana Cells",expansion="TBC",type="Faction",side="Both",category="Blade's Edge Mountains",zoneName="Blade's Edge Mountains",src="api"}
-e[#e+1]={id=11875,rawTitle="Gaining the Advantage",expansion="TBC",type="Faction",side="Both",category="Shattrath City",zoneName="Shattrath City",src="api"}
-e[#e+1]={id=11520,rawTitle="Discovering Your Roots",expansion="TBC",type="Faction",side="Both",category="Terokkar Forest",zoneName="Terokkar Forest",src="api"}
-e[#e+1]={id=11521,rawTitle="Rediscovering Your Roots",expansion="TBC",type="Faction",side="Both",category="Terokkar Forest",zoneName="Terokkar Forest",src="api"}
+e[#e+1]={id=11513,rawTitle="Intercepting the Mana Cells",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Exarch Nasuun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11875,rawTitle="Gaining the Advantage",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Emissary Mordin",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11520,rawTitle="Discovering Your Roots",expansion="TBC",type="Faction",side="Both",category="Terokkar Forest",giver="Mar'nah",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11521,rawTitle="Rediscovering Your Roots",expansion="TBC",type="Faction",side="Both",category="Terokkar Forest",giver="Mar'nah",zoneName="Isle of Quel'Danas",src="api"}
 e[#e+1]={id=80277,rawTitle="City of Threads Twist",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Azj-Kahet",src="api"}
 e[#e+1]={id=80283,rawTitle="City of Threads Twist - Advanced",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Azj-Kahet",src="api"}
 e[#e+1]={id=80289,rawTitle="City of Threads Twist - Reverse",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Azj-Kahet",src="api"}
@@ -607,3 +606,73 @@ e[#e+1]={id=12762,rawTitle="Power of the Great Ones",expansion="WRATH",type="Fac
 e[#e+1]={id=12705,rawTitle="Will of the Titans",expansion="WRATH",type="Faction",side="Both",category="Sholazar Basin",zoneName="Sholazar Basin",src="api"}
 e[#e+1]={id=12604,rawTitle="Congratulations!",expansion="WRATH",type="Faction",side="Both",category="Zul'Drak",zoneName="Zul'Drak",src="api"}
 e[#e+1]={id=12501,rawTitle="Troll Patrol",expansion="WRATH",type="Faction",side="Both",category="Zul'Drak",zoneName="Zul'Drak",src="api"}
+
+-- Baked-only dailies promoted to the master list so they sort by real zone
+-- (were falling into Browse's "Other / Unknown" bucket). Zone/giver/category
+-- cross-referenced via Wowhead; coords deferred to the coordinate sweep.
+e[#e+1]={id=11354,rawTitle="WANTED: Nazan's Riding Crop",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11362,rawTitle="WANTED: Keli'dan's Feathered Stave",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11363,rawTitle="WANTED: Bladefist's Seal",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11364,rawTitle="WANTED: Shattered Hand Centurions",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11368,rawTitle="WANTED: The Heart of Quagmirran",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11370,rawTitle="WANTED: The Warlord's Treatise",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11371,rawTitle="WANTED: Coilfang Myrmidons",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11372,rawTitle="WANTED: The Headfeathers of Ikiss",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11373,rawTitle="WANTED: Shaffar's Wondrous Pendant",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11374,rawTitle="WANTED: The Exarch's Soul Gem",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11375,rawTitle="WANTED: Murmur's Whisper",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11376,rawTitle="WANTED: Malicious Instructors",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11378,rawTitle="WANTED: The Epoch Hunter's Head",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11382,rawTitle="WANTED: Aeonus's Hourglass",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11383,rawTitle="WANTED: Rift Lords",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11384,rawTitle="WANTED: A Warp Splinter Clipping",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11385,rawTitle="WANTED: Sunseeker Channelers",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11386,rawTitle="WANTED: Pathaleon's Projector",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11387,rawTitle="WANTED: Tempest-Forge Destroyers",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11388,rawTitle="WANTED: The Scroll of Skyriss",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11389,rawTitle="WANTED: Arcatraz Sentinels",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11499,rawTitle="WANTED: The Signet Ring of Prince Kael'thas",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Wind Trader Zhareem",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11500,rawTitle="WANTED: Sisters of Torment",expansion="TBC",type="Faction",side="Both",category="Wanted",giver="Nether-Stalker Mah'duun",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=11525,rawTitle="Further Conversions",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Vindicator Xayann",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11533,rawTitle="The Air Strikes Must Continue",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Battlemage Arynna",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11536,rawTitle="Don't Stop Now....",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Smith Hauthaa",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11540,rawTitle="Crush the Dawnblade",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Magister Ilastar",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11541,rawTitle="Disrupt the Greengill Coast",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11543,rawTitle="Keeping the Enemy at Bay",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Vindicator Kaalan",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11544,rawTitle="Ata'mal Armaments",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Smith Hauthaa",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11546,rawTitle="Open for Business",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Mar'nah",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11547,rawTitle="Know Your Ley Lines",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Astromancer Darnarian",zoneName="Isle of Quel'Danas",src="api"}
+e[#e+1]={id=11665,rawTitle="Crocolisks in the City",expansion="TBC",type="Profession",side="Both",category="Fishing",giver="Old Man Barlo",zoneName="Terokkar Forest",src="api"}
+e[#e+1]={id=11669,rawTitle="Felblood Fillet",expansion="TBC",type="Profession",side="Both",category="Fishing",giver="Old Man Barlo",zoneName="Terokkar Forest",src="api"}
+e[#e+1]={id=11668,rawTitle="Shrimpin' Ain't Easy",expansion="TBC",type="Profession",side="Both",category="Fishing",giver="Old Man Barlo",zoneName="Terokkar Forest",src="api"}
+e[#e+1]={id=11880,rawTitle="The Multiphase Survey",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",zoneName="Shattrath City",src="api"}
+e[#e+1]={id=13592,rawTitle="A Valiant's Field Training",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Sir Marcus Barlowe",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13665,rawTitle="The Grand Melee",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Captain Joseph Holley",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13682,rawTitle="Threat From Above",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Eadric the Pure",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13789,rawTitle="Taking Battle To The Enemy",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Cellian Daybreak",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13790,rawTitle="Among the Champions",expansion="WRATH",type="Faction",side="Alliance",category="Argent Tournament",giver="Luuri",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13847,rawTitle="At The Enemy's Gates",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Captain Joseph Holley",zoneName="Icecrown",src="api"}
+e[#e+1]={id=13861,rawTitle="Battle Before The Citadel",expansion="WRATH",type="Faction",side="Both",category="Argent Tournament",giver="Eadric the Pure",zoneName="Icecrown",src="api"}
+e[#e+1]={id=14048,rawTitle="Can't Get Enough Turkey",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
+e[#e+1]={id=14051,rawTitle="Don't Forget The Stuffing!",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
+e[#e+1]={id=14053,rawTitle="We're Out of Cranberry Chutney Again?",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
+e[#e+1]={id=14054,rawTitle="Easy As Pie",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
+e[#e+1]={id=14055,rawTitle="She Says Potato",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
+e[#e+1]={id=26094,rawTitle="Striking Back",expansion="CATA",type="Faction",side="Alliance",category="Dun Morogh",zoneName="Dun Morogh",src="api"}
+e[#e+1]={id=26153,rawTitle="Penny's Pumpkin Pancakes",expansion="CATA",type="Event",side="Both",category="Hallow's End",zoneName="Hallow's End",src="api"}
+e[#e+1]={id=26414,rawTitle="Hitting a Walleye",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
+e[#e+1]={id=26420,rawTitle="Diggin' For Worms",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
+e[#e+1]={id=26442,rawTitle="Rock Lobster",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
+e[#e+1]={id=26488,rawTitle="Big Gulp",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
+e[#e+1]={id=26536,rawTitle="Thunder Falls",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
+e[#e+1]={id=29192,rawTitle="The Wardens are Watching",expansion="CATA",type="Faction",side="Both",category="Molten Front",zoneName="Mount Hyjal",src="api"}
+e[#e+1]={id=29255,rawTitle="Embergris",expansion="CATA",type="Faction",side="Both",category="Molten Front",zoneName="Mount Hyjal",src="api"}
+e[#e+1]={id=29257,rawTitle="Steal Magmolias",expansion="CATA",type="Faction",side="Both",category="Molten Front",zoneName="Mount Hyjal",src="api"}
+e[#e+1]={id=29290,rawTitle="Fire in the Skies",expansion="CATA",type="Faction",side="Both",category="Molten Front",zoneName="Mount Hyjal",src="api"}
+e[#e+1]={id=29296,rawTitle="Territorial Birds",expansion="CATA",type="Faction",side="Both",category="Molten Front",zoneName="Mount Hyjal",src="api"}
+e[#e+1]={id=29364,rawTitle="Corn Mash",expansion="CATA",type="Profession",side="Horde",category="Cooking",zoneName="Thunder Bluff",src="api"}
+e[#e+1]={id=29455,rawTitle="Target: Turtle",expansion="CATA",type="Faction",side="Both",category="Darkmoon Faire",zoneName="Darkmoon Island",src="api"}
+e[#e+1]={id=29463,rawTitle="It's Hammer Time",expansion="CATA",type="Faction",side="Both",category="Darkmoon Faire",zoneName="Darkmoon Island",src="api"}
+e[#e+1]={id=29438,rawTitle="He Shoots, He Scores!",expansion="CATA",type="Faction",side="Both",category="Darkmoon Faire",zoneName="Darkmoon Island",src="api"}
+e[#e+1]={id=33146,rawTitle="Noodle Time",expansion="MOP",type="Profession",side="Both",category="Cooking",giver="Sungshin Ironpaw",zoneName="Valley of the Four Winds",src="api"}
+e[#e+1]={id=33358,rawTitle="Noodle Time: Bonus",expansion="MOP",type="Profession",side="Both",category="Cooking",giver="Sungshin Ironpaw",zoneName="Valley of the Four Winds",src="api"}
