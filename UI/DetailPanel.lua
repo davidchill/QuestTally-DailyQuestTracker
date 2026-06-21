@@ -133,8 +133,10 @@ local function renderRewards(content, y, questID)
     local rendered = false
 
     local function sectionHeader(label)
+        -- First header sits further below the objectives (10) to separate the two
+        -- blocks now that there's no outer "Rewards" divider; later ones use 8.
         y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
-                                  spacingBefore = rendered and 8 or 4 })
+                                  spacingBefore = rendered and 8 or 10 })
         rendered = true
     end
 
@@ -215,8 +217,10 @@ end
 local function renderBakedRewards(content, y, rewards)
     local rendered = false
     local function sectionHeader(label)
+        -- First header sits further below the objectives (10) to separate the two
+        -- blocks now that there's no outer "Rewards" divider; later ones use 8.
         y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
-                                  spacingBefore = rendered and 8 or 4 })
+                                  spacingBefore = rendered and 8 or 10 })
         rendered = true
     end
     local function rewardLine(it)
@@ -286,7 +290,7 @@ end
 -- items. Split that into clean renderable pieces:
 --   { { text = <main sentence>, heading = true }, { text = <bullet> }, ... }
 -- The heading entry renders as a plain line; the bullets get a "- " prefix and a
--- deeper indent in renderBaked, matching how warcraft.wiki lays the quest out.
+-- deeper indent in renderObjectiveLines, matching how warcraft.wiki lays it out.
 local function parseWikiObjectives(raw)
     if not raw or raw == "" then return nil end
     local s = raw
@@ -322,19 +326,70 @@ local function parseWikiObjectives(raw)
     return out
 end
 
+-- Pull an honor amount out of a free-form reward string ("209 honor",
+-- "+209 honor (620 honor at 80)"). PvP dailies historically stored honor as a
+-- pseudo-item in the reward list or inside the rep text rather than a clean
+-- field, so we route it to the honor line instead of rendering it as a nameless
+-- item or a fake faction. Returns a number, or nil if the string isn't honor.
+local function parseHonor(s)
+    if not s then return nil end
+    local n = s:match("(%d+)%s*[Hh]onor")
+    return n and tonumber(n) or nil
+end
+
+-- True if a free-form reputation string is worth showing: it must name a faction
+-- (letters) and an amount (a digit), and not actually be honor. Filters the noise
+-- left by the import -- bare "+", "up to +", etc.
+local function repIsRenderable(s)
+    if not s or s == "" then return false end
+    if s:match("[Hh]onor") then return false end        -- honor is handled separately
+    return s:match("%a") ~= nil and s:match("%d") ~= nil
+end
+
+-- Normalize a raw WikiDetails `rep` value to the renderer shape: a structured
+-- list {{n,v},...} becomes {{name,value},...}; a legacy free-form string passes
+-- through when renderable; anything else is nil. Shared by normalizeWiki and the
+-- standalone bestReputation() resolver.
+local function normalizeRep(rep)
+    if type(rep) == "table" then
+        local out = {}
+        for _, r in ipairs(rep) do out[#out + 1] = { name = r.n, value = r.v } end
+        return (#out > 0) and out or nil
+    elseif repIsRenderable(rep) then
+        return strtrim(rep)
+    end
+    return nil
+end
+
 -- Convert a shipped DT.WikiDetails entry (from warcraft.wiki, compact keys) into
 -- the renderer shape. Objectives arrive as one raw wiki string (parsed into clean
--- lines above); the description is a plain string.
+-- lines above); the description is a plain string. Honor and reputation are
+-- salvaged from the loosely-typed fields so PvP/rep dailies render their full
+-- rewards (see parseHonor/repIsRenderable above).
 local function normalizeWiki(e)
     local d = { objectives = parseWikiObjectives(e.o), description = e.de }
-    if e.r or e.mo then
-        local r = { money = e.mo }
-        if e.r then
-            local items = {}
-            for _, it in ipairs(e.r) do items[#items + 1] = { name = it.n, count = 1 } end
-            r.items = items
+
+    -- Honor can land as an explicit field, inside a legacy rep STRING, or as a
+    -- pseudo-item. (rep may also be a structured table now, so guard parseHonor.)
+    local honor = e.ho or (type(e.rep) == "string" and parseHonor(e.rep)) or nil
+    local items
+    if e.r then
+        for _, it in ipairs(e.r) do
+            local h = parseHonor(it.n)
+            if h then
+                honor = honor or h               -- "209 honor" pseudo-item -> honor line
+            else
+                items = items or {}
+                items[#items + 1] = { name = it.n, count = 1 }
+            end
         end
-        d.rewards = r
+    end
+
+    -- Reputation: structured Blizzard data or a legacy string (see normalizeRep).
+    local reputation = normalizeRep(e.rep)
+
+    if items or e.mo or honor or reputation then
+        d.rewards = { money = e.mo, honor = honor, items = items, reputation = reputation }
     end
     return d
 end
@@ -370,6 +425,20 @@ local function bestDescription(questID)
     return nil
 end
 
+-- Resolve REPUTATION on its own, across every source -- same reason as
+-- bestDescription: resolveBaked() returns the first source with ANY detail, so a
+-- harvested description (or a BakedDetails entry) would otherwise SHADOW the rep
+-- that only lives in WikiDetails. Returns the normalized rep (list or string).
+local function bestReputation(questID)
+    if not questID then return nil end
+    local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
+    if live and live.rewards and live.rewards.reputation then return live.rewards.reputation end
+    -- BakedDetails (harvested) has no rep field; WikiDetails is the baked source.
+    local w = DT.WikiDetails and DT.WikiDetails[questID]
+    if w and w.rep then return normalizeRep(w.rep) end
+    return nil
+end
+
 -- Render a baked objectives list (no header). Items are either plain strings
 -- (harvested/live objectives -> "- " bullets) or { text, heading } tables from
 -- the wiki parser: heading is the main sentence (no bullet), the rest are
@@ -385,25 +454,6 @@ local function renderObjectiveLines(content, y, list)
         else
             y = addLine(content, y, { text = "- " .. txt, color = { 0.85, 0.85, 0.85 }, indent = 6 })
         end
-    end
-    return y
-end
-
--- Render the harvested fallback for an entry. Returns the new y-cursor, or nil
--- if there's no baked data to show.
-local function renderBaked(content, y, questID)
-    local details = resolveBaked(questID)
-    if not details or not (details.rewards or details.objectives) then return nil end
-
-    y = addLine(content, y, { text = "Details:",
-                              color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
-    if details.objectives and #details.objectives > 0 then
-        y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
-        y = renderObjectiveLines(content, y, details.objectives)
-    end
-    if details.rewards then
-        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
-        y = renderBakedRewards(content, y, details.rewards)
     end
     return y
 end
@@ -437,6 +487,132 @@ local function renderObjectives(content, y, questID)
         y = addLine(content, y, { text = "- " .. obj.text, color = color, indent = 6 })
     end
     return y, true
+end
+
+-- Reputation reward text tint (a soft faction blue, distinct from the gold
+-- section headers and the orange honor line).
+local REP_COLOR = { 0.55, 0.75, 1.0 }
+
+-- Resolve a factionID to its display name. Major (renown) factions go through
+-- C_MajorFactions; the others fall back to the general faction getters so the
+-- helper still works if the API ever returns a non-major faction.
+local function factionName(factionID)
+    if not factionID then return nil end
+    if C_MajorFactions and C_MajorFactions.GetMajorFactionData then
+        local data = C_MajorFactions.GetMajorFactionData(factionID)
+        if data and data.name then return data.name end
+    end
+    if C_Reputation and C_Reputation.GetFactionDataByID then
+        local data = C_Reputation.GetFactionDataByID(factionID)
+        if data and data.name then return data.name end
+    end
+    if GetFactionInfoByID then
+        local name = GetFactionInfoByID(factionID)
+        if name then return name end
+    end
+    return nil
+end
+
+-- Render the reputation section. Live MAJOR-faction (renown) rewards come from
+-- the API; classic-faction rep isn't exposed live, so it falls back to baked data
+-- resolved across ALL sources (bestReputation -- not the resolveBaked primary,
+-- which a harvested description would shadow). Kept independent of the item-reward
+-- section so a quest can show live items AND its baked classic-faction rep at once.
+-- Returns the new y-cursor and whether anything was rendered.
+local function renderReputation(content, y, questID)
+    local live = C_QuestLog and C_QuestLog.GetQuestLogMajorFactionReputationRewards
+        and C_QuestLog.GetQuestLogMajorFactionReputationRewards(questID)
+    if live and #live > 0 then
+        y = addLine(content, y, { text = "Reputation:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
+        for _, rr in ipairs(live) do
+            local name = factionName(rr.factionID) or ("Faction " .. tostring(rr.factionID or "?"))
+            y = addLine(content, y, { text = "+" .. (rr.rewardAmount or 0) .. " " .. name,
+                                      color = REP_COLOR, indent = 6 })
+        end
+        return y, true
+    end
+
+    local rep = bestReputation(questID)
+    if rep then
+        y = addLine(content, y, { text = "Reputation:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
+        if type(rep) == "table" then
+            -- Structured: one "+amount Faction" line each (matches the live layout).
+            for _, r in ipairs(rep) do
+                y = addLine(content, y, { text = "+" .. (r.value or 0) .. " " .. (r.name or "?"),
+                                          color = REP_COLOR, indent = 6 })
+            end
+        else
+            y = addLine(content, y, { text = rep, color = REP_COLOR, indent = 6 })  -- legacy string
+        end
+        return y, true
+    end
+    return y, false
+end
+
+-- Render the objectives + rewards body for a quest that has a questID. Per
+-- section, prefer Blizzard's LIVE data and fall back to baked/wiki only when the
+-- live API has nothing. This matters for rewards: the live API returns each item
+-- with its icon and quality, while the wiki fallback is bare names -- so as soon
+-- as the async load lands we upgrade an icon-less wiki render to the real icons.
+-- Both renderObjectives/renderRewards return false when the live API has nothing
+-- yet (e.g. before the load completes), which is our cue to use baked data so the
+-- panel always shows something on first paint.
+local function renderQuestBody(content, y, questID)
+    local baked = resolveBaked(questID)
+    -- "still loading" = the async load hasn't resolved yet, or we're polling for
+    -- objective text that trails the load. Drives "Loading..." vs the definitive
+    -- "pick it up in-game" note, so the latter never flashes mid-load.
+    local stillLoading = loadResult[questID] == nil or objectivePoll == questID
+
+    -- Objectives: live text first, then baked objectives.
+    local hadObj
+    y, hadObj = renderObjectives(content, y, questID)
+    local objShown = hadObj
+    if not hadObj and baked and baked.objectives and #baked.objectives > 0 then
+        y = addLine(content, y, { text = "Objectives:", color = { 0.82, 0.68, 0.28 }, spacingBefore = 8 })
+        y = renderObjectiveLines(content, y, baked.objectives)
+        objShown = true
+    end
+
+    -- Rewards: live (icons + quality) first, then baked/wiki names.
+    local hadRewards
+    y, hadRewards = renderRewards(content, y, questID)
+    local rewardsShown = hadRewards
+    if not hadRewards and baked and baked.rewards then
+        local shown
+        y, shown = renderBakedRewards(content, y, baked.rewards)
+        rewardsShown = shown
+    end
+
+    -- Reputation: its own section (live renown -> baked string), so it can show
+    -- alongside live item rewards even though the API only covers major factions.
+    -- Counts toward "rewards shown" so the empty-rewards note never contradicts it.
+    local repShown
+    y, repShown = renderReputation(content, y, questID)
+    rewardsShown = rewardsShown or repShown
+
+    -- Fill in placeholders for whatever's still missing.
+    if not (objShown and rewardsShown) then
+        if stillLoading and not objShown and not rewardsShown then
+            -- Nothing at all yet; one neutral line rather than two stacked ones.
+            y = addLine(content, y, { text = "Loading details...",
+                                      color = { 0.7, 0.7, 0.7 }, spacingBefore = 8 })
+        elseif not stillLoading then
+            -- Load finished but a section is genuinely empty for this quest.
+            if not objShown then
+                y = addLine(content, y, {
+                    text = "Objectives become available once you pick this quest up in-game.",
+                    color = { 0.6, 0.6, 0.6 }, spacingBefore = 8 })
+            end
+            if not rewardsShown then
+                y = addLine(content, y, {
+                    text = "No reward details are available yet. Pick it up in-game to load them.",
+                    color = { 0.6, 0.6, 0.6 }, spacingBefore = 8 })
+            end
+        end
+    end
+
+    return y
 end
 
 -- ---------------------------------------------------------------------------
@@ -546,61 +722,10 @@ local function render(entry)
                 .. "available. Pick it up (or talk to its giver) to load rewards "
                 .. "and objectives.",
             color = { 0.6, 0.55, 0.7 }, spacingBefore = 8 })
-    elseif HaveQuestRewardData and HaveQuestRewardData(entry.questID) then
-        -- Reward data is cached: render the full live view. The live API gives
-        -- accurate rewards, but the client only loads objective *text* for quests
-        -- in your log -- for an Available quest it returns a bare "0/1" with no
-        -- name. In that case show a note rather than a meaningless count.
-        local hadObj
-        y, hadObj = renderObjectives(content, y, entry.questID)
-        if not hadObj then
-            -- No objective text yet. If the async load is still in flight, say so
-            -- (a neutral "Loading...") rather than flashing the definitive "pick it
-            -- up in-game" note for a split second before the objectives land. Only
-            -- once the load has finished (loadResult set) and text still didn't
-            -- arrive do we show the real placeholder.
-            local stillLoading = loadResult[entry.questID] == nil
-                or objectivePoll == entry.questID
-            y = addLine(content, y, {
-                text = stillLoading
-                    and "Loading objectives..."
-                    or  "Objectives become available once you pick this quest up in-game.",
-                color = { 0.6, 0.6, 0.6 }, spacingBefore = 8 })
-        end
-        y = addLine(content, y, { text = "Rewards", color = { 0.82, 0.68, 0.28 }, spacingBefore = 10 })
-        local ry, hadRewards = renderRewards(content, y, entry.questID)
-        y = ry
-        if not hadRewards then
-            y = addLine(content, y, { text = "No rewards listed for this quest.",
-                                      color = { 0.6, 0.6, 0.6 }, spacingBefore = 4 })
-        end
     else
-        -- Not cached. Prefer harvested data; otherwise wait for the async load.
-        local bakedY = renderBaked(content, y, entry.questID)
-        if bakedY then
-            y = bakedY
-        elseif loadResult[entry.questID] ~= nil then
-            -- Load finished but HaveQuestRewardData is still false. That flag can
-            -- be unreliable, so try the live API anyway (it often returns the
-            -- objectives, and sometimes rewards). Fall back to a clear note rather
-            -- than looping on "Loading..." forever.
-            local hadObjectives
-            y, hadObjectives = renderObjectives(content, y, entry.questID)
-            local ry, hadRewards = renderRewards(content, y, entry.questID)
-            y = ry
-            if not hadRewards then
-                y = addLine(content, y, {
-                    text = hadObjectives
-                        and "Rewards become available once you pick this quest up in-game."
-                        or  "No reward or objective details are available yet. Pick it up "
-                            .. "in-game (or harvest it) to load the full details.",
-                    color = { 0.55, 0.55, 0.6 }, spacingBefore = 8 })
-            end
-        else
-            -- Still waiting on the server; requestData() will re-render on arrival.
-            y = addLine(content, y, { text = "Loading details...",
-                                      color = { 0.7, 0.7, 0.7 }, spacingBefore = 8 })
-        end
+        -- Prefer Blizzard's live reward/objective data (icons + quality) over the
+        -- icon-less baked/wiki fallback, upgrading as the async load lands.
+        y = renderQuestBody(content, y, entry.questID)
     end
 
     content:SetHeight(math.max(y, 10))

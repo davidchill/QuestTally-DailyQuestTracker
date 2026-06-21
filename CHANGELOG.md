@@ -2,6 +2,66 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.5.1] - 2026-06-20
+
+A **detail-panel & rewards** release. The detail panel now shows **reputation and
+honor rewards** — sourced first-party from Blizzard — and renders live reward data
+(with item icons) in preference to baked text. Several layout bugs are fixed, and
+the reputation/honor data was backfilled across the whole catalog.
+
+### Added
+- **Reputation rewards.** The detail panel now shows a **Reputation** section.
+  *Major (renown) factions* — Dragonflight/War Within/Midnight, e.g. *Flame's
+  Radiance* — are read **live** from the in-game API
+  (`C_QuestLog.GetQuestLogMajorFactionReputationRewards`); *classic factions* —
+  which the in-game API does **not** expose — fall back to data baked from
+  Blizzard's Game Data API (`rewards.reputations[]`). Rendered as `+N Faction`,
+  one line per faction.
+- **Honor rewards.** PvP dailies now show an **Honor** line. Honor reads live from
+  `GetQuestLogRewardHonor` and is also baked from the Game Data API; honor that the
+  old wiki data had buried inside reward/reputation strings (e.g. `"209 honor"`) is
+  now salvaged onto the proper Honor line.
+
+### Changed
+- **Live rewards preferred (with icons).** The panel now renders Blizzard's **live**
+  reward data — which carries item **icons and quality colors** — in preference to
+  the icon-less baked/wiki text, upgrading automatically the moment the async load
+  lands. Each section (objectives / rewards / reputation) falls back to baked data
+  independently, so nothing is blank on first paint.
+- **Quest rows indent to their parent.** Nested quests are now inset one step past
+  their section header, so a zone's quests sit under that zone (and sub-zone quests
+  under the sub-zone) instead of lining up with the expansion above them.
+
+### Fixed
+- **Detail-panel layout.** Removed a misplaced `Details:` header that rendered
+  *below* the giver/description, and a **duplicate `Rewards` header** (the section
+  showed "Rewards" then "Rewards:"). Reward sub-sections are now consistent.
+- **Reputation/honor no longer shadowed.** Reputation is resolved across **all**
+  baked sources (`bestReputation`), so a cached live-harvested description no longer
+  hides the reputation that lives in the wiki detail table.
+
+### Data
+- **Reputation + honor backfilled from Blizzard's Game Data API** across the whole
+  catalog: **942** quests gained clean structured reputation (`rep={{n,v},…}`),
+  **40** major-faction strings were preserved as live-fallbacks, **2** honor values
+  were baked, and **173 stub entries** were added for tracked quests that had rep in
+  Blizzard's data but no detail entry — so every tracked daily/weekly that grants
+  reputation now shows it. The 70 remaining un-cached quests were fetched to
+  complete the cache.
+- **De-duplicated `WikiDetails.lua`.** Removed **15** quest IDs that were defined
+  twice (faction cross-contamination, patch-update drift such as Cairne → **Baine**
+  Bloodhoof, and a few genuinely different quests mis-keyed to one ID). Each was
+  adjudicated against Blizzard's canonical API data; the catalog now has no
+  duplicate IDs.
+
+### Dev / tooling
+- The Blizzard Game Data API credentials now live in `_generator/.env` (gitignored,
+  auto-loaded by `load-env.js`), so the API tooling runs without re-exporting them.
+  Added `backfill-reputation.js`. Also corrected a long-standing bug in the
+  generator's `normalize()` that read reputation at the wrong JSON path
+  (`reward_reputation.faction.name` instead of `reward.name`) — which is why
+  reputation had never been baked despite the API providing it all along.
+
 ## [0.5.0] - 2026-06-20
 
 A **data-integrity & feature** release. A full multi-source verification of the

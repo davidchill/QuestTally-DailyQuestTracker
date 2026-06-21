@@ -369,9 +369,11 @@ local function emitZoneWithSubzones(display, opts)
         end
     end
 
-    -- Direct quests first, then sub-zone sub-sections (alphabetical).
+    -- Direct quests first, then sub-zone sub-sections (alphabetical). `depth`
+    -- carries the parent section's level so renderDisplay can inset each row one
+    -- step past its header (a zone at level 2 in the All view, level 1 in Browse).
     table.sort(direct, sortEntries)
-    for _, e in ipairs(direct) do display[#display+1] = { type = "quest", entry = e } end
+    for _, e in ipairs(direct) do display[#display+1] = { type = "quest", entry = e, depth = opts.level } end
     table.sort(subNames)
     for _, sz in ipairs(subNames) do
         local list = subGroups[sz]
@@ -384,9 +386,9 @@ local function emitZoneWithSubzones(display, opts)
             color = opts.color, key = key, collapsed = szCollapsed,
         }
         if not szCollapsed then
-            -- subZoneDepth indents these rows one step in renderDisplay, so they
-            -- read as belonging to the sub-zone rather than the parent zone.
-            for _, e in ipairs(list) do display[#display+1] = { type = "quest", entry = e, subZoneDepth = 1 } end
+            -- One level deeper than the parent zone, so these rows read as
+            -- belonging to the sub-zone rather than the zone above it.
+            for _, e in ipairs(list) do display[#display+1] = { type = "quest", entry = e, depth = opts.level + 1 } end
         end
     end
 end
@@ -1625,10 +1627,12 @@ local function renderDisplay(display)
             row.headerTop:Hide(); row.headerBot:Hide()
             row.dot:Show()
 
-            -- Indent rows that belong to a sub-zone so they sit under its header
-            -- rather than lining up with the parent zone's quests. Re-anchored every
-            -- render because rows are pooled (a reused row may have been indented).
-            local qIndent = (item.subZoneDepth or 0) * SUBSECTION_INDENT
+            -- Inset each quest one step past its parent section's header so it
+            -- nests under that header instead of lining up with a shallower one.
+            -- `depth` is the parent section's level (1 in Browse/Current Zone, 2+
+            -- under a zone in the All view). Re-anchored every render because rows
+            -- are pooled (a reused row may carry a different indent).
+            local qIndent = (item.depth or 1) * SUBSECTION_INDENT
             row.dot:ClearAllPoints()
             row.dot:SetPoint("LEFT", 12 + qIndent, 0)
 

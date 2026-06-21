@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.5.0** — built and tested against Retail patch **12.0.x**.
+> **Version 0.5.1** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~2,030 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source verified) plus **~3,600 world quests**
 > (Legion → Midnight) from first-party sources.
@@ -61,8 +61,11 @@ available, tracking completion, and helping you finish them, organized by
   installed, **Shift+Left-click** a quest to drop a TomTom waypoint (with the arrow)
   at its giver. Works fully without TomTom.
 - **Quest details — baked in.** Click a quest to see its **rewards** (money,
-  items, currencies), **objectives**, **description**, and **giver + location** —
-  even for quests you haven't picked up.
+  items, currencies, **reputation**, and **honor**), **objectives**, **description**,
+  and **giver + location** — even for quests you haven't picked up. When you've
+  loaded a quest, Blizzard's **live** reward data (with item **icons** and quality
+  colors) is shown; otherwise the baked first-party data fills in. Reputation comes
+  live for **renown** factions and baked from Blizzard's API for classic ones.
 - **Search by location.** Three tabs: **Current Zone** *(default)* · **All**
   (everything by expansion) · **Browse** (pick a Continent → Zone).
 - **Faction-aware.** Only your character's faction's dailies are shown.
@@ -110,8 +113,10 @@ entry up with real-time status:
 
 1. **Daily catalog (the wiki).** `Core/ChecklistData.lua` ships **~1,460 dailies
    across every expansion** — with real quest IDs, zones, and givers — and
-   `Core/WikiDetails.lua` ships their rewards, objectives, descriptions, and giver
-   coordinates. Both are imported from warcraft.wiki.gg (CC BY-SA).
+   `Core/WikiDetails.lua` ships their rewards, **reputation**, **honor**, objectives,
+   descriptions, and giver coordinates. The reputation and honor values are baked
+   first-party from Blizzard's Game Data API; everything else is imported from
+   warcraft.wiki.gg (CC BY-SA).
 2. **Gap-fill + corrections (Blizzard Game Data API).** `Core/ChecklistDataExtra.lua`
    adds **~570 more dailies & weeklies** the wiki list missed (originally found by
    sweeping the official API, then **verified against live Wowhead + the community
@@ -160,8 +165,9 @@ Either way, the data is baked and shipped, so end users just install the addon.
   only a live harvest can resolve their zone).
 - Fill in world-quest rewards via periodic `Sweep` (inactive WQs don't stream
   reward data until live).
-- Extend the API enrichment to **rewards/currencies** (descriptions and zones are
-  done as of 0.4.0).
+- Extend the API enrichment to **item rewards/currencies** (descriptions and zones
+  done in 0.4.0; **reputation and honor** done in 0.5.1 — item rewards still rely on
+  live data + the harvest).
 - World-map and minimap pins for daily turn-ins and objectives.
 - Live-ticking reset countdown (currently updates on quest events, not every second).
 
@@ -176,7 +182,7 @@ QuestTally/
 │   ├── QuestData.lua        Optional expansion-keyed catalog of quest IDs
 │   ├── ChecklistData.lua    Daily master list from warcraft.wiki (id/zone/giver)
 │   ├── ChecklistDataExtra.lua  API-found dailies/weeklies the wiki missed (~570; gaps + races)
-│   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords (by id)
+│   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords + API-baked reputation/honor (by id)
 │   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
 │   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
@@ -187,7 +193,7 @@ QuestTally/
 │   └── Core.lua             Events, init, slash commands
 ├── UI/
 │   ├── MainFrame.lua        The tracker window (3 modes, dark theme + DT.UI.Skin)
-│   ├── DetailPanel.lua      Per-quest details pane, right side (rewards/objectives/desc)
+│   ├── DetailPanel.lua      Per-quest details pane, right side (rewards/reputation/honor/objectives/desc; live-preferred)
 │   └── PinnedPanel.lua      Pinned-quests pane, left side (middle-clicked favourites)
 ├── Media/
 │   └── QuestTally-Logo.tga  Title-bar logo (baked from the first-party art)
