@@ -2,6 +2,55 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.5.0] - 2026-06-20
+
+A **data-integrity & feature** release. A full multi-source verification of the
+quest catalog removed one-time quests the retired harvester had wrongly ingested
+as dailies, and the tracker now **distinguishes Weekly quests from Dailies**.
+
+### Added
+- **Weekly quest support.** Quests carry a new `freq` field (`"daily"` by default,
+  or `"weekly"`), and weekly quests now show a distinct **gold "Weekly" tag** on
+  their row (taking priority over the kind tag) so the daily-vs-weekly split reads
+  at a glance. A full-catalog wiki pass identified the **6 weekly quests** in the
+  catalog (incl. *Defender of the Flame* and the Siren Isle weeklies) and stamped
+  them; everything else is daily. The reset countdown is now **frequency-aware**
+  (`GetSecondsUntilReset("weekly")` returns the weekly reset). Completion tracking
+  needed no new logic — the game resets weeklies on the weekly timer natively and
+  the addon reads completion live.
+
+### Changed
+- **Multi-source daily/weekly verification.** Establishing whether a quest is
+  actually a repeatable daily/weekly turned out to need **three live sources**, not
+  one: the Wowhead tooltip endpoint (`nether.wowhead.com`) plus the two community
+  wikis (**warcraft.wiki.gg** and **wowpedia.fandom.com**, read as raw wikitext).
+  No single source is complete — the Blizzard Game Data API's `is_daily` flag
+  proved **unreliable** (it both misses long-standing dailies and carried stale
+  pre-launch/PTR flags), and the Wowhead tooltip under-reports modern world-state
+  "soft" dailies. A quest is kept when **any** id-matched source confirms it as
+  daily/weekly. The full ~2,030-quest catalog was re-checked this way.
+
+### Removed
+- **One-time quests the harvester mis-ingested as dailies.** Three verified passes
+  removed **91 non-daily entries** from `ChecklistDataExtra.lua` (665 → 574): the
+  36-quest **"Saltheril's Haven"** Midnight storyline (the bug that kicked this
+  off — *A Bit of Bloodthistle* et al.), then **18**, then **37** more confirmed
+  one-time quests (Dragonflight "Specialized Secrets" profession quests, MoP "Work
+  Order" / "Aid the …" entries, Zereth Mortis and Dragonbane Keep campaign quests).
+  Each removal was triangulated against the live sources above; the detailed list
+  is retained for review. Orphaned descriptions were pruned from `ApiDetails.lua`
+  to match.
+- **The retired generator toolchain.** The dead catalog-*generation* scripts
+  (`build-checklist-from-wiki.js`, `build-gap-entries.js`, `build-from-harvest.js`,
+  `build-chains.js`, and other one-offs) and their wiki/gap caches were deleted.
+  The API/DB2 **verification** tooling and the cached Blizzard API responses are
+  preserved. (Dev-only; never part of the shipped addon.)
+
+### Fixed
+- **Story quests no longer appear as dailies.** *A Bit of Bloodthistle* and the
+  rest of the Midnight Eversong Woods "Saltheril's Haven" chain — one-time campaign
+  quests — were incorrectly listed in the daily tracker and are now gone.
+
 ## [0.4.6] - 2026-06-19
 
 A **bug-fix** release that finishes off the detail-panel objectives loading the

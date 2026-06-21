@@ -12,11 +12,7 @@ DT.ChecklistData.entries = DT.ChecklistData.entries or {}
 local e = DT.ChecklistData.entries
 e[#e+1]={id=55742,rawTitle="Bundle of Corroded Parts",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
 e[#e+1]={id=55213,rawTitle="Energy Cells for Everyone",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
-e[#e+1]={id=56116,rawTitle="Even More Recycling",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
-e[#e+1]={id=55815,rawTitle="Other Interests",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
 e[#e+1]={id=56746,rawTitle="Our Direct Line",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
-e[#e+1]={id=56335,rawTitle="Wanna Charge? Gotta Pay!",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
-e[#e+1]={id=56324,rawTitle="Your First Charge Ain't Free!",expansion="BFA",type="Faction",side="Both",category="Mechagon",zoneName="Mechagon",src="api"}
 e[#e+1]={id=50801,rawTitle="A Nose for Ptrouble",expansion="BFA",type="Faction",side="Horde",category="Zuldazar",zoneName="Zuldazar",src="api"}
 e[#e+1]={id=50930,rawTitle="Falling With Style",expansion="BFA",type="Faction",side="Horde",category="Zuldazar",zoneName="Zuldazar",src="api"}
 e[#e+1]={id=51146,rawTitle="Kua'fon's Day Off",expansion="BFA",type="Faction",side="Horde",category="Zuldazar",zoneName="Zuldazar",src="api"}
@@ -149,17 +145,6 @@ e[#e+1]={id=75803,rawTitle="River Rapids Route - Challenge",expansion="DRAGONFLI
 e[#e+1]={id=72807,rawTitle="River Rapids Route - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75804,rawTitle="River Rapids Route - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=70352,rawTitle="Scaling Ever Higher",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70183,rawTitle="Specialized Secrets: Alchemy",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70184,rawTitle="Specialized Secrets: Blacksmithing",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70186,rawTitle="Specialized Secrets: Enchanting",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70187,rawTitle="Specialized Secrets: Engineering",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70190,rawTitle="Specialized Secrets: Herbalism",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70188,rawTitle="Specialized Secrets: Inscription",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70189,rawTitle="Specialized Secrets: Jewelcrafting",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70191,rawTitle="Specialized Secrets: Leatherworking",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70192,rawTitle="Specialized Secrets: Mining",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70193,rawTitle="Specialized Secrets: Skinning",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70194,rawTitle="Specialized Secrets: Tailoring",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66835,rawTitle="Sundapple Copse Circuit",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66836,rawTitle="Sundapple Copse Circuit - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75793,rawTitle="Sundapple Copse Circuit - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
@@ -225,17 +210,12 @@ e[#e+1]={id=75822,rawTitle="Tyrhold Trial - Challenge",expansion="DRAGONFLIGHT",
 e[#e+1]={id=72792,rawTitle="Tyrhold Trial - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=75823,rawTitle="Tyrhold Trial - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=77784,rawTitle="Tyrhold Trial - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Thaldraszus",zoneName="Thaldraszus",src="api"}
-e[#e+1]={id=72586,rawTitle="Additional Academic Acquisitions",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Azure Span",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=67741,rawTitle="Archive Ambit",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=67742,rawTitle="Archive Ambit - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75816,rawTitle="Archive Ambit - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=72797,rawTitle="Archive Ambit - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75817,rawTitle="Archive Ambit - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=72587,rawTitle="Astonishing Academic Acquisitions",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Azure Span",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=70542,rawTitle="Azure Span Rally",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Azure Span",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=67002,rawTitle="Azure Span Slalom",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=67003,rawTitle="Azure Span Slalom - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=75807,rawTitle="Azure Span Slalom - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=72799,rawTitle="Azure Span Slalom - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75808,rawTitle="Azure Span Slalom - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=66946,rawTitle="Azure Span Sprint",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
@@ -296,21 +276,9 @@ e[#e+1]={id=76529,rawTitle="Krazzworks Klash - Reverse",expansion="DRAGONFLIGHT"
 e[#e+1]={id=76364,rawTitle="Twilight Terror",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76365,rawTitle="Twilight Terror - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76366,rawTitle="Twilight Terror - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
-e[#e+1]={id=77284,rawTitle="A Chilling Ascent",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77653,rawTitle="A Key Story",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77865,rawTitle="A Proper Burial",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77165,rawTitle="A Secretive Contact",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=77897,rawTitle="A Special Book",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77953,rawTitle="A Sphere in Danger",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=77957,rawTitle="A Treacherous Race",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77276,rawTitle="An Inside Job?",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77303,rawTitle="Idol Searching",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=76509,rawTitle="Into the Sands",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77829,rawTitle="Reforging a Legend",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=76735,rawTitle="Rise in Relic Theft",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77281,rawTitle="Securing an Artifact",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=69937,rawTitle="Sylvan Succor",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
-e[#e+1]={id=77928,rawTitle="They Are Always Listening",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=72384,rawTitle="Valdrakken Tour",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=75310,rawTitle="Winter Wander",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Winterspring",src="api"}
 e[#e+1]={id=75311,rawTitle="Winter Wander - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Winterspring",src="api"}
@@ -354,13 +322,9 @@ e[#e+1]={id=75983,rawTitle="Sulfur Sprint - Reverse Challenge",expansion="DRAGON
 e[#e+1]={id=64852,rawTitle="Aeon Matrix",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=64860,rawTitle="Aetheric Lattice",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=65326,rawTitle="Circle of Strife",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
-e[#e+1]={id=65255,rawTitle="Forcing the Cycle",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=64592,rawTitle="Historic Protection",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
-e[#e+1]={id=64579,rawTitle="Hollow Efforts",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
-e[#e+1]={id=64717,rawTitle="Materials of Creation",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=65325,rawTitle="Motes of Knowledge",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=65362,rawTitle="Not of the Body",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
-e[#e+1]={id=64785,rawTitle="Overgrown Story",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=65096,rawTitle="Your Death Or Mine",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zereth Mortis",zoneName="Zereth Mortis",src="api"}
 e[#e+1]={id=39651,rawTitle="Grumpus",expansion="LEGION",type="Faction",side="Both",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
 e[#e+1]={id=39649,rawTitle="Menacing Grumplings",expansion="LEGION",type="Faction",side="Both",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
@@ -371,52 +335,11 @@ e[#e+1]={id=39532,rawTitle="Bringing Down the Iron Horde",expansion="LEGION",typ
 e[#e+1]={id=39519,rawTitle="Demonslayer of Tanaan",expansion="LEGION",type="Faction",side="Horde",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
 e[#e+1]={id=39529,rawTitle="Tooth and Claw",expansion="LEGION",type="Faction",side="Horde",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
 e[#e+1]={id=39433,rawTitle="Unseen Influence",expansion="LEGION",type="Faction",side="Both",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
-e[#e+1]={id=91999,rawTitle="A Bit of Bloodthistle",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91991,rawTitle="A Little Errand",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92003,rawTitle="Artisanal Replicas",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92007,rawTitle="Begged, Borrowed, or Stolen",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91988,rawTitle="Brightwing Conservation",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92000,rawTitle="Bring the Ruckus",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91979,rawTitle="Chop It Down",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92002,rawTitle="Dangerous Showpieces",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91993,rawTitle="Diminutive Demand",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91996,rawTitle="Fit for a Magister",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91989,rawTitle="Ghostland Peppers",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91971,rawTitle="Hitting the Hammer",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91972,rawTitle="Hold the Watch",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=89277,rawTitle="Illuminate the Space",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91977,rawTitle="Less Lawless",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=89276,rawTitle="Light Snacks",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91976,rawTitle="Lightbloom Dimmed",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91983,rawTitle="Lovely Plumage",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=89278,rawTitle="Minding Our Duty",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91973,rawTitle="Naga Blades",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92001,rawTitle="One Smuggler to Another",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91987,rawTitle="Potted Lashers",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91997,rawTitle="Power Clean",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91986,rawTitle="Put a Little Snap in Their Step",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91994,rawTitle="Pyrepetal Purposes",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92004,rawTitle="Shady Dealings",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91974,rawTitle="Sunfire to the Blade",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91984,rawTitle="Sungrub Silk",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91990,rawTitle="Sunset to Sea",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91978,rawTitle="Taxing the Tideborne",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91975,rawTitle="That's Our Wood",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92005,rawTitle="Throw the Dice",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=92006,rawTitle="We Need a Refill",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91995,rawTitle="What Horrible Magic",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91992,rawTitle="Where Has the Wine Gone?",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
-e[#e+1]={id=91985,rawTitle="Windrunner Memorabilia",expansion="MIDNIGHT",type="Faction",side="Both",category="Eversong Woods",zoneName="Eversong Woods",src="api"}
 e[#e+1]={id=33756,rawTitle="Let's Keep Racing!",expansion="MOP",type="Race",side="Both",category="Skyriding Race",zoneName="Darkmoon Island",src="api"}
-e[#e+1]={id=83795,rawTitle="Aid the Hozen",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",zoneName="Dread Wastes",src="api"}
-e[#e+1]={id=83793,rawTitle="Aid the Jinyu",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",zoneName="Dread Wastes",src="api"}
-e[#e+1]={id=80320,rawTitle="Aid the Klaxxi",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",zoneName="Dread Wastes",src="api"}
 e[#e+1]={id=80443,rawTitle="Aid the Kirin Tor Offensive",expansion="MOP",type="Faction",side="Alliance",category="Isle of Thunder",zoneName="Isle of Thunder",src="api"}
 e[#e+1]={id=80442,rawTitle="Aid the Sunreavers Onslaught",expansion="MOP",type="Faction",side="Horde",category="Isle of Thunder",zoneName="Isle of Thunder",src="api"}
 e[#e+1]={id=32720,rawTitle="Choose Your Assignment",expansion="MOP",type="Faction",side="Horde",category="Isle of Thunder",zoneName="Isle of Thunder",src="api"}
 e[#e+1]={id=32205,rawTitle="Gather Scout Reports",expansion="MOP",type="Faction",side="Horde",category="Isle of Thunder",zoneName="Isle of Thunder",src="api"}
-e[#e+1]={id=80439,rawTitle="Aid the Alliance",expansion="MOP",type="Faction",side="Alliance",category="Krasarang Wilds",zoneName="Krasarang Wilds",src="api"}
-e[#e+1]={id=80444,rawTitle="Aid the Anglers",expansion="MOP",type="Faction",side="Both",category="Krasarang Wilds",zoneName="Krasarang Wilds",src="api"}
 e[#e+1]={id=80433,rawTitle="Aid the August Celestials",expansion="MOP",type="Faction",side="Both",category="Krasarang Wilds",zoneName="Krasarang Wilds",src="api"}
 e[#e+1]={id=80438,rawTitle="Aid the Horde",expansion="MOP",type="Faction",side="Horde",category="Krasarang Wilds",zoneName="Krasarang Wilds",src="api"}
 e[#e+1]={id=31378,rawTitle="Challenge At The Temple of the Red Crane",expansion="MOP",type="Faction",side="Alliance",category="Krasarang Wilds",zoneName="Krasarang Wilds",src="api"}
@@ -426,9 +349,7 @@ e[#e+1]={id=80441,rawTitle="Aid the Order of the Cloud Serpent",expansion="MOP",
 e[#e+1]={id=31376,rawTitle="Attack At The Temple of the Jade Serpent",expansion="MOP",type="Faction",side="Alliance",category="The Jade Forest",zoneName="The Jade Forest",src="api"}
 e[#e+1]={id=30442,rawTitle="Blanche's Boomer Brew",expansion="MOP",type="Faction",side="Both",category="The Jade Forest",zoneName="The Jade Forest",src="api"}
 e[#e+1]={id=33374,rawTitle="Path of the Mistwalker",expansion="MOP",type="Faction",side="Both",category="Timeless Isle",zoneName="Timeless Isle",src="api"}
-e[#e+1]={id=33334,rawTitle="Strong Enough To Survive",expansion="MOP",type="Faction",side="Both",category="Timeless Isle",zoneName="Timeless Isle",src="api"}
-e[#e+1]={id=80427,rawTitle="Aid the Golden Lotus",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes",src="api"}
-e[#e+1]={id=80426,rawTitle="Aid the Shado-Pan",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes",src="api"}
+e[#e+1]={id=33334,rawTitle="Strong Enough To Survive",expansion="MOP",type="Faction",side="Both",category="Timeless Isle",zoneName="Timeless Isle",src="api",freq="weekly"}
 e[#e+1]={id=31044,rawTitle="Bronze Claws",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes",src="api"}
 e[#e+1]={id=31382,rawTitle="Defense At Niuzao Temple",expansion="MOP",type="Faction",side="Alliance",category="Townlong Steppes",zoneName="Townlong Steppes",src="api"}
 e[#e+1]={id=31048,rawTitle="Grave Consequences",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes",src="api"}
@@ -440,16 +361,7 @@ e[#e+1]={id=30414,rawTitle="A Dish for Haohan",expansion="MOP",type="Faction",si
 e[#e+1]={id=30439,rawTitle="A Dish for Jogu",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
 e[#e+1]={id=30396,rawTitle="A Dish for Old Hillpaw",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
 e[#e+1]={id=30408,rawTitle="A Dish for Sho",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32642,rawTitle="Work Order: Dominance Offensive I",expansion="MOP",type="Faction",side="Horde",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32647,rawTitle="Work Order: Golden Lotus I",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32944,rawTitle="Work Order: Kirin Tor Offensive I",expansion="MOP",type="Faction",side="Alliance",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32645,rawTitle="Work Order: Operation: Shieldwall I",expansion="MOP",type="Faction",side="Alliance",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32649,rawTitle="Work Order: Shado-Pan I",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32942,rawTitle="Work Order: Sunreaver Onslaught I",expansion="MOP",type="Faction",side="Horde",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32653,rawTitle="Work Order: The August Celestials I",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
-e[#e+1]={id=32658,rawTitle="Work Order: The Klaxxi I",expansion="MOP",type="Faction",side="Both",category="Valley of the Four Winds",zoneName="Valley of the Four Winds",src="api"}
 e[#e+1]={id=62606,rawTitle="A Blackthorn Blend",expansion="SHADOWLANDS",type="Faction",side="Both",category="Ardenweald",zoneName="Ardenweald",src="api"}
-e[#e+1]={id=62607,rawTitle="Glittering Gritty Goodness",expansion="SHADOWLANDS",type="Faction",side="Both",category="Ardenweald",zoneName="Ardenweald",src="api"}
 e[#e+1]={id=63964,rawTitle="Broker's Bounty: Grimtalon",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=63792,rawTitle="Broker's Bounty: Nocturnus the Unraveler",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=63791,rawTitle="Broker's Bounty: Valdinar the Curseborn",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
@@ -460,7 +372,6 @@ e[#e+1]={id=63784,rawTitle="Gold's No Object",expansion="SHADOWLANDS",type="Fact
 e[#e+1]={id=63782,rawTitle="Mawsworn Rituals",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=63989,rawTitle="Oozing with Character",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=64194,rawTitle="War Prototype",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
-e[#e+1]={id=57284,rawTitle="Blade of Blades",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",zoneName="Maldraxxus",src="api"}
 e[#e+1]={id=60283,rawTitle="Specter Of War: Visectus",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",zoneName="Maldraxxus",src="api"}
 e[#e+1]={id=11513,rawTitle="Intercepting the Mana Cells",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Exarch Nasuun",zoneName="Shattrath City",src="api"}
 e[#e+1]={id=11875,rawTitle="Gaining the Advantage",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Emissary Mordin",zoneName="Shattrath City",src="api"}
@@ -512,7 +423,7 @@ e[#e+1]={id=78000,rawTitle="Viridescent Venture - Reverse Challenge",expansion="
 e[#e+1]={id=78334,rawTitle="Blackriver Burble",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Grizzly Hills",src="api"}
 e[#e+1]={id=78335,rawTitle="Blackriver Burble - Advanced",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Grizzly Hills",src="api"}
 e[#e+1]={id=78336,rawTitle="Blackriver Burble - Reverse",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Grizzly Hills",src="api"}
-e[#e+1]={id=76588,rawTitle="Defender of the Flame",expansion="TWW",type="Faction",side="Both",category="Hallowfall",zoneName="Hallowfall",src="api"}
+e[#e+1]={id=76588,rawTitle="Defender of the Flame",expansion="TWW",type="Faction",side="Both",category="Hallowfall",zoneName="Hallowfall",src="api",freq="weekly"}
 e[#e+1]={id=80256,rawTitle="Dunelle's Detour",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Hallowfall",src="api"}
 e[#e+1]={id=80265,rawTitle="Dunelle's Detour - Advanced",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Hallowfall",src="api"}
 e[#e+1]={id=80271,rawTitle="Dunelle's Detour - Reverse",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Hallowfall",src="api"}
@@ -544,9 +455,9 @@ e[#e+1]={id=78501,rawTitle="Citadel Sortie - Reverse",expansion="TWW",type="Race
 e[#e+1]={id=78558,rawTitle="Sholazar Spree",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Sholazar Basin",src="api"}
 e[#e+1]={id=78559,rawTitle="Sholazar Spree - Advanced",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Sholazar Basin",src="api"}
 e[#e+1]={id=78560,rawTitle="Sholazar Spree - Reverse",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="Sholazar Basin",src="api"}
-e[#e+1]={id=84432,rawTitle="Longship Landing",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api"}
-e[#e+1]={id=84680,rawTitle="Rock 'n Stone Revival",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api"}
-e[#e+1]={id=84222,rawTitle="Secure the Perimeter",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api"}
+e[#e+1]={id=84432,rawTitle="Longship Landing",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api",freq="weekly"}
+e[#e+1]={id=84680,rawTitle="Rock 'n Stone Revival",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api",freq="weekly"}
+e[#e+1]={id=84222,rawTitle="Secure the Perimeter",expansion="TWW",type="Faction",side="Both",category="Siren Isle",zoneName="Siren Isle",src="api",freq="weekly"}
 e[#e+1]={id=78389,rawTitle="The Makers' Marathon",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="The Storm Peaks",src="api"}
 e[#e+1]={id=78390,rawTitle="The Makers' Marathon - Advanced",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="The Storm Peaks",src="api"}
 e[#e+1]={id=78391,rawTitle="The Makers' Marathon - Reverse",expansion="TWW",type="Race",side="Both",category="Skyriding Race",zoneName="The Storm Peaks",src="api"}
@@ -559,7 +470,6 @@ e[#e+1]={id=78349,rawTitle="Zul'Drak Zephyr - Reverse",expansion="TWW",type="Rac
 e[#e+1]={id=37868,rawTitle="More Big Racing!",expansion="WOD",type="Race",side="Both",category="Skyriding Race",zoneName="Darkmoon Island",src="api"}
 e[#e+1]={id=37911,rawTitle="The Real Big Race",expansion="WOD",type="Race",side="Both",category="Skyriding Race",zoneName="Darkmoon Island",src="api"}
 e[#e+1]={id=37910,rawTitle="The Real Race",expansion="WOD",type="Race",side="Both",category="Skyriding Race",zoneName="Darkmoon Island",src="api"}
-e[#e+1]={id=36912,rawTitle="Capturing a Clefthoof",expansion="WOD",type="Faction",side="Horde",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
 e[#e+1]={id=37919,rawTitle="Gronnsbane: The Blessing of Beasts",expansion="WOD",type="Faction",side="Alliance",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
 e[#e+1]={id=37917,rawTitle="Gronnsbane: The Blessing of Fire",expansion="WOD",type="Faction",side="Both",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
 e[#e+1]={id=37918,rawTitle="Gronnsbane: The Blessing of Frost",expansion="WOD",type="Faction",side="Both",category="Frostfire Ridge",zoneName="Frostfire Ridge",src="api"}
@@ -600,7 +510,7 @@ e[#e+1]={id=38250,rawTitle="Assault on the Ruins of Kra'nak",expansion="WOD",typ
 e[#e+1]={id=37968,rawTitle="Assault on the Temple of Sha'naar",expansion="WOD",type="Faction",side="Both",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
 e[#e+1]={id=38046,rawTitle="Battle At The Iron Front",expansion="WOD",type="Faction",side="Alliance",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
 e[#e+1]={id=38044,rawTitle="Bleeding the Bleeding Hollow",expansion="WOD",type="Faction",side="Both",category="Tanaan Jungle",zoneName="Tanaan Jungle",src="api"}
-e[#e+1]={id=46049,rawTitle="A Gift From Your Tadpole",expansion="WRATH",type="Faction",side="Both",category="Borean Tundra",zoneName="Borean Tundra",src="api"}
+e[#e+1]={id=46049,rawTitle="A Gift From Your Tadpole",expansion="WRATH",type="Faction",side="Both",category="Borean Tundra",zoneName="Borean Tundra",src="api",freq="weekly"}
 e[#e+1]={id=13333,rawTitle="Capture More Dispatches",expansion="WRATH",type="Faction",side="Alliance",category="Icecrown",zoneName="Icecrown",src="api"}
 e[#e+1]={id=13281,rawTitle="Neutralizing the Plague",expansion="WRATH",type="Faction",side="Horde",category="Icecrown",zoneName="Icecrown",src="api"}
 e[#e+1]={id=12582,rawTitle="Frenzyheart Champion",expansion="WRATH",type="Faction",side="Both",category="Sholazar Basin",zoneName="Sholazar Basin",src="api"}
@@ -661,7 +571,6 @@ e[#e+1]={id=14051,rawTitle="Don't Forget The Stuffing!",expansion="WRATH",type="
 e[#e+1]={id=14053,rawTitle="We're Out of Cranberry Chutney Again?",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
 e[#e+1]={id=14054,rawTitle="Easy As Pie",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
 e[#e+1]={id=14055,rawTitle="She Says Potato",expansion="WRATH",type="Event",side="Both",category="Pilgrim's Bounty",zoneName="Pilgrim's Bounty",src="api"}
-e[#e+1]={id=26094,rawTitle="Striking Back",expansion="CATA",type="Faction",side="Alliance",category="Dun Morogh",zoneName="Dun Morogh",src="api"}
 e[#e+1]={id=26153,rawTitle="Penny's Pumpkin Pancakes",expansion="CATA",type="Event",side="Both",category="Hallow's End",zoneName="Hallow's End",src="api"}
 e[#e+1]={id=26414,rawTitle="Hitting a Walleye",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}
 e[#e+1]={id=26420,rawTitle="Diggin' For Worms",expansion="CATA",type="Profession",side="Alliance",category="Fishing",giver="Catherine Leland",zoneName="Stormwind City",src="api"}

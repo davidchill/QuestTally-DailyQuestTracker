@@ -5,10 +5,10 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.4.6** — built and tested against Retail patch **12.0.x**.
-> Catalog covers **~2,000 dailies across every expansion** (wiki + Blizzard-API
-> gap-fill) plus **~3,600 world quests** (Legion → Midnight) from first-party
-> sources.
+> **Version 0.5.0** — built and tested against Retail patch **12.0.x**.
+> Catalog covers **~2,030 dailies & weeklies across every expansion** (wiki +
+> Blizzard-API gap-fill, multi-source verified) plus **~3,600 world quests**
+> (Legion → Midnight) from first-party sources.
 >
 > *Formerly named **DailyGrind**. The addon was renamed to QuestTally in 0.1.1;
 > the old slash commands (`/grind`, `/ddt`) are replaced by **`/qt`**.*
@@ -34,6 +34,10 @@ available, tracking completion, and helping you finish them, organized by
 - **Quest-kind tags.** A small inline badge labels each quest's kind — **Prof**,
   **Pet**, **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**,
   **Garrison** — so it groups by zone yet stays identifiable at a glance.
+- **Daily vs Weekly.** Weekly quests are marked with a distinct **gold "Weekly"
+  tag** so they're easy to tell apart from dailies, and the reset countdown is
+  frequency-aware. Completion stays accurate automatically — the game resets
+  weeklies on the weekly timer and the addon reads your status live.
 - **Live status, always accurate.** Reads your real quest log and completion
   flags — never stale. Each quest is color-coded:
   - 🟡 **Available** · 🔵 **In Progress** · 🟢 **Ready to Turn In** ·
@@ -109,11 +113,11 @@ entry up with real-time status:
    `Core/WikiDetails.lua` ships their rewards, objectives, descriptions, and giver
    coordinates. Both are imported from warcraft.wiki.gg (CC BY-SA).
 2. **Gap-fill + corrections (Blizzard Game Data API).** `Core/ChecklistDataExtra.lua`
-   adds **~600 more dailies** the wiki list missed (found by sweeping the official
-   API for `is_daily` quests, then reviewed to drop one-time quests and fix
-   expansion tags), and the same API corrected **452 zones** in the wiki
-   list. `Core/ApiDetails.lua` ships **~2,100 quest descriptions** so nearly every
-   tracked daily (99.7%) shows its flavor text.
+   adds **~570 more dailies & weeklies** the wiki list missed (originally found by
+   sweeping the official API, then **verified against live Wowhead + the community
+   wikis** and pruned of one-time quests), and the same API corrected **452 zones**
+   in the wiki list. `Core/ApiDetails.lua` ships **~2,000 quest descriptions** so
+   nearly every tracked daily shows its flavor text.
 3. **World-quest catalog (Blizzard's database).** `Core/WorldQuestData.lua` ships
    **~3,600 world quests** (Legion → Midnight) — title, expansion, zone — mined
    from Blizzard's own retail client database (DB2, via wago.tools). Hidden by
@@ -126,37 +130,28 @@ entry up with real-time status:
 6. **Live capture.** Talking to a quest giver records its **exact coordinates**
    account-wide, overriding the baked data — so locations sharpen as you play.
 
-### First-party harvesting (developer toolchain)
+### How the catalog is built & maintained (developer notes)
 
 Retail does **not** ship quest titles, the daily flag, or rewards in any static
 file (`Quest`/`QuestSparse` don't exist on retail; `QuestV2` is just an ID
-registry) — that data is streamed to the client on demand. So QuestTally's data
-is generated from the **client itself**:
+registry) — that data is streamed to the client on demand. So the catalog was
+**bootstrapped by a developer toolchain** and is now **hand-maintained**:
 
-- `_generator/build-db2-catalog.js` mines the **world-quest catalog** straight
-  from Blizzard's retail client DB2 (`QuestV2CliTask` + `QuestInfo` +
-  `ContentTuning` + `QuestPOIBlob`) via [wago.tools](https://wago.tools) and bakes
-  `Core/WorldQuestData.lua`. This covers the world-quest era (Legion → Midnight).
-- The in-game **harvester** (`_harvester/Harvester.lua`, kept outside the shipped
-  addon) covers what DB2 can't: regular hub/turn-in dailies (pre-Legion and modern
-  non-WQ), recognized by checklist title-match and read live, plus `C_TaskQuest`
-  sweeps. Drop it back into the addon to run a fresh harvest.
-- `_generator/build-checklist-from-wiki.js` imports the daily-quest master list
-  from warcraft.wiki.gg (CC BY-SA) — real quest IDs, zones, givers, rewards,
-  objectives, descriptions, and giver coordinates — baking `Core/ChecklistData.lua`
-  and `Core/WikiDetails.lua`.
-- `_generator/build-from-harvest.js` converts the harvested SavedVariables into
-  the shipped `Core/QuestRewards.lua` (merging Alliance + Horde passes).
-- `_generator/build-quest-details-from-api.js` queries Blizzard's official **Game
-  Data API** to **audit** our titles/zones (`--fix-zones` rewrote 452 zones) and
-  **find gaps** (`--find-gaps` sweeps each zone for `is_daily` quests we lack).
-  `build-gap-entries.js` turns those gaps into `Core/ChecklistDataExtra.lua`, and
-  `build-api-details.js` bakes their descriptions into `Core/ApiDetails.lua`.
-  (Needs a free Battle.net API client; build-time only — addons can't call the web.)
+- **Originally generated** from four first-party sources — the community wiki
+  (warcraft.wiki.gg, CC BY-SA) for dailies, Blizzard's client DB2 (via
+  [wago.tools](https://wago.tools)) for world quests, an in-game harvester for live
+  rewards, and Blizzard's official **Game Data API** for zone audits, gap-fills, and
+  descriptions. That catalog-*generation* toolchain has since been **retired and its
+  scripts removed**; only the API/DB2 **verification** tooling is kept (dev-only,
+  outside the shipped addon).
+- **Now maintained by hand and verified against three live sources.** Whether a
+  quest is a genuine repeatable daily/weekly is confirmed by cross-checking the
+  **Wowhead tooltip endpoint** and the two community wikis (**warcraft.wiki.gg** +
+  **wowpedia.fandom.com**). No single source is complete, so a quest is kept only
+  when an id-matched source confirms it — this is how the one-time story/profession
+  quests were found and removed in 0.5.0.
 
-This is a **developer workflow**: the data is baked and shipped, so end users
-just install the addon. Re-running the generators against a newer client build
-or wiki refreshes the catalogs.
+Either way, the data is baked and shipped, so end users just install the addon.
 
 ## Roadmap
 
@@ -180,7 +175,7 @@ QuestTally/
 │   ├── Database.lua         SavedVariables, defaults, learned-quest store
 │   ├── QuestData.lua        Optional expansion-keyed catalog of quest IDs
 │   ├── ChecklistData.lua    Daily master list from warcraft.wiki (id/zone/giver)
-│   ├── ChecklistDataExtra.lua  API-found dailies the wiki missed (~650; gaps + races)
+│   ├── ChecklistDataExtra.lua  API-found dailies/weeklies the wiki missed (~570; gaps + races)
 │   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords (by id)
 │   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
 │   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
@@ -201,10 +196,11 @@ QuestTally/
     └── TomTom.lua           Optional TomTom waypoint integration (no-op without TomTom)
 ```
 
-The `_generator/` folder (Node tools that bake harvested data into shipped Lua)
-and `_harvester/` folder (the in-game harvester files, kept out of the shipped
-addon) sit alongside this addon folder. Both are dev-only and not part of the
-installed addon.
+The `_generator/` folder (now just the Blizzard API / DB2 **verification** tooling
+and cached API responses — the old generation scripts were removed in 0.5.0) and
+`_harvester/` folder (the in-game harvester files, kept out of the shipped addon)
+sit alongside this addon folder. Both are dev-only and not part of the installed
+addon.
 
 ## Credits
 

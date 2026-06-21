@@ -170,8 +170,13 @@ function DT.QuestLog:SetGiverWaypoint(giver)
     return false
 end
 
--- Public: seconds until the next daily reset (or nil if unavailable).
-function DT.QuestLog:GetSecondsUntilReset()
+-- Public: seconds until the next reset (or nil if unavailable). Pass freq="weekly"
+-- for the weekly reset; anything else (or nil) returns the daily reset. Weeklies
+-- and dailies are reset by the game itself -- we only read the countdown for display.
+function DT.QuestLog:GetSecondsUntilReset(freq)
+    if freq == "weekly" and C_DateAndTime and C_DateAndTime.GetSecondsUntilWeeklyReset then
+        return C_DateAndTime.GetSecondsUntilWeeklyReset()
+    end
     if C_DateAndTime and C_DateAndTime.GetSecondsUntilDailyReset then
         return C_DateAndTime.GetSecondsUntilDailyReset()
     end

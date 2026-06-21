@@ -243,6 +243,10 @@ local SUBGROUP_ACCENT = {
     [SUB_GARRISON]    = { 0.66, 0.58, 0.40 }, -- khaki (garrison / outpost)
 }
 
+-- Weekly quests get a distinct gold tag that takes priority over the kind tag,
+-- so the daily-vs-weekly distinction reads at a glance (weeklies are the minority).
+local WEEKLY_ACCENT = { 0.95, 0.82, 0.40 }
+
 -- Short label drawn on a quest row's inline tag, per kind.
 local SUB_BADGE = {
     [SUB_PROFESSIONS] = "Prof",
@@ -1638,6 +1642,11 @@ local function renderDisplay(display)
             local kind = themedSubgroup(e)
             if kind then
                 tagText, tagColor = SUB_BADGE[kind], SUBGROUP_ACCENT[kind]
+            end
+            -- Weekly takes priority over the kind tag: the daily/weekly split is the
+            -- more salient distinction in a daily tracker, and weeklies are rare.
+            if e.freq == "weekly" then
+                tagText, tagColor = "Weekly", WEEKLY_ACCENT
             end
             local titleAnchor, titleGap, titleWidth = row.dot, 7, CONTENT_WIDTH - 120 - qIndent
             if tagText then
