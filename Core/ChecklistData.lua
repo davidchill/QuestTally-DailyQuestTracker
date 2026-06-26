@@ -590,7 +590,6 @@ e[#e+1]={id=31043,rawTitle="Dark Arts",expansion="MOP",type="Faction",side="Both
 e[#e+1]={id=31046,rawTitle="Little Hatchlings",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Ban Bearheart",zoneName="Townlong Steppes"}
 e[#e+1]={id=31047,rawTitle="Born Free",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",giver="Ban Bearheart",zoneName="Townlong Steppes"}
 e[#e+1]={id=31049,rawTitle="In Sprite Of Everything",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes"}
-e[#e+1]={id=31058,rawTitle="The Funky Monkey Brew",expansion="MOP",type="Faction",side="Both",category="Scenario",giver="Brewmaster Bo",zoneName="Unga Ingoo"}
 e[#e+1]={id=31061,rawTitle="Riding the Storm",expansion="MOP",type="Faction",side="Both",category="Townlong Steppes",zoneName="Townlong Steppes"}
 e[#e+1]={id=31109,rawTitle="Culling the Swarm",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",giver="Kil'ruk the Wind-Reaver",zoneName="Dread Wastes"}
 e[#e+1]={id=31111,rawTitle="Eradicating the Zan'thik",expansion="MOP",type="Faction",side="Both",category="Dread Wastes",giver="Kil'ruk the Wind-Reaver",zoneName="Dread Wastes"}
@@ -978,7 +977,6 @@ e[#e+1]={id=32943,rawTitle="Work Order: Sunreaver Onslaught II",expansion="MOP",
 e[#e+1]={id=32945,rawTitle="Work Order: Kirin Tor Offensive II",expansion="MOP",type="Faction",side="Alliance",category="Valley of the Four Winds",giver="Empty Crate",zoneName="Valley of the Four Winds"}
 e[#e+1]={id=33211,rawTitle="A Timeless Question",expansion="MOP",type="Faction",side="Both",category="Timeless Isle",giver="Senior Historian Evelyna",zoneName="Timeless Isle"}
 e[#e+1]={id=33222,rawTitle="Little Tommy Newcomer",expansion="MOP",type="Faction",side="Both",category="Battle Pets",giver="Little Tommy Newcomer",zoneName="Timeless Isle"}
-e[#e+1]={id=33690,rawTitle="Assault on Lost Veil Anzu",expansion="MOP",type="Faction",side="Horde",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
 e[#e+1]={id=35066,rawTitle="Fire Ammonite",expansion="WOD",type="Profession",side="Horde",category="Fishing",giver="Mak'jin",zoneName="Frostfire Ridge"}
 e[#e+1]={id=35072,rawTitle="Fat Sleeper",expansion="WOD",type="Profession",side="Horde",category="Fishing",giver="Mak'jin",zoneName="Frostfire Ridge"}
 e[#e+1]={id=35074,rawTitle="Blackwater Whiptail",expansion="WOD",type="Profession",side="Horde",category="Fishing",giver="Mak'jin",zoneName="Frostfire Ridge"}
@@ -1014,7 +1012,6 @@ e[#e+1]={id=36695,rawTitle="Assault on the Everbloom Wilds",expansion="WOD",type
 e[#e+1]={id=36696,rawTitle="Assault on the Iron Siegeworks",expansion="WOD",type="Faction",side="Horde",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
 e[#e+1]={id=36697,rawTitle="Assault on Magnarok",expansion="WOD",type="Faction",side="Horde",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
 e[#e+1]={id=36698,rawTitle="Battle in Ashran",expansion="WOD",type="Faction",side="Horde",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
-e[#e+1]={id=37149,rawTitle="Whispers in the Darkness",expansion="WOD",type="Faction",side="Both",category="Shadowmoon Burial Grounds",giver="Impsy",zoneName="Shadowmoon Burial Grounds"}
 e[#e+1]={id=37203,rawTitle="Ashlei",expansion="WOD",type="Faction",side="Both",category="Shadowmoon Valley (alternate universe)",giver="Ashlei",zoneName="Shadowmoon Valley (alternate universe)"}
 e[#e+1]={id=37231,rawTitle="The Search Continues",expansion="WOD",type="Faction",side="Both",category="Iron Docks",giver="Fleet Master Seahorn",zoneName="Iron Docks"}
 e[#e+1]={id=37238,rawTitle="Secrets of Soulbinding",expansion="WOD",type="Faction",side="Both",category="Shadowmoon Burial Grounds",giver="Darion Mograine",zoneName="Shadowmoon Burial Grounds"}
@@ -1104,7 +1101,6 @@ e[#e+1]={id=56365,rawTitle="Be Kind, Rewind",expansion="BFA",type="Faction",side
 e[#e+1]={id=56372,rawTitle="Hozen Totem",expansion="BFA",type="Event",side="Alliance",category="Brewfest",giver="Hozen Totem",zoneName="Brewfest",seasonal=true}
 e[#e+1]={id=56373,rawTitle="A Gulper Ate The Rolly",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Danielle Anglers",zoneName="Mechagon"}
 e[#e+1]={id=56380,rawTitle="Grounded",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Brian Pitchspark",zoneName="Mechagon"}
-e[#e+1]={id=56402,rawTitle="Wastewander Coins",expansion="BFA",type="Faction",side="Both",category="Uldum",giver="Outrider Lashan",zoneName="Uldum"}
 e[#e+1]={id=56405,rawTitle="Cogfrenzy's Construction Frenzy",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Walton Cogfrenzy",zoneName="Mechagon"}
 e[#e+1]={id=56410,rawTitle="Discs of Norgannon",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Archivist Bitbyte",zoneName="Mechagon"}
 e[#e+1]={id=56434,rawTitle="WANTED: Junkbrat and Roadtrogg",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Wanted: Junkbrat and Roadtrogg",zoneName="Mechagon"}
@@ -1115,7 +1111,6 @@ e[#e+1]={id=56501,rawTitle="Taking The Air Out",expansion="BFA",type="Faction",s
 e[#e+1]={id=56508,rawTitle="Waste Not",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver=":Useful Bits and Pieces",zoneName="Mechagon"}
 e[#e+1]={id=56523,rawTitle="My Chickens are Not for Eating!",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Oglethorpe Obnoticus",zoneName="Mechagon"}
 e[#e+1]={id=56532,rawTitle="Nuke 'Em Norbit",expansion="BFA",type="Faction",side="Both",category="Mechagon Island",giver="Dashman Hammerall",zoneName="Mechagon"}
-e[#e+1]={id=56550,rawTitle="Corpse Cleanup",expansion="BFA",type="Faction",side="Both",category="Uldum",giver="Tracker Samara",zoneName="Uldum"}
 e[#e+1]={id=56552,rawTitle="Off-the-Books Brawlin'",expansion="BFA",type="Faction",side="Horde",category="Mechagon Island",giver="Usha Eyegouge",zoneName="Mechagon"}
 e[#e+1]={id=56557,rawTitle="A Little Side Action",expansion="BFA",type="Faction",side="Horde",category="Mechagon Island",giver="Usha Eyegouge",zoneName="Mechagon"}
 e[#e+1]={id=56558,rawTitle="Off-the-Books Brawlin'",expansion="BFA",type="Faction",side="Alliance",category="Mechagon Island",giver="Grumbol Grimhammer",zoneName="Mechagon"}
@@ -1142,73 +1137,19 @@ e[#e+1]={id=56761,rawTitle="Rustbolt Requisitions: Lane Snapper",expansion="BFA"
 e[#e+1]={id=56762,rawTitle="Rustbolt Requisitions: Great Sea Catfish",expansion="BFA",type="Faction",side="Horde",category="Mechagon Island",giver="Skaggit",zoneName="Mechagon"}
 e[#e+1]={id=56763,rawTitle="Rustbolt Requisitions: Great Sea Catfish",expansion="BFA",type="Faction",side="Alliance",category="Mechagon Island",giver="Gila Crosswires",zoneName="Mechagon"}
 e[#e+1]={id=56765,rawTitle="Rustbolt Requisitions: Lane Snapper",expansion="BFA",type="Faction",side="Horde",category="Mechagon Island",giver="Skaggit",zoneName="Mechagon"}
-e[#e+1]={id=56889,rawTitle="Wounded Wastewanderers",expansion="BFA",type="Faction",side="Both",category="Uldum",giver="Mender Dyrin",zoneName="Uldum"}
 e[#e+1]={id=57278,rawTitle="Bring Me Their Heads",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",giver="Stubborn Animate",zoneName="Maldraxxus"}
 e[#e+1]={id=57326,rawTitle="Prototypes for Profit",expansion="SHADOWLANDS",type="Faction",side="Horde",category="Mechagon Island",giver="Gazlowe",zoneName="Mechagon"}
 e[#e+1]={id=57327,rawTitle="Prototypes for Inspiration",expansion="SHADOWLANDS",type="Faction",side="Alliance",category="Mechagon Island",giver="Tinkmaster Overspark",zoneName="Mechagon"}
 e[#e+1]={id=57510,rawTitle="Darklord Taraxis",expansion="SHADOWLANDS",type="Faction",side="Both",category="The Maw",giver="...",zoneName="The Maw"}
-e[#e+1]={id=57718,rawTitle="Bound in Stone",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Kun Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=57721,rawTitle="Spoils of War",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Forgemaster Han",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=57737,rawTitle="Ramkahen Rescue",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="King Phaoris",zoneName="Uldum"}
-e[#e+1]={id=57773,rawTitle="Close to Tears",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=57774,rawTitle="Nine Lives",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
 e[#e+1]={id=57964,rawTitle="Revenge Is Easy",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",giver="Cyrin Smirk",zoneName="Maldraxxus"}
-e[#e+1]={id=57968,rawTitle="The Wastewandering Dead",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Tracker Samara",zoneName="Uldum"}
 e[#e+1]={id=58151,rawTitle="Minions of N'Zoth",expansion="SHADOWLANDS",type="Faction",side="Both",category="Visions of N'Zoth",giver="Blacktalon Agent",zoneName="Jade Forest; Valley of the Four Winds; Kun-Lai Summit; Blackrock Mountain; Durotar; Uldum; Vale of Eternal Blossoms"}
 e[#e+1]={id=58155,rawTitle="A Hand in the Dark",expansion="SHADOWLANDS",type="Faction",side="Both",category="Visions of N'Zoth",giver="Blacktalon Agent",zoneName="Jade Forest; Valley of the Four Winds; Kun-Lai Summit; Blackrock Mountain; Durotar; Uldum; Vale of Eternal Blossoms"}
 e[#e+1]={id=58156,rawTitle="Vanquishing the Darkness",expansion="SHADOWLANDS",type="Faction",side="Both",category="Visions of N'Zoth",giver="Blacktalon Agent",zoneName="Jade Forest; Valley of the Four Winds; Kun-Lai Summit; Blackrock Mountain; Durotar; Uldum; Vale of Eternal Blossoms"}
 e[#e+1]={id=58167,rawTitle="Preventative Measures",expansion="SHADOWLANDS",type="Faction",side="Both",category="Visions of N'Zoth",giver="Blacktalon Agent",zoneName="Jade Forest; Valley of the Four Winds; Kun-Lai Summit; Blackrock Mountain; Durotar; Uldum; Vale of Eternal Blossoms"}
 e[#e+1]={id=58168,rawTitle="A Dark, Glaring Reality",expansion="SHADOWLANDS",type="Faction",side="Both",category="Visions of N'Zoth",giver="Blacktalon Agent",zoneName="Jade Forest; Valley of the Four Winds; Kun-Lai Summit; Blackrock Mountain; Durotar; Uldum; Vale of Eternal Blossoms"}
 e[#e+1]={id=58211,rawTitle="Pumped Up",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",giver="Varzisk Lidless",zoneName="Maldraxxus"}
-e[#e+1]={id=58230,rawTitle="Blind the Eyes",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58231,rawTitle="Wisdom From Madness",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58232,rawTitle="Order Among Chaos",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=58233,rawTitle="Twisted Corruptors",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58234,rawTitle="Questionable Sourcing",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58235,rawTitle="Anchors of the Black Empire",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="King Phaoris",zoneName="Uldum"}
-e[#e+1]={id=58237,rawTitle="Cleansing Uldum",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58238,rawTitle="Lost and Tormented",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="King Phaoris",zoneName="Uldum"}
-e[#e+1]={id=58239,rawTitle="Lessons in Brigandry",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Arianna Swiftsand",zoneName="Uldum"}
 e[#e+1]={id=58260,rawTitle="Queens And Future Kings",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",giver="Fixer Bixie",zoneName="Maldraxxus"}
-e[#e+1]={id=58277,rawTitle="Dark Deceivers",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58281,rawTitle="Ancient Armaments",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=58282,rawTitle="Down From the Sky",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=58283,rawTitle="Blind Leading the Blind",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Priest Amet",zoneName="Uldum"}
-e[#e+1]={id=58284,rawTitle="Writs of the Sun King",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Explorer Dellorah",zoneName="Uldum"}
-e[#e+1]={id=58285,rawTitle="Unearthed Artifacts",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Explorer Dellorah",zoneName="Uldum"}
-e[#e+1]={id=58286,rawTitle="Far From Home",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="King Phaoris",zoneName="Uldum"}
-e[#e+1]={id=58287,rawTitle="A Smashing Plan",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=58288,rawTitle="The Sun King's Chosen",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Commander Kamses",zoneName="Uldum"}
-e[#e+1]={id=58289,rawTitle="Guarded Secrets",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="High Explorer Dellorah",zoneName="Uldum"}
-e[#e+1]={id=58291,rawTitle="Encroaching Poachers",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Arianna Swiftsand",zoneName="Uldum"}
-e[#e+1]={id=58321,rawTitle="Uncommon Core",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="King Phaoris",zoneName="Uldum"}
 e[#e+1]={id=58454,rawTitle="Spoiling For A Fight",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",giver="Au'narim",zoneName="Maldraxxus"}
-e[#e+1]={id=58462,rawTitle="Windows to the Soul",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Chi-Ji",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58469,rawTitle="Tears in the Vale",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Chi-Ji",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58470,rawTitle="Corrupted Curiosities",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Lorewalker Cho",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58471,rawTitle="Aggressive Notation",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Lorewalker Cho",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58476,rawTitle="Bringing the Thunder",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Anji Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58477,rawTitle="Through Blood and Dirt and Bone",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Stormspeaker Qian",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58478,rawTitle="No Stone Unbroken",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Stormspeaker Qian",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58595,rawTitle="Pillars of Oblivion",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Stormspeaker Qian",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58740,rawTitle="Subjugated Serpents",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Anji Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58741,rawTitle="Cutting Stone",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Forgemaster Han",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58754,rawTitle="Champions of the Swarm",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Stormspeaker Qian",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58755,rawTitle="Stashed Supplies",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Kun Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58757,rawTitle="Testing the Untested",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Stormspeaker Qian",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58758,rawTitle="Rampaging Destroyers",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Anji Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58759,rawTitle="The Empress' Guard",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Taoshi",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58760,rawTitle="Blades of Amber",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Forgemaster Han",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58762,rawTitle="Taken by the Swarm",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Kun Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58763,rawTitle="Halting Production",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Taoshi",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58764,rawTitle="Standards of the Swarm",expansion="SHADOWLANDS",type="Faction",side="Both",category="Vale of Eternal Blossoms",giver="Anji Autumnlight",zoneName="Vale of Eternal Blossoms"}
-e[#e+1]={id=58776,rawTitle="Hatching Problems",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Captain Navid Sandstone",zoneName="Uldum"}
-e[#e+1]={id=58777,rawTitle="Put Your Foot Down",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Zahra Sandstalker",zoneName="Uldum"}
-e[#e+1]={id=58778,rawTitle="Getting Ahead",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Zahra Sandstalker",zoneName="Uldum"}
-e[#e+1]={id=58779,rawTitle="Taking the Skies",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Zahra Sandstalker",zoneName="Uldum"}
-e[#e+1]={id=58780,rawTitle="Heralds of the Hive",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Captain Navid Sandstone",zoneName="Uldum"}
-e[#e+1]={id=58781,rawTitle="Terrors from the Deep",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Arik Scorpidsting",zoneName="Uldum"}
-e[#e+1]={id=58782,rawTitle="Things Left Behind",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Arik Scorpidsting",zoneName="Uldum"}
 e[#e+1]={id=58801,rawTitle="Enter the Void",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="Idol of Iniquity",zoneName="Uldum"}
 e[#e+1]={id=58805,rawTitle="Continued Incubation",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="H'partho Ardoros",zoneName="Uldum"}
 e[#e+1]={id=58831,rawTitle="Honing Instincts",expansion="SHADOWLANDS",type="Faction",side="Both",category="Uldum",giver="H'partho Ardoros",zoneName="Uldum"}
@@ -1407,11 +1348,11 @@ e[#e+1]={id=76266,rawTitle="A Multitude of Tasks",expansion="DRAGONFLIGHT",type=
 e[#e+1]={id=76269,rawTitle="A Mislaid Egg",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Thaldraszus",giver="Chromie",zoneName="Thaldraszus"}
 e[#e+1]={id=76591,rawTitle="Bubbling Brews",expansion="DRAGONFLIGHT",type="Event",side="Both",category="Brewfest",giver="Bragdur Battlebrew",zoneName="Valdrakken",seasonal=true}
 e[#e+1]={id=77208,rawTitle="Barreling Down",expansion="DRAGONFLIGHT",type="Event",side="Both",category="Brewfest",giver="Bragdur Battlebrew",zoneName="Valdrakken",seasonal=true}
-e[#e+1]={id=77426,rawTitle="Practice Makes Perfect: Rusziona",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Little Scales Daycare",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
-e[#e+1]={id=77427,rawTitle="Practice Makes Perfect: Zhusadormu",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Little Scales Daycare",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
-e[#e+1]={id=77428,rawTitle="Practice Makes Perfect: Zalethgos",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Little Scales Daycare",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
-e[#e+1]={id=77429,rawTitle="Practice Makes Perfect: Posidriss",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Little Scales Daycare",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
-e[#e+1]={id=77430,rawTitle="Practice Makes Perfect: Belastrasza",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Little Scales Daycare",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
+e[#e+1]={id=77426,rawTitle="Practice Makes Perfect: Rusziona",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
+e[#e+1]={id=77427,rawTitle="Practice Makes Perfect: Zhusadormu",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
+e[#e+1]={id=77428,rawTitle="Practice Makes Perfect: Zalethgos",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
+e[#e+1]={id=77429,rawTitle="Practice Makes Perfect: Posidriss",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
+e[#e+1]={id=77430,rawTitle="Practice Makes Perfect: Belastrasza",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",giver="Celetiros",zoneName="Valdrakken",subZone="Little Scales Daycare"}
 e[#e+1]={id=78274,rawTitle="Quacking Down",expansion="TWW",type="Event",side="Alliance",category="Noblegarden",giver="Zinnia Brooks",zoneName="Elwynn Forest",seasonal=true}
 e[#e+1]={id=78565,rawTitle="Getaway to Scenic Grizzly Hills!",expansion="TWW",type="Event",side="Alliance",category="Love is in the Air",giver="Gabbo Blinkwink",zoneName="Various",seasonal=true}
 e[#e+1]={id=78591,rawTitle="Getaway to Scenic Nagrand!",expansion="TWW",type="Event",side="Alliance",category="Love is in the Air",giver="Gabbo Blinkwink",zoneName="Various",seasonal=true}
@@ -1421,8 +1362,6 @@ e[#e+1]={id=78674,rawTitle="The Gift of Relief",expansion="TWW",type="Event",sid
 e[#e+1]={id=78679,rawTitle="The Gift of Relaxation",expansion="TWW",type="Event",side="Alliance",category="Love is in the Air",giver="Ying",zoneName="Elwynn Forest",seasonal=true}
 e[#e+1]={id=78724,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Event",side="Both",category="Love is in the Air",zoneName="Love is in the Air",seasonal=true}
 e[#e+1]={id=78726,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Event",side="Both",category="Love is in the Air",zoneName="Love is in the Air",seasonal=true}
-e[#e+1]={id=78752,rawTitle="Proof of Demise: Titan Rune Protocol Gamma",expansion="TWW",type="Faction",side="Both",category="Dalaran",giver="Archmage Lan'dalock",zoneName="Various"}
-e[#e+1]={id=78753,rawTitle="Proof of Demise: Threats to Azeroth",expansion="TWW",type="Faction",side="Both",category="Dalaran",giver="Archmage Lan'dalock",zoneName="Various"}
 e[#e+1]={id=78938,rawTitle="Champion of the Waterlords",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Memory of a Duke",zoneName="Searing Gorge"}
 e[#e+1]={id=78979,rawTitle="Loving Yourself, Your Way",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Ning",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=78986,rawTitle="Getaway to Scenic Grizzly Hills!",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Aurora Vabsley",zoneName="Various",seasonal=true}
@@ -1430,25 +1369,13 @@ e[#e+1]={id=78987,rawTitle="Getaway to Scenic Nagrand!",expansion="TWW",type="Ev
 e[#e+1]={id=78988,rawTitle="Getaway to Scenic Feralas!",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Aurora Vabsley",zoneName="Various",seasonal=true}
 e[#e+1]={id=78990,rawTitle="The Gift of Relief",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Ning",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=78991,rawTitle="The Gift of Relaxation",expansion="TWW",type="Event",side="Horde",category="Love is in the Air",giver="Ning",zoneName="Durotar",seasonal=true}
-e[#e+1]={id=79090,rawTitle="Repelling Invaders",expansion="TWW",type="Faction",side="Alliance",category="Ashenvale",giver="Warsong Outrider Mark",zoneName="60"}
-e[#e+1]={id=79098,rawTitle="Clear the Forest!",expansion="TWW",type="Faction",side="Horde",category="Ashenvale",giver="Silverwing Sentinel Charm",zoneName="60"}
 e[#e+1]={id=79135,rawTitle="Quacking Down",expansion="TWW",type="Event",side="Horde",category="Noblegarden",giver="Sylnaria Fareflame",zoneName="Durotar",seasonal=true}
 e[#e+1]={id=79558,rawTitle="Feathered Fiend",expansion="TWW",type="Event",side="Horde",category="Noblegarden",giver="Noblegarden Trinket",zoneName="Noblegarden",seasonal=true}
 e[#e+1]={id=81471,rawTitle="Dropping Eaves: Saving the Past",expansion="TWW",type="Faction",side="Both",category="Azj-Kahet",zoneName="Azj-Kahet"}
 e[#e+1]={id=81476,rawTitle="Bounty: Chitinous Goliath",expansion="TWW",type="Faction",side="Both",category="Azj-Kahet",zoneName="Azj-Kahet"}
 e[#e+1]={id=81490,rawTitle="Bounty: Balaxir the Bully",expansion="TWW",type="Faction",side="Both",category="Azj-Kahet",zoneName="Azj-Kahet"}
-e[#e+1]={id=82068,rawTitle="Fight the Nightmare Incursions",expansion="TWW",type="Faction",side="Both",category="Nightmare Incursion",giver="Field Captain Arunnel",zoneName="52"}
 e[#e+1]={id=82676,rawTitle="Broken Masquerade",expansion="TWW",type="Faction",side="Both",category="Dustwallow Marsh",giver="Forgotten Hero",zoneName="Dustwallow Marsh"}
 e[#e+1]={id=82689,rawTitle="Only Darkness",expansion="TWW",type="Faction",side="Both",category="Dragonblight",giver="Echo of the Silver Hand",zoneName="Dragonblight"}
-e[#e+1]={id=84348,rawTitle="Priority Target: Duke Tectonis",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Hansel Heavyhands",zoneName="Searing Gorge"}
-e[#e+1]={id=84349,rawTitle="Priority Target: Duke Searbrand",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Lookout Captain Lolo Longstriker",zoneName="Searing Gorge"}
-e[#e+1]={id=84350,rawTitle="Grinding Them Down",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Evonice Sootsmoker",zoneName="Searing Gorge"}
-e[#e+1]={id=84351,rawTitle="Work Smarter, Not Harder",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Taskmaster Scrange",zoneName="Searing Gorge"}
-e[#e+1]={id=84355,rawTitle="More Like Lame-bringers!",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Taskmaster Scrange",zoneName="Searing Gorge"}
-e[#e+1]={id=84356,rawTitle="Oh, Shiny!",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Master Smith Burninate",zoneName="Searing Gorge"}
-e[#e+1]={id=84359,rawTitle="Sleepless Nights",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Evonice Sootsmoker",zoneName="Searing Gorge"}
-e[#e+1]={id=84360,rawTitle="Firefighting",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Overseer Oilfist",zoneName="Searing Gorge"}
-e[#e+1]={id=84372,rawTitle="Lava Diving",expansion="TWW",type="Faction",side="Both",category="Searing Gorge",giver="Hansel Heavyhands",zoneName="Searing Gorge"}
 e[#e+1]={id=84616,rawTitle="Celebrate Good Fun!",expansion="TWW",type="Event",side="Both",category="Seasonal",giver="Yllana",zoneName="Tanaris",seasonal=true}
 e[#e+1]={id=86486,rawTitle="Hungry, Hungry Snapdragon",expansion="TWW",type="Faction",side="Both",category="Siren Isle",giver="Growing Snapdragon Runt",zoneName="Siren Isle"}
 e[#e+1]={id=87475,rawTitle="Sureki Incursion: Hold the Wall",expansion="TWW",type="Faction",side="Both",category="Hallowfall",giver="Mylton Wyldbraun",zoneName="Hallowfall"}
@@ -1457,13 +1384,4 @@ e[#e+1]={id=87480,rawTitle="Sureki Incursion: The Eastern Assault",expansion="TW
 e[#e+1]={id=88711,rawTitle="Radiant Incursion: Toxins and Pheromones",expansion="MIDNIGHT",type="Faction",side="Both",category="Azj-Kahet",giver="Mylton Wyldbraun",zoneName="Azj-Kahet"}
 e[#e+1]={id=88916,rawTitle="Radiant Incursion: Sureki's End",expansion="MIDNIGHT",type="Faction",side="Both",category="Azj-Kahet",giver="Mylton Wyldbraun",zoneName="Azj-Kahet"}
 e[#e+1]={id=88945,rawTitle="Radiant Incursion: Rak-Zakaz",expansion="MIDNIGHT",type="Faction",side="Both",category="Azj-Kahet",giver="Mylton Wyldbraun",zoneName="Azj-Kahet"}
-e[#e+1]={id=91701,rawTitle="A Celestial Challenge: Darkmaster Gandling",expansion="MIDNIGHT",type="Faction",side="Both",category="Scholomance",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91704,rawTitle="A Celestial Challenge: Flameweaver Koegler",expansion="MIDNIGHT",type="Faction",side="Both",category="Scarlet Halls",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91705,rawTitle="A Celestial Challenge: Durand",expansion="MIDNIGHT",type="Faction",side="Both",category="Scarlet Monastery",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91707,rawTitle="A Celestial Challenge: Wing Leader Ner'onok",expansion="MIDNIGHT",type="Faction",side="Both",category="Siege of Niuzao Temple",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91710,rawTitle="A Celestial Challenge: Raigonn",expansion="MIDNIGHT",type="Faction",side="Both",category="Gate of the Setting Sun",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91711,rawTitle="A Celestial Challenge: Xin the Weaponmaster",expansion="MIDNIGHT",type="Faction",side="Both",category="Mogu'shan Palace",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91713,rawTitle="A Celestial Challenge: Sha of Hatred",expansion="MIDNIGHT",type="Faction",side="Both",category="Shado-Pan Monastery",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91716,rawTitle="A Celestial Challenge: Yan-zhu the Uncasked",expansion="MIDNIGHT",type="Faction",side="Both",category="Stormstout Brewery",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
-e[#e+1]={id=91717,rawTitle="A Celestial Challenge: Sha of Doubt",expansion="MIDNIGHT",type="Faction",side="Both",category="Temple of the Jade Serpent",giver="Challenger Soong",zoneName="Shrine of Seven Stars",subZone="Shrine of Seven Stars"}
 e[#e+1]={id=92855,rawTitle="Make Haste, Not Waste",expansion="MIDNIGHT",type="Faction",side="Both",category="Legion: Remix",giver="Lidamorrutu",zoneName="Infinite Bazaars"}

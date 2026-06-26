@@ -5,9 +5,9 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.5.1** — built and tested against Retail patch **12.0.x**.
-> Catalog covers **~2,030 dailies & weeklies across every expansion** (wiki +
-> Blizzard-API gap-fill, multi-source verified) plus **~3,600 world quests**
+> **Version 0.5.2** — built and tested against Retail patch **12.0.x**.
+> Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
+> Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
 > (Legion → Midnight) from first-party sources.
 >
 > *Formerly named **DailyGrind**. The addon was renamed to QuestTally in 0.1.1;
@@ -15,10 +15,11 @@ available, tracking completion, and helping you finish them, organized by
 
 ## Features
 
-- **Full quest catalog.** **~2,100 daily quests across every expansion** — from
-  warcraft.wiki, completed and zone-corrected against Blizzard's own Game Data API
-  — plus **~3,600 world quests** (Legion → Midnight, from Blizzard's client
-  database). Grouped by **expansion → zone**.
+- **Full quest catalog.** **~1,950 daily & weekly quests across every expansion** —
+  from warcraft.wiki, completed and zone-corrected against Blizzard's own Game Data
+  API, and cross-referenced so only genuine repeatable dailies/weeklies ship — plus
+  **~3,600 world quests** (Legion → Midnight, from Blizzard's client database).
+  Grouped by **expansion → zone**.
 - **Modern window.** A dark panel with subtle gradients and bevels (not flat),
   the **QuestTally logo** in the title bar, **collapsible sections color-coded to
   each expansion's logo** that **nest by zone — and again by sub-zone** (e.g.
@@ -66,6 +67,10 @@ available, tracking completion, and helping you finish them, organized by
   loaded a quest, Blizzard's **live** reward data (with item **icons** and quality
   colors) is shown; otherwise the baked first-party data fills in. Reputation comes
   live for **renown** factions and baked from Blizzard's API for classic ones.
+- **Search by name.** A **search bar** under the sub-bar filters the whole catalog
+  by quest name as you type, with a **type-ahead suggestion** menu of matching names.
+  Results show as one flat *Search results* list with a live match count; clearing
+  the box returns to the active tab.
 - **Search by location.** Three tabs: **Current Zone** *(default)* · **All**
   (everything by expansion) · **Browse** (pick a Continent → Zone).
 - **Faction-aware.** Only your character's faction's dailies are shown.
@@ -111,7 +116,7 @@ The WoW API can report the live status of **any quest ID you ask about**, but it
 of time — assembled from first-party sources — and lets the live game light each
 entry up with real-time status:
 
-1. **Daily catalog (the wiki).** `Core/ChecklistData.lua` ships **~1,460 dailies
+1. **Daily catalog (the wiki).** `Core/ChecklistData.lua` ships **~1,375 dailies
    across every expansion** — with real quest IDs, zones, and givers — and
    `Core/WikiDetails.lua` ships their rewards, **reputation**, **honor**, objectives,
    descriptions, and giver coordinates. The reputation and honor values are baked
@@ -149,12 +154,18 @@ registry) — that data is streamed to the client on demand. So the catalog was
   descriptions. That catalog-*generation* toolchain has since been **retired and its
   scripts removed**; only the API/DB2 **verification** tooling is kept (dev-only,
   outside the shipped addon).
-- **Now maintained by hand and verified against three live sources.** Whether a
-  quest is a genuine repeatable daily/weekly is confirmed by cross-checking the
-  **Wowhead tooltip endpoint** and the two community wikis (**warcraft.wiki.gg** +
-  **wowpedia.fandom.com**). No single source is complete, so a quest is kept only
-  when an id-matched source confirms it — this is how the one-time story/profession
-  quests were found and removed in 0.5.0.
+- **Now maintained by hand and cross-referenced against several first-party
+  sources.** Whether a quest is a genuine repeatable daily/weekly is confirmed by
+  combining three independent signals — Blizzard's **Game Data API** (daily flag +
+  whether the quest even exists on retail), the client's **QuestLine** table (story/
+  leveling quests are one-time), and the **Wowhead** daily/weekly flag — plus the
+  community wikis (**warcraft.wiki.gg** states the quest *Type*) for anything still
+  ambiguous. No single source is reliable on its own (the API over-reports "daily" on
+  revamped and rotating-assault content; the Wowhead tooltip under-reports), so a
+  quest is kept only when the sources agree. This is how the one-time story/profession
+  quests were removed in 0.5.0, and how the non-retail (Classic/SoD/MoP-Classic) IDs,
+  the BFA *N'Zoth Assault* quests, and the mis-tagged skyriding races were pruned in
+  **0.5.2**.
 
 Either way, the data is baked and shipped, so end users just install the addon.
 

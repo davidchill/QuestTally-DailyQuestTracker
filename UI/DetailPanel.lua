@@ -873,6 +873,13 @@ local function createPanel()
     p.close:SetPoint("TOPRIGHT", -4, -4)
     p.close:SetScript("OnClick", function() DT.Details:Hide() end)
 
+    -- Whenever the panel hides by ANY path (close button, toggle-off, or the main
+    -- window hiding and cascading to this child), drop the list's selection
+    -- highlight so it can never get stuck on a row with no panel open.
+    p:HookScript("OnHide", function()
+        if DT.UI and DT.UI.SetSelectedQuest then DT.UI:SetSelectedQuest(nil) end
+    end)
+
     p.title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     p.title:SetPoint("TOPLEFT", LINE_PAD, -14)
     p.title:SetPoint("TOPRIGHT", -28, -14)  -- leave room for the close button
@@ -948,11 +955,14 @@ function DT.Details:Show(entry)
     panel:Show()
     requestData(entry.questID)  -- kick off async load if not cached
     render(entry)               -- render immediately with whatever we have
+    -- Keep the quest's row highlighted in the list while its detail is open.
+    if DT.UI and DT.UI.SetSelectedQuest then DT.UI:SetSelectedQuest(entry) end
 end
 
 function DT.Details:Hide()
     if panel then panel:Hide() end
     lastEntry = nil
+    if DT.UI and DT.UI.SetSelectedQuest then DT.UI:SetSelectedQuest(nil) end
 end
 
 function DT.Details:IsShown()

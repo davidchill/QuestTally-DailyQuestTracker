@@ -219,6 +219,7 @@ local ZONE_CONTINENT = {
     ["Eastern Plaguelands"]      = "Eastern Kingdoms",
     ["Isle of Quel'Danas"]       = "Eastern Kingdoms",
     ["Eversong Woods"]           = "Eastern Kingdoms",
+    ["Silvermoon City"]          = "Eastern Kingdoms",
     ["Darkmoon Island"]          = "Eastern Kingdoms",
     ["Blackrock Depths"]         = "Eastern Kingdoms",
     ["Scholomance"]              = "Eastern Kingdoms",

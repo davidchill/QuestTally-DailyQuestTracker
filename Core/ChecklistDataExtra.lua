@@ -126,14 +126,14 @@ e[#e+1]={id=66878,rawTitle="Fen Flythrough - Advanced",expansion="DRAGONFLIGHT",
 e[#e+1]={id=75795,rawTitle="Fen Flythrough - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=72802,rawTitle="Fen Flythrough - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75796,rawTitle="Fen Flythrough - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=77785,rawTitle="Fen Flythrough - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
+e[#e+1]={id=77785,rawTitle="Fen Flythrough - Storm Gryphon",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=70990,rawTitle="If There's Wool There's a Way",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66921,rawTitle="Maruukai Dash",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75801,rawTitle="Maruukai Dash - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66933,rawTitle="Mirror of Sky Dash",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75802,rawTitle="Mirror of Sky Dash - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=67034,rawTitle="Of Wind and Water",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
-e[#e+1]={id=70526,rawTitle="Ohn'ahran Plains Rally",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Ohn'ahran Plains",zoneName="Ohn'ahran Plains",src="api"}
+e[#e+1]={id=70526,rawTitle="Ohn'ahran Plains Rally",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66880,rawTitle="Ravine River Run",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=66881,rawTitle="Ravine River Run - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
 e[#e+1]={id=75797,rawTitle="Ravine River Run - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Ohn'ahran Plains",src="api"}
@@ -203,19 +203,19 @@ e[#e+1]={id=72769,rawTitle="Garden Gallivant - Reverse",expansion="DRAGONFLIGHT"
 e[#e+1]={id=75828,rawTitle="Garden Gallivant - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=72806,rawTitle="Pleasant Alpha",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Thaldraszus",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=73030,rawTitle="Southern Reach Route - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
-e[#e+1]={id=66241,rawTitle="Thaldraszus Rally",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Thaldraszus",zoneName="Thaldraszus",src="api"}
+e[#e+1]={id=66241,rawTitle="Thaldraszus Rally",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=69957,rawTitle="Tyrhold Trial",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=69958,rawTitle="Tyrhold Trial - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=75822,rawTitle="Tyrhold Trial - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=72792,rawTitle="Tyrhold Trial - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=75823,rawTitle="Tyrhold Trial - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
-e[#e+1]={id=77784,rawTitle="Tyrhold Trial - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Thaldraszus",zoneName="Thaldraszus",src="api"}
+e[#e+1]={id=77784,rawTitle="Tyrhold Trial - Storm Gryphon",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Thaldraszus",src="api"}
 e[#e+1]={id=67741,rawTitle="Archive Ambit",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=67742,rawTitle="Archive Ambit - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75816,rawTitle="Archive Ambit - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=72797,rawTitle="Archive Ambit - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75817,rawTitle="Archive Ambit - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=70542,rawTitle="Azure Span Rally",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Azure Span",zoneName="The Azure Span",src="api"}
+e[#e+1]={id=70542,rawTitle="Azure Span Rally",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=72799,rawTitle="Azure Span Slalom - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75808,rawTitle="Azure Span Slalom - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=66946,rawTitle="Azure Span Sprint",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
@@ -238,7 +238,7 @@ e[#e+1]={id=67032,rawTitle="Vakthros Ascent - Advanced",expansion="DRAGONFLIGHT"
 e[#e+1]={id=75809,rawTitle="Vakthros Ascent - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=72794,rawTitle="Vakthros Ascent - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=75810,rawTitle="Vakthros Ascent - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
-e[#e+1]={id=77786,rawTitle="Vakthros Ascent - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Azure Span",zoneName="The Azure Span",src="api"}
+e[#e+1]={id=77786,rawTitle="Vakthros Ascent - Storm Gryphon",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Azure Span",src="api"}
 e[#e+1]={id=73025,rawTitle="Aerie Chasm Cruise",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=73027,rawTitle="Aerie Chasm Cruise - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=75958,rawTitle="Aerie Chasm Cruise - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
@@ -269,14 +269,13 @@ e[#e+1]={id=73018,rawTitle="Stormsunder Crater Circuit - Advanced",expansion="DR
 e[#e+1]={id=75954,rawTitle="Stormsunder Crater Circuit - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=73019,rawTitle="Stormsunder Crater Circuit - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=75955,rawTitle="Stormsunder Crater Circuit - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
-e[#e+1]={id=77787,rawTitle="Stormsunder Crater Circuit - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="The Forbidden Reach",zoneName="The Forbidden Reach",src="api"}
+e[#e+1]={id=77787,rawTitle="Stormsunder Crater Circuit - Storm Gryphon",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="The Forbidden Reach",src="api"}
 e[#e+1]={id=76527,rawTitle="Krazzworks Klash",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76528,rawTitle="Krazzworks Klash - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76529,rawTitle="Krazzworks Klash - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76364,rawTitle="Twilight Terror",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76365,rawTitle="Twilight Terror - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
 e[#e+1]={id=76366,rawTitle="Twilight Terror - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Twilight Highlands",src="api"}
-e[#e+1]={id=77897,rawTitle="A Special Book",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=77957,rawTitle="A Treacherous Race",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=69937,rawTitle="Sylvan Succor",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Valdrakken",zoneName="Valdrakken",src="api"}
 e[#e+1]={id=72384,rawTitle="Valdrakken Tour",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Valdrakken",src="api"}
@@ -303,7 +302,7 @@ e[#e+1]={id=74842,rawTitle="Crystal Circuit - Advanced",expansion="DRAGONFLIGHT"
 e[#e+1]={id=75972,rawTitle="Crystal Circuit - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
 e[#e+1]={id=74882,rawTitle="Crystal Circuit - Reverse",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
 e[#e+1]={id=75973,rawTitle="Crystal Circuit - Reverse Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
-e[#e+1]={id=77793,rawTitle="Crystal Circuit - Storm Gryphon",expansion="DRAGONFLIGHT",type="Faction",side="Both",category="Zaralek Cavern",zoneName="Zaralek Cavern",src="api"}
+e[#e+1]={id=77793,rawTitle="Crystal Circuit - Storm Gryphon",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
 e[#e+1]={id=74972,rawTitle="Loamm Roamm",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
 e[#e+1]={id=74975,rawTitle="Loamm Roamm - Advanced",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
 e[#e+1]={id=75980,rawTitle="Loamm Roamm - Challenge",expansion="DRAGONFLIGHT",type="Race",side="Both",category="Skyriding Race",zoneName="Zaralek Cavern",src="api"}
@@ -372,7 +371,6 @@ e[#e+1]={id=63784,rawTitle="Gold's No Object",expansion="SHADOWLANDS",type="Fact
 e[#e+1]={id=63782,rawTitle="Mawsworn Rituals",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=63989,rawTitle="Oozing with Character",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
 e[#e+1]={id=64194,rawTitle="War Prototype",expansion="SHADOWLANDS",type="Faction",side="Both",category="Korthia",zoneName="Korthia",src="api"}
-e[#e+1]={id=60283,rawTitle="Specter Of War: Visectus",expansion="SHADOWLANDS",type="Faction",side="Both",category="Maldraxxus",zoneName="Maldraxxus",src="api"}
 e[#e+1]={id=11513,rawTitle="Intercepting the Mana Cells",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Exarch Nasuun",zoneName="Shattrath City",src="api"}
 e[#e+1]={id=11875,rawTitle="Gaining the Advantage",expansion="TBC",type="Faction",side="Both",category="Shattered Sun Offensive",giver="Emissary Mordin",zoneName="Shattrath City",src="api"}
 e[#e+1]={id=11520,rawTitle="Discovering Your Roots",expansion="TBC",type="Faction",side="Both",category="Terokkar Forest",giver="Mar'nah",zoneName="Isle of Quel'Danas",src="api"}
@@ -588,3 +586,15 @@ e[#e+1]={id=29463,rawTitle="It's Hammer Time",expansion="CATA",type="Faction",si
 e[#e+1]={id=29438,rawTitle="He Shoots, He Scores!",expansion="CATA",type="Faction",side="Both",category="Darkmoon Faire",zoneName="Darkmoon Island",src="api"}
 e[#e+1]={id=33146,rawTitle="Noodle Time",expansion="MOP",type="Profession",side="Both",category="Cooking",giver="Sungshin Ironpaw",zoneName="Valley of the Four Winds",src="api"}
 e[#e+1]={id=33358,rawTitle="Noodle Time: Bonus",expansion="MOP",type="Profession",side="Both",category="Cooking",giver="Sungshin Ironpaw",zoneName="Valley of the Four Winds",src="api"}
+-- Midnight: Decor Duel daily (hide-and-seek minigame) in Falconwing Square,
+-- Silvermoon City. Verified on Wowhead (quest=93870): daily, giver Fieldweaver
+-- Amolenne, rewards Illusionary Coin. Not in the wiki master list; added by hand.
+e[#e+1]={id=93870,rawTitle="The Ephemeron Masquerade",expansion="MIDNIGHT",type="Faction",side="Both",category="Decor Duel",giver="Fieldweaver Amolenne",zoneName="Silvermoon City"}
+-- Midnight: standalone Silvermoon City daily, found 2026-06-25 via the Blizzard
+-- Game Data API --find-gaps sweep AND confirmed daily by cross-reference (Wowhead
+-- daily flag + not a member of any DB2 QuestLine). The 36 Eversong Woods quests
+-- the same sweep returned were DROPPED: Blizzard's is_daily flag over-reports the
+-- revamped starting zone — cross-reference proved they're one-time leveling quests
+-- (all in QuestLine 5841, no Wowhead daily flag). Lesson: is_daily alone isn't
+-- enough; verify against Wowhead/QuestLine before bulk-adding revamp-zone quests.
+e[#e+1]={id=92554,rawTitle="Addition of Anguish",expansion="MIDNIGHT",type="Faction",side="Both",category="Silvermoon City",zoneName="Silvermoon City"}

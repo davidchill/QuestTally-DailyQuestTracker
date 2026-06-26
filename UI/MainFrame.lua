@@ -82,10 +82,30 @@ function DT.UI:ShowWowheadLink(questID)
 end
 
 -- Current view state.
-DT.UI.mode = "ZONE"            -- ZONE | BROWSE | ALL
+DT.UI.mode = "ZONE"            -- ZONE | ALL (Expansion) | FACTION | BROWSE
 DT.UI.browseContinent = nil    -- selected continent NAME
 DT.UI.browseZone = nil         -- selected zone NAME (nil = all zones)
+DT.UI.searchQuery = ""         -- active name filter (empty = inactive, normal mode)
 local browseTree = {}          -- cached continent->zone tree for the dropdowns
+
+-- The quest currently shown in the detail panel, kept highlighted in the list.
+-- Stored as id + title (not an entry reference) because rows/entries are rebuilt
+-- on every refresh; the DetailPanel owns this state via DT.UI:SetSelectedQuest.
+DT.UI.selectedQuestID = nil
+DT.UI.selectedTitle = nil
+
+-- Does this entry match the current selection? Mirrors DT.Details:Toggle's
+-- identity rule: match on questID when it's known, else fall back to title (some
+-- catalog entries have no questID until seen in-game).
+local function entryIsSelected(e)
+    if not e then return false end
+    local sid, stitle = DT.UI.selectedQuestID, DT.UI.selectedTitle
+    if sid == nil and stitle == nil then return false end
+    if sid ~= nil or e.questID ~= nil then
+        return e.questID == sid
+    end
+    return e.title == stitle
+end
 
 -- ---------------------------------------------------------------------------
 -- Sorting helpers
@@ -466,6 +486,72 @@ local function groupByZone(entries)
 end
 
 -- ---------------------------------------------------------------------------
+-- Reputation-faction grouping (the "Faction" tab)
+-- ---------------------------------------------------------------------------
+-- Section accent for faction groups: a soft violet, distinct from the blue zone
+-- accent and the per-expansion tints, so the Faction tab reads as its own view.
+local FACTION_ACCENT = { 0.64, 0.55, 0.86 }
+
+-- Quests with no known reputation reward bucket here; sorted to the bottom.
+local NO_FACTION = "No Reputation"
+
+-- Resolve a quest's PRIMARY reputation-faction NAME for grouping. Prefers the
+-- live-harvested rep cached this session, then the baked wiki rep (the broad
+-- source — ~70% of the catalog carries it). Returns nil when no rep is known, so
+-- those rows fall into the NO_FACTION bucket. Only the faction name matters here;
+-- the detail panel still resolves full amounts (incl. live renown) separately.
+-- A quest that grants several factions groups under the first listed.
+local function primaryFactionName(e)
+    local qid = e.questID
+    if not qid then return nil end
+    local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(qid)
+    local rep = live and live.rewards and live.rewards.reputation
+    if type(rep) == "table" and rep[1] then
+        return rep[1].name or rep[1].n
+    end
+    local w = DT.WikiDetails and DT.WikiDetails[qid]
+    if w and type(w.rep) == "table" and w.rep[1] then
+        return w.rep[1].n
+    end
+    return nil
+end
+
+-- Group entries by primary reputation faction (flat — one section per faction).
+-- Faction sections are alphabetical; the catch-all "No Reputation" sinks to the
+-- bottom. Mirrors groupByZone's section/fold handling so the existing collapse,
+-- expand-all and selection-highlight machinery all work unchanged.
+local function groupByFaction(entries)
+    local groups, names = {}, {}
+    for _, e in ipairs(entries) do
+        local name = primaryFactionName(e) or NO_FACTION
+        if not groups[name] then groups[name] = {}; names[#names+1] = name end
+        table.insert(groups[name], e)
+    end
+    table.sort(names, function(a, b)
+        if (a == NO_FACTION) ~= (b == NO_FACTION) then return b == NO_FACTION end
+        return a < b
+    end)
+    local display = {}
+    for _, name in ipairs(names) do
+        local list = groups[name]
+        table.sort(list, sortEntries)
+        local key = "FACTION:" .. name
+        local collapsed = DT.DB:IsCollapsedByDefault(key)  -- starts folded like All/Browse
+        display[#display+1] = {
+            type = "section", level = 1,
+            text = name, done = doneCount(list), total = #list,
+            color = FACTION_ACCENT, key = key, collapsed = collapsed,
+        }
+        if not collapsed then
+            for _, e in ipairs(list) do
+                display[#display+1] = { type = "quest", entry = e, depth = 1 }
+            end
+        end
+    end
+    return display
+end
+
+-- ---------------------------------------------------------------------------
 -- Mode display builders. Each returns (displayList, summaryText).
 -- ---------------------------------------------------------------------------
 local function buildZoneMode()
@@ -549,7 +635,74 @@ local function buildAllMode()
         if e.status == DT.STATUS.COMPLETED then completed = completed + 1 end
     end
     return groupByExpansion(entries),
-           string.format("All  |cff707070— %d quests, |r|cff66cc66%d completed|r", #entries, completed)
+           string.format("Expansion  |cff707070— %d quests, |r|cff66cc66%d completed|r", #entries, completed)
+end
+
+-- The Faction tab: the same filtered catalog as the Expansion tab, grouped by the
+-- reputation faction each quest rewards instead of by expansion/zone.
+local function buildFactionMode()
+    local entries = applyKindFilters(DT.Checklist:GetEntries())
+    local completed = 0
+    for _, e in ipairs(entries) do
+        if e.status == DT.STATUS.COMPLETED then completed = completed + 1 end
+    end
+    return groupByFaction(entries),
+           string.format("Faction  |cff707070— %d quests, |r|cff66cc66%d completed|r", #entries, completed)
+end
+
+-- Search mode: a name filter that overrides whatever tab is active. Matches the
+-- typed query (case-insensitive substring) against the cleaned title and the raw
+-- catalog title, across the WHOLE kind-filtered catalog, then presents the hits
+-- as one flat, always-open "Search results" section sorted by name. A flat list
+-- (rather than expansion grouping) keeps every match visible without the user
+-- having to expand folded sections — the point of a search is to see results.
+local function buildSearchMode()
+    local q = (DT.UI.searchQuery or ""):lower()
+    local matches = {}
+    for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
+        local t  = (e.title or ""):lower()
+        local rt = (e.rawTitle or ""):lower()
+        if t:find(q, 1, true) or rt:find(q, 1, true) then
+            matches[#matches+1] = e
+        end
+    end
+    table.sort(matches, function(a, b) return (a.title or "") < (b.title or "") end)
+
+    if #matches == 0 then
+        return { { type = "message",
+                   text = 'No quests match "' .. (DT.UI.searchQuery or "") .. '".' } },
+               "Search  |cff707070— no matches|r"
+    end
+
+    local display = {
+        { type = "section", level = 1, text = "Search results",
+          done = doneCount(matches), total = #matches,
+          color = ZONE_ACCENT, key = "SEARCH:", collapsed = false },
+    }
+    for _, e in ipairs(matches) do
+        display[#display+1] = { type = "quest", entry = e, depth = 1 }
+    end
+    return display,
+           string.format('Search  |cff707070— %d match%s|r',
+                         #matches, #matches == 1 and "" or "es")
+end
+
+-- Distinct quest titles matching the query, sorted and capped, for the
+-- type-ahead suggestion popup under the search box.
+local SEARCH_SUGGEST_MAX = 8
+local function searchSuggestions(query)
+    local q = (query or ""):lower()
+    local seen, titles = {}, {}
+    for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
+        local title = e.title
+        if title and not seen[title] and title:lower():find(q, 1, true) then
+            seen[title] = true
+            titles[#titles+1] = title
+        end
+    end
+    table.sort(titles)
+    while #titles > SEARCH_SUGGEST_MAX do titles[#titles] = nil end
+    return titles
 end
 
 -- ---------------------------------------------------------------------------
@@ -629,6 +782,23 @@ local function acquireRow(parent)
         row.badge = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         row.badge:SetJustifyH("CENTER")
         row.badge:Hide()
+
+        -- Persistent "selected" highlight for the quest whose detail panel is
+        -- open: a soft blue fill plus a brighter left accent bar. Drawn on the
+        -- BORDER layer so it sits above the section backings but below the ARTWORK
+        -- dot/title and the HIGHLIGHT hover sheen, so a selected row still lights
+        -- up further on hover. Toggled per-row in renderDisplay / the lightweight
+        -- UpdateSelectionHighlight pass.
+        row.selected = row:CreateTexture(nil, "BORDER")
+        row.selected:SetAllPoints()
+        row.selected:SetColorTexture(0.30, 0.46, 0.66, 0.20)
+        row.selected:Hide()
+        row.selectedEdge = row:CreateTexture(nil, "BORDER")
+        row.selectedEdge:SetPoint("TOPLEFT", 0, 0)
+        row.selectedEdge:SetPoint("BOTTOMLEFT", 0, 0)
+        row.selectedEdge:SetWidth(2)
+        row.selectedEdge:SetColorTexture(0.46, 0.66, 0.92, 0.95)
+        row.selectedEdge:Hide()
 
         row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
         row.highlight:SetAllPoints()
@@ -747,6 +917,8 @@ local function releaseAllRows()
     for _, row in ipairs(activeRows) do
         row.entry = nil
         row.sectionKey = nil
+        row.selected:Hide()
+        row.selectedEdge:Hide()
         row:Hide()
         row:ClearAllPoints()
         rowPool[#rowPool + 1] = row
@@ -865,19 +1037,26 @@ local function updateModeButtons()
             b.label:SetTextColor(0.55, 0.55, 0.52)
         end
     end
-    -- Dropdowns only matter in browse mode; the list start shifts to make room.
-    local browsing = (DT.UI.mode == "BROWSE")
-    mainFrame.continentDD:SetShown(browsing)
-    mainFrame.zoneDD:SetShown(browsing)
+    -- Layout below the sub-bar, top to bottom: the always-visible search bar
+    -- (+28 over the old base of 54), then — in Browse mode only — the continent/
+    -- zone dropdowns (+32). An active search overrides the tab content, so the
+    -- Browse dropdowns are irrelevant then and hide, reclaiming their band.
+    local searching = (DT.UI.searchQuery ~= "")
+    local showDropdowns = (DT.UI.mode == "BROWSE") and not searching
+    mainFrame.continentDD:SetShown(showDropdowns)
+    mainFrame.zoneDD:SetShown(showDropdowns)
     mainFrame.scroll:ClearAllPoints()
-    mainFrame.scroll:SetPoint("TOPLEFT", 12, browsing and -86 or -54)
+    mainFrame.scroll:SetPoint("TOPLEFT", 12, showDropdowns and -114 or -82)
     mainFrame.scroll:SetPoint("BOTTOMRIGHT", -18, 32)
 
     -- The All and Browse tabs (both grouped/collapsible) show the
     -- expand/collapse-all toggle at the right of the sub-bar; the reset countdown
     -- shifts left to make room when it's visible. The Current Zone tab has a
     -- single section, so the toggle would be pointless there.
-    local hasGroups = (DT.UI.mode == "ALL" or DT.UI.mode == "BROWSE")
+    -- Search shows a single flat "Search results" section, so the expand/collapse
+    -- toggle is pointless there (as in Current Zone) and hides.
+    local hasGroups = not searching
+        and (DT.UI.mode == "ALL" or DT.UI.mode == "FACTION" or DT.UI.mode == "BROWSE")
     mainFrame.collapseAllBtn:SetShown(hasGroups)
     mainFrame.reset:ClearAllPoints()
     if hasGroups then
@@ -1205,6 +1384,124 @@ local function createDropdown(parent, width)
     return dd
 end
 
+local function hideDropMenu()
+    if dropMenu then dropMenu:Hide() end
+end
+
+-- A themed search box: dark chip with a magnifier glyph, an EditBox, and a clear
+-- (×) button that appears once there's text. Typing live-filters the list (the
+-- query is stored on DT.UI and a Refresh rebuilds the display in search mode) and
+-- pops a type-ahead menu of matching quest names beneath the box. Picking a
+-- suggestion fills the box with that exact name. Reuses the shared dropMenu popup
+-- so the suggestions match the Browse dropdowns' look.
+local function createSearchBox(parent, width)
+    local box = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    box:SetSize(width, 22)
+    if box.SetBackdrop then
+        box:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        box:SetBackdropColor(0.06, 0.07, 0.09, 0.95)
+        box:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    end
+
+    local icon = box:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(14, 14)
+    icon:SetPoint("LEFT", 6, 0)
+    icon:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
+    icon:SetVertexColor(0.65, 0.65, 0.68)
+
+    -- Clear (×) button, only visible when the box has text.
+    local clear = CreateFrame("Button", nil, box)
+    clear:SetSize(16, 16)
+    clear:SetPoint("RIGHT", -4, 0)
+    clear.x = clear:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    clear.x:SetPoint("CENTER", 0, 1)
+    clear.x:SetText("×")
+    clear.x:SetTextColor(0.6, 0.6, 0.62)
+    clear:SetScript("OnEnter", function(s) s.x:SetTextColor(1, 0.45, 0.45) end)
+    clear:SetScript("OnLeave", function(s) s.x:SetTextColor(0.6, 0.6, 0.62) end)
+    clear:Hide()
+
+    local eb = CreateFrame("EditBox", nil, box)
+    eb:SetAutoFocus(false)
+    eb:SetFontObject("GameFontHighlightSmall")
+    eb:SetTextColor(0.92, 0.92, 0.88)
+    eb:SetMaxLetters(50)
+    eb:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+    eb:SetPoint("RIGHT", clear, "LEFT", -2, 0)
+    eb:SetHeight(20)
+    box.editBox = eb
+
+    -- Muted placeholder, hidden while typing or when text is present.
+    local placeholder = box:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    placeholder:SetPoint("LEFT", eb, "LEFT", 1, 0)
+    placeholder:SetText("Search quests by name…")
+    placeholder:SetTextColor(0.5, 0.5, 0.52)
+
+    -- Pop (or refresh) the type-ahead menu of matching names under the box.
+    local function showSuggestions()
+        local list = searchSuggestions(DT.UI.searchQuery)
+        if #list == 0 then hideDropMenu(); return end
+        box.builder = function()
+            local out = {}
+            for _, title in ipairs(list) do
+                out[#out+1] = { text = title, func = function()
+                    -- Programmatic set (userInput=false) so OnTextChanged won't
+                    -- re-open the menu; just filters to the chosen name.
+                    eb:SetText(title)
+                    eb:SetCursorPosition(#title)
+                    eb:SetFocus()
+                end }
+            end
+            return out
+        end
+        local m = ensureDropMenu()
+        m.owner = box
+        openDropMenu(box)
+    end
+
+    eb:SetScript("OnTextChanged", function(self, userInput)
+        local text = self:GetText() or ""
+        -- Trim leading/trailing spaces for matching but keep what the user typed.
+        DT.UI.searchQuery = text:gsub("^%s+", ""):gsub("%s+$", "")
+        placeholder:SetShown(text == "")
+        clear:SetShown(text ~= "")
+        DT.UI:Refresh()
+        if userInput and DT.UI.searchQuery ~= "" then
+            showSuggestions()
+        else
+            hideDropMenu()
+        end
+    end)
+    eb:SetScript("OnEscapePressed", function(self)
+        self:SetText("")
+        self:ClearFocus()
+        hideDropMenu()
+    end)
+    eb:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+        hideDropMenu()
+    end)
+    eb:SetScript("OnEditFocusGained", function() placeholder:Hide() end)
+    eb:SetScript("OnEditFocusLost", function(self)
+        placeholder:SetShown((self:GetText() or "") == "")
+    end)
+
+    clear:SetScript("OnClick", function()
+        eb:SetText("")
+        eb:SetFocus()
+        hideDropMenu()
+    end)
+
+    -- Let the magnifier act as a focus target too.
+    box:EnableMouse(true)
+    box:SetScript("OnMouseDown", function() eb:SetFocus() end)
+
+    return box
+end
+
 local function createMainFrame()
     local f = CreateFrame("Frame", "QuestTallyFrame", UIParent, "BackdropTemplate")
     f:SetSize(372, 470)
@@ -1369,9 +1666,16 @@ local function createMainFrame()
     end)
     f.collapseAllBtn:Hide()
 
-    -- Browse dropdowns (shown only in browse mode), sitting under the sub-bar.
+    -- Always-visible search bar, docked just under the sub-bar and spanning the
+    -- window width. Typing here filters the list by quest name across every tab.
+    f.searchBox = createSearchBox(f, 348)
+    f.searchBox:ClearAllPoints()
+    f.searchBox:SetPoint("TOPLEFT", f.subBar, "BOTTOMLEFT", 10, -4)
+    f.searchBox:SetPoint("TOPRIGHT", f.subBar, "BOTTOMRIGHT", -10, -4)
+
+    -- Browse dropdowns (shown only in browse mode), sitting under the search bar.
     f.continentDD = createDropdown(f, 132)
-    f.continentDD:SetPoint("TOPLEFT", f.subBar, "BOTTOMLEFT", 10, -3)
+    f.continentDD:SetPoint("TOPLEFT", f.searchBox, "BOTTOMLEFT", 0, -4)
     f.continentDD:SetBuilder(buildContinentMenu)
 
     f.zoneDD = createDropdown(f, 176)
@@ -1382,7 +1686,7 @@ local function createMainFrame()
     -- custom scrollbar is anchored to the scroll frame's right edge, so it tracks
     -- those repositions automatically.
     local scroll, content, scrollbar = createScrollFrame(f, CONTENT_WIDTH)
-    scroll:SetPoint("TOPLEFT", 12, -54)
+    scroll:SetPoint("TOPLEFT", 12, -82)  -- leaves room for the search bar; updateModeButtons retunes per mode
     scroll:SetPoint("BOTTOMRIGHT", -18, 32)
     f.scroll, f.content, f.scrollbar = scroll, content, scrollbar
 
@@ -1398,7 +1702,7 @@ local function createMainFrame()
     f.tabHi:SetHeight(1)
 
     f.modeButtons = {}
-    local modes = { { "ZONE", "Current Zone" }, { "ALL", "All" }, { "BROWSE", "Browse" } }
+    local modes = { { "ZONE", "Current Zone" }, { "ALL", "Expansion" }, { "FACTION", "Faction" }, { "BROWSE", "Browse" } }
     local n = #modes
     for i, m in ipairs(modes) do
         local b = CreateFrame("Button", nil, f)
@@ -1684,6 +1988,11 @@ local function renderDisplay(display)
             row.status:SetPoint("RIGHT", -8, 0)
             row.status:SetText("|cff" .. hex .. (DT.STATUS_LABEL[e.status] or "") .. "|r")
             row.dot:SetAlpha(done and 0.5 or 1)
+
+            -- Keep the open-detail quest highlighted as the list rebuilds.
+            local sel = entryIsSelected(e)
+            row.selected:SetShown(sel)
+            row.selectedEdge:SetShown(sel)
             y = y + ROW_HEIGHT
         end
         activeRows[#activeRows+1] = row
@@ -1702,15 +2011,46 @@ local function renderDisplay(display)
     end
 end
 
+-- Repaint only the selection highlight on the rows already on screen — cheap
+-- enough to call on every selection change without a full rebuild/reorder.
+function DT.UI:UpdateSelectionHighlight()
+    for _, row in ipairs(activeRows) do
+        if row.entry then
+            local sel = entryIsSelected(row.entry)
+            row.selected:SetShown(sel)
+            row.selectedEdge:SetShown(sel)
+        end
+    end
+end
+
+-- Set (or clear, with nil) the quest highlighted in the list. Driven by the
+-- DetailPanel so opening/closing the detail pane keeps the list in step.
+function DT.UI:SetSelectedQuest(entry)
+    if entry then
+        DT.UI.selectedQuestID = entry.questID
+        DT.UI.selectedTitle = entry.title
+    else
+        DT.UI.selectedQuestID = nil
+        DT.UI.selectedTitle = nil
+    end
+    DT.UI:UpdateSelectionHighlight()
+end
+
 function DT.UI:Refresh()
     if not mainFrame or not mainFrame:IsShown() then return end
 
     local display, summary
-    if DT.UI.mode == "BROWSE" then
+    if DT.UI.searchQuery ~= "" then
+        -- A name search overrides the active tab's content (the tab highlight
+        -- stays, so clearing the box returns to that view).
+        display, summary = buildSearchMode()
+    elseif DT.UI.mode == "BROWSE" then
         display, summary = buildBrowseMode()
         refreshDropdownLabels()
     elseif DT.UI.mode == "ALL" then
         display, summary = buildAllMode()
+    elseif DT.UI.mode == "FACTION" then
+        display, summary = buildFactionMode()
     else
         display, summary = buildZoneMode()
     end

@@ -2,6 +2,80 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.5.2] - 2026-06-25
+
+A **search & data-integrity** release. Adds a **name search bar** with type-ahead
+suggestions, and runs a deep, multi-source **cross-reference audit** of the whole
+catalog that removed quests which were never genuine retail dailies — wrong-game
+(Classic/SoD/MoP-Classic) IDs, rotating world-event "assault" quests, and a few
+one-time quests — and re-tagged some skyriding races that were leaking into the
+daily list. The "No Reputation" group in the Faction tab is now dailies-only.
+
+### Added
+- **Search bar.** A persistent search box under the sub-bar filters the list by
+  quest name as you type (matched against the cleaned and raw titles, across every
+  tab — not just the current view). Results show as a single flat, always-open
+  *Search results* section with a live match count, so every hit is visible without
+  expanding folded sections. Clearing the box returns to the active tab.
+- **Type-ahead suggestions.** Typing pops a themed auto-complete menu of up to 8
+  matching quest names; click one to fill the box with that exact name. Reuses the
+  shared popup so it matches the Browse dropdowns. `Esc` clears, `Enter` keeps the
+  filter and unfocuses.
+
+### Changed
+- **"No Reputation" is dailies-only.** Every quest in the Faction tab's
+  *No Reputation* group was cross-referenced; non-dailies were removed or re-tagged
+  (see **Data**). The Browse dropdowns hide while a search is active (they don't
+  apply to search results), reclaiming that row for the list.
+- **List selection highlight.** Opening a quest's detail panel now highlights that
+  quest's row in the list, and the highlight clears whenever the panel closes (by the
+  close button, a toggle-off, or the main window hiding) so it can't get stuck on a
+  row with no panel open.
+
+### Data
+- **Removed non-retail "stowaway" quests (26).** Classic, *Season of Discovery*,
+  and *MoP Classic* use quest IDs that overlap retail's modern ID bands, so the
+  ID-band classifier had mis-filed some into the retail catalog. Confirmed via the
+  retail **Game Data API** (they return 404 — they don't exist on retail) plus
+  source verification: the SoD "Blackrock Eruption" set, the MoP-Classic "Celestial
+  Challenge" dungeon dailies, SoD Ashenvale / Nightmare Incursion quests, WotLK
+  "Proof of Demise" (resolving a long-standing mis-tag), and the one-time WoD
+  dungeon quest *The Void-Gate* (which had also carried the wrong title).
+- **Removed rotating-assault quests (56).** The BFA 8.3 *N'Zoth Assault* dailies in
+  **Uldum** and the **Vale of Eternal Blossoms** are flagged "daily" but are only
+  available while that zone's assault is the active rotation — so in a tracker they
+  read as perpetually incomplete. They're not standing dailies, so they're out.
+- **Removed one-time quests (4 more):** *A Special Book* (Secrets of Azeroth chain
+  step), *Specter of War: Visectus* (a repeatable with no daily reset), plus
+  *The Funky Monkey Brew* and a mis-IDed *"Assault on Lost Veil Anzu"* entry.
+- **Re-tagged skyriding races (13).** Dragonflight race time-trials (zone *Rallies*,
+  *Storm Gryphon* courses, and *Little Scales Daycare* practice runs) were tagged as
+  faction dailies, so they bypassed the Skyriding filter and showed in the daily
+  list. They're now `type="Race"` like the rest of the courses, governed by the
+  **Skyriding** filter (hidden by default).
+- **Added 2 Midnight dailies.** *The Ephemeron Masquerade* (the Decor Duel daily)
+  and *Addition of Anguish*, both in **Silvermoon City** — neither was in the
+  catalog. Added `Silvermoon City → Eastern Kingdoms` to the zone map so they group
+  correctly.
+- Net catalog: **1,949** checklist dailies/weeklies (down from ~2,030 as the
+  non-dailies were pruned), **341** skyriding races, plus **3,632** world quests.
+
+### Fixed
+- **Brand-new dailies can be added at all.** Surfaced that the addon only renders
+  quests present in its shipped catalog — passive learning attaches status to an
+  *existing* entry but never creates a new row — so genuinely new content (e.g. the
+  Midnight Silvermoon dailies) has to be added to the catalog by hand.
+
+### Dev / tooling
+- **Cross-reference is now the standing process.** A new `_generator/lib/verify.js`
+  combines three independent signals — DB2 **QuestLine** membership (one-time/story),
+  the **Wowhead** daily/weekly flag, and the Blizzard **Game Data API** existence
+  check — because no single source is reliable (the API *over*-reports daily on
+  revamped/assault content; the Wowhead tooltip *under*-reports). The `--find-gaps`
+  completeness tool now bakes this in and only auto-confirms a daily when the sources
+  agree. Added `audit-full-catalog.js` (retail-existence sweep) and the No-Reputation
+  audit pipeline. All dev-only, outside the shipped addon.
+
 ## [0.5.1] - 2026-06-20
 
 A **detail-panel & rewards** release. The detail panel now shows **reputation and
