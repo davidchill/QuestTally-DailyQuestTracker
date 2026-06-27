@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.6.0** — built and tested against Retail patch **12.0.x**.
+> **Version 0.7.0** — built and tested against Retail patch **12.0.7**.
 > Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
 > (Legion → Midnight) from first-party sources.
@@ -67,11 +67,14 @@ available, tracking completion, and helping you finish them, organized by
   installed, **Shift+Left-click** a quest to drop a TomTom waypoint (with the arrow)
   at its giver. Works fully without TomTom.
 - **Quest details — baked in.** Click a quest to see its **rewards** (money,
-  items, currencies, **reputation**, and **honor**), **objectives**, **description**,
-  and **giver + location** — even for quests you haven't picked up. When you've
-  loaded a quest, Blizzard's **live** reward data (with item **icons** and quality
-  colors) is shown; otherwise the baked first-party data fills in. Reputation comes
-  live for **renown** factions and baked from Blizzard's API for classic ones.
+  items, currencies, **reputation**, **XP**, and **honor**), **objectives**,
+  **description**, and **giver + location** — even for quests you haven't picked up.
+  When you've loaded a quest, Blizzard's **live** reward data (with item **icons** and
+  quality colors) is shown; otherwise the baked first-party data fills in, **merged per
+  reward type** so a category the live API omits (e.g. a legacy currency) still shows.
+  Every reward type is baked from Blizzard's **Game Data API**; reputation also comes
+  live for **renown** factions. **XP** follows your level — hidden at max level (where
+  dailies grant none) and shown level-scaled while leveling.
 - **Search by name.** A **search bar** under the sub-bar filters the whole catalog
   by quest name as you type, with a **type-ahead suggestion** menu of matching names.
   **Pick a suggestion (or click any result) to open it in the detail panel.** Results
@@ -143,8 +146,10 @@ entry up with real-time status:
    **~3,600 world quests** (Legion → Midnight) — title, expansion, zone — mined
    from Blizzard's own retail client database (DB2, via wago.tools). Hidden by
    default (Blizzard tracks these on the map already).
-4. **Harvested details.** `Core/QuestRewards.lua` ships rewards/objectives read
-   first-party from the live client (see the harvester, below).
+4. **Consolidated rewards (Blizzard Game Data API).** `Core/QuestRewards.lua` is the
+   single baked source for every reward type — items, currency, money, XP, honor, and
+   **reputation** — built from Blizzard's first-party Game Data API (2,194 entries).
+   The detail panel reads it whenever live data isn't cached, merged per reward type.
 5. **Live status.** `Core/Checklist.lua` merges those catalogs and asks the game
    for each quest's real-time status — never stale. World quests are
    **rotation-aware**: ones not currently up read as *Not Active*.
@@ -187,9 +192,9 @@ Either way, the data is baked and shipped, so end users just install the addon.
   only a live harvest can resolve their zone).
 - Fill in world-quest rewards via periodic `Sweep` (inactive WQs don't stream
   reward data until live).
-- Extend the API enrichment to **item rewards/currencies** (descriptions and zones
-  done in 0.4.0; **reputation and honor** done in 0.5.1 — item rewards still rely on
-  live data + the harvest).
+- API reward enrichment is **complete**: descriptions/zones (0.4.0), reputation/honor
+  (0.5.1), and **item rewards, currencies, money, and XP** consolidated into the baked
+  source (0.7.0). Live data still supplies item **icons/quality** on demand.
 - World-map and minimap pins for daily turn-ins and objectives.
 - Live-ticking reset countdown (currently updates on quest events, not every second).
 
@@ -207,7 +212,7 @@ QuestTally/
 │   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords + API-baked reputation/honor (by id)
 │   ├── FactionIDs.lua        Baked faction name → factionID map (for the Faction-tab reputation bars)
 │   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
-│   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
+│   ├── QuestRewards.lua      Consolidated baked rewards — items/currency/money/XP/honor/reputation (Game Data API)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery
 │   ├── Zones.lua            Map/zone resolution + current-zone lookup

@@ -176,10 +176,11 @@ local function createPanel()
 
     local p = CreateFrame("Frame", "QuestTallyPinnedPanel", host, "BackdropTemplate")
     p:SetWidth(PANEL_WIDTH)
-    -- Mirror of the detail panel: overlap the main frame's left edge by 8px so the
-    -- two borders read as one continuous piece.
-    p:SetPoint("TOPRIGHT", host, "TOPLEFT", 8, 0)
-    p:SetPoint("BOTTOMRIGHT", host, "BOTTOMLEFT", 8, 0)
+    -- Dock flush against the main frame's left edge (no overlap): a positive X
+    -- offset here would push the panel's right edge INTO the window and draw its
+    -- border over the list's left margin. 0 keeps the two borders adjacent.
+    p:SetPoint("TOPRIGHT", host, "TOPLEFT", 0, 0)
+    p:SetPoint("BOTTOMRIGHT", host, "BOTTOMLEFT", 0, 0)
     p:SetFrameStrata("MEDIUM")
     p:EnableMouse(true)
 
@@ -248,6 +249,8 @@ end
 -- Public API
 -- ---------------------------------------------------------------------------
 function DT.Pinned:Show()
+    -- Never paint over the collapsed logo chip (see DT.Details:Show).
+    if DT.UI and DT.UI.IsCollapsed and DT.UI:IsCollapsed() then return end
     if not panel then panel = createPanel() end
     if not panel then return end
     panel:Show()

@@ -1,8 +1,8 @@
-## Interface: 120005
+## Interface: 120007
 ## Title: QuestTally - Daily Quest Tracker
 ## Notes: Designed to track ALL daily quests available in Retail from Vanilla through Midnight - lists what's available, tracks completion, and helps you finish them.
 ## Author: David Rodriguez
-## Version: 0.6.0
+## Version: 0.7.0
 ## SavedVariables: QuestTallyDB
 ## SavedVariablesPerCharacter: QuestTallyCharDB
 ## IconTexture: Interface\Icons\INV_Misc_Note_01

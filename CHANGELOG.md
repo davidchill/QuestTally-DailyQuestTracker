@@ -2,6 +2,55 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.7.0] - 2026-06-27
+
+A **client-compat, reward-data, and UI-polish** release. Updated for Retail
+**12.0.7**, completed a **full reward audit** that makes `Core/QuestRewards.lua`
+the single baked source for every reward type — closing large gaps in **currency**,
+**reputation**, and **XP** coverage — and fixed a batch of **collapse-chip** and
+**side-panel** behaviors.
+
+### Changed
+- **Updated for patch 12.0.7** (Interface `120007`).
+- **One consolidated reward source.** All structured rewards — items, currency,
+  money, XP, honor, and **reputation** — now live in `Core/QuestRewards.lua`. The
+  detail panel resolves each section **live-first** and fills the rest from this baked
+  table, so reputation and XP now display for quests that previously couldn't render
+  them (the data used to be split across `QuestRewards`/`WikiDetails` in a way that
+  shadowed XP and reputation).
+- **XP shown by player level.** Quest XP is now **hidden entirely at max level** (the
+  game awards none there) and shows the **live, level-scaled** value while leveling,
+  with the baked nominal value as a pre-load placeholder. Uses
+  `GetMaxLevelForPlayerExpansion()`, so it adapts to any level cap.
+- **Collapse chip opens down-and-right.** Collapsing and expanding now pivot around
+  the chip's **top-left corner** — the window grows down-and-right from the chip and
+  shrinks back into it — instead of around the center.
+- **Snappier chip drag.** Dragging the collapsed chip now begins almost immediately
+  (a small 3px threshold) rather than after WoW's larger built-in drag dead-zone; a
+  plain click still toggles collapse.
+
+### Fixed
+- **XP no longer flickers then vanishes** after a quest's data finishes loading (the
+  live API reports 0 XP at max level, which used to wipe the value shown a moment
+  earlier).
+- **Legacy currency rewards now show** (e.g. *Lesser Charm of Good Fortune*). Reward
+  rendering now merges live and baked data **per category**, so a reward type the live
+  API silently drops is still filled in from the baked table.
+- **Collapsed-chip cleanups:** the **Collapse All** button no longer reappears over
+  the chip after a quest event; the chip no longer **jumps off the cursor** when you
+  start dragging; and a stray **scrollbar stub** no longer appears beside the chip
+  (the list scrollbar was re-showing itself when the window shrank).
+- **Pinned panel no longer overlaps** the main window — it now docks **flush** against
+  the left edge instead of intruding 8px over the list.
+
+### Data
+- **Full reward audit (Blizzard Game Data API).** Pulled rewards for all **1,949**
+  catalog quests and rebuilt `Core/QuestRewards.lua` from that first-party data:
+  **702 → 2,194 entries**. Added **reputation** to ~1,100 quests and **currency** to
+  ~820, filled XP/money for ~1,000 more, and corrected **63** stale money values plus
+  the harvested-at-max-level XP across **405** quests. The ~40 quests the API doesn't
+  carry (mostly Call-to-Arms battleground dailies) keep their existing data.
+
 ## [0.6.0] - 2026-06-26
 
 A **UI & quality-of-life** release. Profession dailies now show their **specific

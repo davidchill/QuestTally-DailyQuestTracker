@@ -1326,7 +1326,11 @@ local function createScrollFrame(parent, width)
 
     local function update()
         local range = scroll:GetVerticalScrollRange()
-        if range <= 1 then bar:Hide(); return end
+        -- Never show the bar when there's nothing to scroll OR the scroll frame is
+        -- hidden. The latter matters on collapse: shrinking the window resizes the
+        -- (hidden) scroll frame, which fires OnScrollRangeChanged and would re-show
+        -- the bar beside the logo chip right after applyCollapsedGeometry hid it.
+        if range <= 1 or not scroll:IsShown() then bar:Hide(); return end
         bar:Show()
         if scroll:GetVerticalScroll() > range then scroll:SetVerticalScroll(range) end
         local trackH = bar:GetHeight()
@@ -1675,13 +1679,55 @@ local function createMainFrame()
     f:SetClampedToScreen(true)
     f:SetMovable(true)
     f:EnableMouse(true)
+    -- Persist the current position (CENTER/UIParent-CENTER, matching ResetPosition).
+    local function saveFramePosition()
+        local point, _, _, x, y = f:GetPoint()
+        DT.DB.account.framePosition = { point = point, x = x, y = y }
+    end
+
+    -- Title-bar drag (expanded window) uses the built-in mover.
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
-    f:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local point, _, _, x, y = self:GetPoint()
-        DT.DB.account.framePosition = { point = point, x = x, y = y }
-    end)
+    f:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); saveFramePosition() end)
+
+    -- Cursor travel (UI units) before a press on the logo becomes a drag instead of
+    -- a click. Small so the chip starts moving almost immediately; large enough that
+    -- a normal click still toggles collapse. Tune here.
+    local LOGO_DRAG_THRESHOLD = 3
+
+    -- Drag the window by its logo. We drive this from OnMouseDown rather than
+    -- RegisterForDrag because WoW's built-in drag dead-zone is far larger than the
+    -- 30x30 chip, so the chip wouldn't start moving until the cursor was well past
+    -- its edge. Here it follows as soon as the cursor passes LOGO_DRAG_THRESHOLD;
+    -- a press with no real movement falls through to a collapse/expand toggle. We
+    -- poll IsMouseButtonDown (not OnDragStop) so it keeps tracking even if the
+    -- cursor briefly leaves the chip, and re-anchor by TOP-LEFT so the chip's corner
+    -- stays under the grab point and the saved position matches ResetPosition.
+    local function onLogoMouseDown(_, button)
+        if button and button ~= "LeftButton" then return end
+        local scale = f:GetEffectiveScale()
+        local startCX, startCY = GetCursorPosition()
+        local baseX = f:GetLeft() - UIParent:GetLeft()
+        local baseY = f:GetTop() - UIParent:GetTop()
+        local dragging = false
+        f:SetScript("OnUpdate", function(self)
+            if not IsMouseButtonDown("LeftButton") then
+                self:SetScript("OnUpdate", nil)
+                if dragging then saveFramePosition() else DT.UI:ToggleCollapsed() end
+                return
+            end
+            local dx = (select(1, GetCursorPosition()) - startCX) / scale
+            local dy = (select(2, GetCursorPosition()) - startCY) / scale
+            if not dragging and (math.abs(dx) >= LOGO_DRAG_THRESHOLD or math.abs(dy) >= LOGO_DRAG_THRESHOLD) then
+                dragging = true
+            end
+            if dragging then
+                self:ClearAllPoints()
+                self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", baseX + dx, baseY + dy)
+            end
+        end)
+    end
+    f._onLogoMouseDown = onLogoMouseDown
 
     -- Flat dark panel with a thin 1px border.
     if f.SetBackdrop then
@@ -1724,8 +1770,10 @@ local function createMainFrame()
     f.logoBtn = CreateFrame("Button", nil, f)
     f.logoBtn:SetAllPoints(f.portrait)
     f.logoBtn:SetFrameLevel(f:GetFrameLevel() + 5)
-    f.logoBtn:RegisterForClicks("LeftButtonUp")
-    f.logoBtn:SetScript("OnClick", function() DT.UI:ToggleCollapsed() end)
+    -- Click toggles collapse; hold + move drags the window. Both are handled in
+    -- onLogoMouseDown so dragging starts immediately (past LOGO_DRAG_THRESHOLD)
+    -- rather than after WoW's large RegisterForDrag dead-zone.
+    f.logoBtn:SetScript("OnMouseDown", onLogoMouseDown)
     f.logoBtn:SetScript("OnEnter", function(self)
         local isC = DT.UI:IsCollapsed()
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
@@ -2292,6 +2340,11 @@ end
 
 function DT.UI:Refresh()
     if not mainFrame or not mainFrame:IsShown() then return end
+    -- While collapsed to the logo chip, the body chrome is hidden. Bail out so a
+    -- quest event firing Refresh doesn't re-show mode-conditional elements (the
+    -- Collapse All button, dropdowns, etc.) floating over the chip. Expanding goes
+    -- through SetCollapsed, which clears `collapsed` before calling Refresh itself.
+    if collapsed then return end
 
     local display, summary
     if DT.UI.searchQuery ~= "" then
@@ -2330,6 +2383,13 @@ end
 -- chip and hide/show the body. Panel snapshot+restore lives in SetCollapsed so
 -- this can also be reused to silently un-collapse on close.
 local function applyCollapsedGeometry(f, on)
+    -- Pivot collapse/expand around the TOP-LEFT corner: capture the current
+    -- top-left (anchor-independent, in UIParent units) before resizing, then
+    -- re-anchor the frame there afterward. So expanding grows DOWN and to the
+    -- RIGHT of the chip, and collapsing shrinks back up-left into that corner --
+    -- instead of the symmetric center-pivot a plain SetSize would give.
+    local xOff = f:GetLeft() - UIParent:GetLeft()
+    local yOff = f:GetTop() - UIParent:GetTop()
     if on then
         f._expW, f._expH = f:GetSize()
         for _, el in ipairs(f.collapsibles) do el:Hide() end
@@ -2342,6 +2402,10 @@ local function applyCollapsedGeometry(f, on)
         f.portrait:SetPoint("LEFT", f.titleBar, "LEFT", 9, 0)
         for _, el in ipairs(f.collapsibles) do el:Show() end
     end
+    -- Re-anchor by TOP-LEFT to the captured corner (SetPoint relativePoint matches
+    -- the frame point so saveFramePosition/ResetPosition stay self-consistent).
+    f:ClearAllPoints()
+    f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xOff, yOff)
 end
 
 function DT.UI:IsCollapsed() return collapsed end

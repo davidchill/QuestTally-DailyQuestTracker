@@ -128,22 +128,39 @@ local function qualityColor(quality)
     return { 1, 1, 1 }
 end
 
--- Render the rewards portion. Returns the updated y-cursor.
+-- True when the player is at the maximum level for their expansion. Quest XP is
+-- level-scaled and the game awards 0 at the cap, so we hide the XP line entirely
+-- for max-level characters; while leveling we show the live, level-scaled value.
+local function playerAtMaxLevel()
+    local lvl = UnitLevel and UnitLevel("player") or 0
+    local max = (GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion())
+        or (GetMaxLevelForExpansionLevel and GetExpansionLevel and GetMaxLevelForExpansionLevel(GetExpansionLevel()))
+        or (GetMaxPlayerLevel and GetMaxPlayerLevel())
+    return max ~= nil and lvl >= max
+end
+
+-- Render the rewards portion from the LIVE API. Returns the updated y-cursor and
+-- a `shown` table flagging which reward CATEGORIES were rendered (choices, items,
+-- currencies, also = money/xp/honor; plus `any`). The caller uses these flags to
+-- fill in only the categories the live API omitted from baked data -- the live
+-- API silently drops some rewards (e.g. legacy currencies like the Lesser Charm
+-- of Good Fortune), and we must not lose them just because money/items loaded.
 local function renderRewards(content, y, questID)
-    local rendered = false
+    local shown = {}
 
     local function sectionHeader(label)
         -- First header sits further below the objectives (10) to separate the two
         -- blocks now that there's no outer "Rewards" divider; later ones use 8.
         y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
-                                  spacingBefore = rendered and 8 or 10 })
-        rendered = true
+                                  spacingBefore = shown.any and 8 or 10 })
+        shown.any = true
     end
 
     -- Choice rewards ("pick one of these").
     local numChoices = GetNumQuestLogChoices and GetNumQuestLogChoices(questID) or 0
     if numChoices > 0 then
         sectionHeader("Choose one of:")
+        shown.choices = true
         for i = 1, numChoices do
             local name, texture, numItems, quality = GetQuestLogChoiceInfo(i, questID)
             if name then
@@ -158,6 +175,7 @@ local function renderRewards(content, y, questID)
     local numRewards = GetNumQuestLogRewards and GetNumQuestLogRewards(questID) or 0
     if numRewards > 0 then
         sectionHeader(numChoices > 0 and "You will also receive:" or "Rewards:")
+        shown.items = true
         for i = 1, numRewards do
             local name, texture, numItems, quality = GetQuestLogRewardInfo(i, questID)
             if name then
@@ -172,6 +190,7 @@ local function renderRewards(content, y, questID)
     local numCurr = GetNumQuestLogRewardCurrencies and GetNumQuestLogRewardCurrencies(questID) or 0
     if numCurr > 0 then
         sectionHeader("Currency:")
+        shown.currencies = true
         for i = 1, numCurr do
             local name, texture, numItems = GetQuestLogRewardCurrencyInfo(i, questID)
             if name then
@@ -186,8 +205,20 @@ local function renderRewards(content, y, questID)
     local xp = GetQuestLogRewardXP and GetQuestLogRewardXP(questID) or 0
     local honor = GetQuestLogRewardHonor and GetQuestLogRewardHonor(questID) or 0
 
+    -- XP is level-scaled. At max level it's meaningless (the game gives 0), so
+    -- hide it. While leveling, the live value is already scaled to the player;
+    -- before the async load lands it reads 0, so fall back to the baked nominal
+    -- value as a placeholder until the real scaled number arrives.
+    if playerAtMaxLevel() then
+        xp = 0
+    elseif xp == 0 then
+        local baked = DT.BakedDetails and DT.BakedDetails[questID]
+        if baked and baked.r and baked.r.xp then xp = baked.r.xp end
+    end
+
     if money > 0 or xp > 0 or honor > 0 then
         sectionHeader("Also:")
+        shown.also = true
         if money > 0 then
             local moneyStr = GetCoinTextureString and GetCoinTextureString(money)
                 or (math.floor(money / 10000) .. "g")
@@ -203,9 +234,9 @@ local function renderRewards(content, y, questID)
         end
     end
 
-    -- Caller decides what to show when nothing rendered (the "No rewards" line in
-    -- the cached path, or a softer note in the post-load fallback).
-    return y, rendered
+    -- Caller uses `shown` (per-category flags + `any`) to fill in only the reward
+    -- categories the live API didn't provide from the baked data.
+    return y, shown
 end
 
 -- ---------------------------------------------------------------------------
@@ -214,14 +245,21 @@ end
 -- earlier by the harvester (DT.DB:GetQuestDetails). The shape mirrors what
 -- Harvester:readRewards produces: lists of { name, icon, count, quality }.
 -- ---------------------------------------------------------------------------
-local function renderBakedRewards(content, y, rewards)
-    local rendered = false
+-- `skip` (optional): the `shown` flags returned by renderRewards -- categories
+-- the live API already rendered, so we don't duplicate them. `alreadyShown`: true
+-- when the live pass rendered any section, so our first header uses the tighter
+-- spacing. Returns the y-cursor and whether this pass rendered anything.
+local function renderBakedRewards(content, y, rewards, skip, alreadyShown)
+    skip = skip or {}
+    local rendered = alreadyShown or false
+    local didRender = false
     local function sectionHeader(label)
         -- First header sits further below the objectives (10) to separate the two
         -- blocks now that there's no outer "Rewards" divider; later ones use 8.
         y = addLine(content, y, { text = label, color = { 0.82, 0.68, 0.28 },
                                   spacingBefore = rendered and 8 or 10 })
         rendered = true
+        didRender = true
     end
     local function rewardLine(it)
         local qty = (it.count and it.count > 1) and (" x" .. it.count) or ""
@@ -229,29 +267,32 @@ local function renderBakedRewards(content, y, rewards)
                                   color = qualityColor(it.quality), indent = 6 })
     end
 
-    if rewards.choices then
+    if rewards.choices and not skip.choices then
         sectionHeader("Choose one of:")
         for _, it in ipairs(rewards.choices) do rewardLine(it) end
     end
-    if rewards.items then
-        sectionHeader(rewards.choices and "You will also receive:" or "Rewards:")
+    if rewards.items and not skip.items then
+        sectionHeader((rewards.choices or skip.choices) and "You will also receive:" or "Rewards:")
         for _, it in ipairs(rewards.items) do rewardLine(it) end
     end
-    if rewards.currencies then
+    if rewards.currencies and not skip.currencies then
         sectionHeader("Currency:")
         for _, it in ipairs(rewards.currencies) do
             y = addLine(content, y, { text = (it.count or 1) .. "x " .. it.name,
                                       icon = it.icon, indent = 6 })
         end
     end
-    if rewards.money or rewards.xp or rewards.honor then
+    -- XP hidden for max-level characters (see playerAtMaxLevel); while leveling
+    -- this baked value is the placeholder until the live scaled value loads.
+    local showXp = rewards.xp and not playerAtMaxLevel()
+    if (rewards.money or showXp or rewards.honor) and not skip.also then
         sectionHeader("Also:")
         if rewards.money then
             local moneyStr = GetCoinTextureString and GetCoinTextureString(rewards.money)
                 or (math.floor(rewards.money / 10000) .. "g")
             y = addLine(content, y, { text = moneyStr, indent = 6 })
         end
-        if rewards.xp then
+        if showXp then
             y = addLine(content, y, { text = BreakUpLargeNumbers(rewards.xp) .. " XP",
                                       color = { 0.6, 0.4, 0.9 }, indent = 6 })
         end
@@ -260,7 +301,7 @@ local function renderBakedRewards(content, y, rewards)
                                       color = { 1, 0.4, 0.3 }, indent = 6 })
         end
     end
-    return y, rendered
+    return y, didRender
 end
 
 -- Convert a shipped DT.BakedDetails entry (compact short keys, emitted by the
@@ -279,6 +320,14 @@ local function normalizeBaked(e)
         if e.r.c then r.choices = conv(e.r.c) end
         if e.r.i then r.items = conv(e.r.i) end
         if e.r.cu then r.currencies = conv(e.r.cu) end
+        -- Reputation now lives in the consolidated baked table too (key `rep`,
+        -- shape {{n,v}}). Rendered by renderReputation via bestReputation, not by
+        -- renderBakedRewards -- so it shows alongside live item rewards.
+        if e.r.rep then
+            local rr = {}
+            for _, x in ipairs(e.r.rep) do rr[#rr + 1] = { name = x.n, value = x.v } end
+            if #rr > 0 then r.reputation = rr end
+        end
         d.rewards = r
     end
     return d
@@ -402,10 +451,21 @@ local function resolveBaked(questID)
     local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
     if live and (live.rewards or live.objectives or live.description) then return live end
     local shipped = DT.BakedDetails and DT.BakedDetails[questID]
-    if shipped then return normalizeBaked(shipped) end
     local wiki = DT.WikiDetails and DT.WikiDetails[questID]
-    if wiki then return normalizeWiki(wiki) end
-    return nil
+    local s = shipped and normalizeBaked(shipped) or nil
+    local w = wiki and normalizeWiki(wiki) or nil
+    if not s and not w then return nil end
+    if not w then return s end
+    if not s then return w end
+    -- Both exist: BakedDetails is now the authoritative reward source, but a
+    -- reward-only baked entry can lack objectives/description -- fill those from
+    -- the wiki so adding rewards never hides the wiki's objective/flavor text.
+    return {
+        title = s.title or w.title,
+        objectives = (s.objectives and #s.objectives > 0) and s.objectives or w.objectives,
+        description = (s.description and s.description ~= "") and s.description or w.description,
+        rewards = s.rewards or w.rewards,
+    }
 end
 
 -- Resolve the DESCRIPTION on its own, across every source, taking the first that
@@ -433,7 +493,13 @@ local function bestReputation(questID)
     if not questID then return nil end
     local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(questID)
     if live and live.rewards and live.rewards.reputation then return live.rewards.reputation end
-    -- BakedDetails (harvested) has no rep field; WikiDetails is the baked source.
+    -- Consolidated baked table is now the primary baked rep source; WikiDetails
+    -- remains the fallback (e.g. the few quests the Game Data API 404s).
+    local b = DT.BakedDetails and DT.BakedDetails[questID]
+    if b then
+        local nb = normalizeBaked(b)
+        if nb.rewards and nb.rewards.reputation then return nb.rewards.reputation end
+    end
     local w = DT.WikiDetails and DT.WikiDetails[questID]
     if w and w.rep then return normalizeRep(w.rep) end
     return nil
@@ -574,14 +640,18 @@ local function renderQuestBody(content, y, questID)
         objShown = true
     end
 
-    -- Rewards: live (icons + quality) first, then baked/wiki names.
-    local hadRewards
-    y, hadRewards = renderRewards(content, y, questID)
-    local rewardsShown = hadRewards
-    if not hadRewards and baked and baked.rewards then
-        local shown
-        y, shown = renderBakedRewards(content, y, baked.rewards)
-        rewardsShown = shown
+    -- Rewards: live (icons + quality) first, then fill any reward CATEGORY the
+    -- live API omitted from baked data. The live API silently drops some rewards
+    -- (e.g. legacy currencies like the Lesser Charm of Good Fortune), so a
+    -- per-category merge is required -- an all-or-nothing fallback would lose them
+    -- the moment money/items loaded. `liveShown` flags what live already rendered.
+    local liveShown
+    y, liveShown = renderRewards(content, y, questID)
+    local rewardsShown = liveShown.any or false
+    if baked and baked.rewards then
+        local bakedShown
+        y, bakedShown = renderBakedRewards(content, y, baked.rewards, liveShown, liveShown.any)
+        rewardsShown = rewardsShown or bakedShown
     end
 
     -- Reputation: its own section (live renown -> baked string), so it can show
@@ -948,6 +1018,9 @@ end
 -- ---------------------------------------------------------------------------
 function DT.Details:Show(entry)
     if not entry then return end
+    -- Never paint over the collapsed logo chip (the side panels are hidden while
+    -- collapsed; expanding clears the flag before its restore re-shows them).
+    if DT.UI and DT.UI.IsCollapsed and DT.UI:IsCollapsed() then return end
     if not panel then panel = createPanel() end
     if not panel then return end  -- main frame doesn't exist yet
 
