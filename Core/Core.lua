@@ -15,6 +15,7 @@ local REFRESH_EVENTS = {
     "UNIT_QUEST_LOG_CHANGED",
     "ZONE_CHANGED_NEW_AREA",  -- player moved to a new zone (Current Zone view)
     "ZONE_CHANGED",
+    "UPDATE_FACTION",         -- reputation changed -> refresh the Faction tab bars
 }
 
 -- Events where we actively discover daily IDs by interacting with a quest giver

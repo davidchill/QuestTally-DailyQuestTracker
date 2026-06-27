@@ -2,6 +2,58 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.6.0] - 2026-06-26
+
+A **UI & quality-of-life** release. Profession dailies now show their **specific
+profession** on the inline tag, **PvP** coverage is rounded out, the **Faction
+tab** gains a **live reputation bar** atop each faction section, the **search box**
+reliably opens results in the detail panel, and the whole window can **collapse to
+a logo-only chip**.
+
+### Added
+- **Reputation bars on the Faction tab.** Each faction section now opens with a
+  horizontal **reputation bar** showing your live standing with that faction — fill
+  proportional to progress in the current level, with the **status and numbers
+  centered** (e.g. `Honored — 5,000 / 12,000`, `Renown 12 — Max`). Uses Blizzard's
+  standard standing colors, and handles all three systems: **classic** 8-step
+  factions, **renown / major** factions, **friendships**, and **paragon** past
+  Exalted. Factions you haven't encountered show a muted *Not yet discovered* bar.
+  Updates live as your reputation changes.
+- **Collapsible window.** **Click the QuestTally logo** in the title bar to condense
+  the entire window — list, tabs, search, and any open side panels — down to a
+  **logo-only chip**. Click it again to restore everything, **including the panels
+  that were open** (the detail panel reopens to the same quest). The chip stays
+  draggable; the rest of the title bar still works as the move handle.
+
+### Changed
+- **Profession tags name the profession.** The generic **Prof** chip is replaced by
+  the **specific profession** — *Jewelcrafting*, *Cooking*, *Fishing*, *Engineering*,
+  *Archaeology*, *First Aid*, etc. Driven off a profession whitelist, so profession
+  dailies whose data type isn't literally "Profession" (e.g. *Elemental Goo*, a
+  Jewelcrafting daily) are now tagged **and** respond to the Profession filter.
+- **Search results open the detail panel.** Picking a name from the type-ahead now
+  **opens that quest's details** directly (instead of only filling the box), and the
+  suggestion popup no longer blocks the first click on a result row — clicking any
+  search result reliably opens it on the first try.
+
+### Fixed
+- **PvP tag coverage.** World-PvP dailies that carried no PvP signal in the data are
+  now tagged: the **Halaa** dailies in *Nagrand* (*In Defense of Halaa*, *Enemies
+  Old and New* — "defeat 10 enemy players", honor-flagged) and the **Auchindoun
+  spirit-tower** dailies in *Terokkar Forest* (*Spirits of Auchindoun*, world-PvP
+  zone control like Tol Barad). Verified across Wowhead + the community wikis.
+
+### Data
+- **Profession re-tags (multi-source verified).** *Just a Flesh Wound* (30148, MoP)
+  re-tagged from a zone bucket to **First Aid**; *Fencing the Rose* (38399) corrected
+  **off** a false *Engineering* tag (it's a Booty Bay reputation daily, not a
+  profession quest). A full cross-reference sweep of the catalog confirmed every
+  other profession daily was already labeled correctly.
+- **New `Core/FactionIDs.lua`.** A baked faction **name → factionID** table (86
+  factions our catalog rewards), generated from the first-party Blizzard Game Data
+  quest-reward cache, so the reputation bar can resolve any faction via the live API
+  without a fragile reputation-pane scan.
+
 ## [0.5.2] - 2026-06-25
 
 A **search & data-integrity** release. Adds a **name search bar** with type-ahead

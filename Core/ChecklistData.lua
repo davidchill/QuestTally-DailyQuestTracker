@@ -408,7 +408,7 @@ e[#e+1]={id=30067,rawTitle="The Shadow of Doubt",expansion="MOP",type="Faction",
 e[#e+1]={id=30068,rawTitle="Flames of the Void",expansion="MOP",type="Faction",side="Both",category="Jade Temple Grounds",giver="Elder Sage Tai-Feng",zoneName="The Jade Forest"}
 e[#e+1]={id=30146,rawTitle="Snack Time",expansion="MOP",type="Profession",side="Both",category="Fishing",giver="Jenova Longeye",zoneName="The Jade Forest"}
 e[#e+1]={id=30147,rawTitle="Fragments of the Past",expansion="MOP",type="Profession",side="Both",category="Archaeology",giver="Jenova Longeye",zoneName="The Jade Forest"}
-e[#e+1]={id=30148,rawTitle="Just a Flesh Wound",expansion="MOP",type="Faction",side="Both",category="The Arboretum",giver="Jenova Longeye",zoneName="The Jade Forest"}
+e[#e+1]={id=30148,rawTitle="Just a Flesh Wound",expansion="MOP",type="Faction",side="Both",category="First Aid",giver="Jenova Longeye",zoneName="The Jade Forest"}
 e[#e+1]={id=30149,rawTitle="A Feast for the Senses",expansion="MOP",type="Profession",side="Both",category="Cooking",giver="Jenova Longeye",zoneName="The Jade Forest"}
 e[#e+1]={id=30150,rawTitle="Sweet as Honey",expansion="MOP",type="Faction",side="Both",category="Jade Forest",giver="Your Hatchling",zoneName="The Jade Forest"}
 e[#e+1]={id=30151,rawTitle="Catch!",expansion="MOP",type="Faction",side="Both",category="Jade Forest",giver="Your Hatchling",zoneName="The Jade Forest"}
@@ -1023,7 +1023,7 @@ e[#e+1]={id=38243,rawTitle="A Bit of Ore",expansion="WOD",type="Faction",side="B
 e[#e+1]={id=38287,rawTitle="Raw Beast Hides",expansion="WOD",type="Faction",side="Both",category="Garrison Support",giver="Jake the Fox",zoneName="Garrison Support"}
 e[#e+1]={id=38293,rawTitle="Sumptuous Fur",expansion="WOD",type="Faction",side="Both",category="Garrison Support",giver="Dorothy \"Two\"",zoneName="Garrison Support"}
 e[#e+1]={id=38296,rawTitle="Herbs Galore",expansion="WOD",type="Faction",side="Both",category="Garrison Support",giver="Samantha Scarlet",zoneName="Garrison Support"}
-e[#e+1]={id=38399,rawTitle="Fencing the Rose",expansion="WOD",type="Faction",side="Both",category="Engineering",giver="Catelyn the Blade",zoneName="Cape of Stranglethorn"}
+e[#e+1]={id=38399,rawTitle="Fencing the Rose",expansion="WOD",type="Faction",side="Both",category="Cape of Stranglethorn",giver="Catelyn the Blade",zoneName="Cape of Stranglethorn"}
 e[#e+1]={id=38586,rawTitle="Assault on the Throne of Kil'jaeden",expansion="WOD",type="Faction",side="Horde",category="Tanaan Jungle",giver="Tanaan Planning Map",zoneName="Tanaan Jungle"}
 e[#e+1]={id=39509,rawTitle="Bloodied Blades of Zeth'Gol",expansion="LEGION",type="Faction",side="Horde",category="Tanaan Jungle",giver="Shadow Hunter Denjai",zoneName="Tanaan Jungle"}
 e[#e+1]={id=39510,rawTitle="A Little Wetwork",expansion="LEGION",type="Faction",side="Horde",category="Tanaan Jungle",giver="Shadow Hunter Denjai",zoneName="Tanaan Jungle"}

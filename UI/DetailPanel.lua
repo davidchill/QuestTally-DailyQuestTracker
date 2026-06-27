@@ -969,6 +969,12 @@ function DT.Details:IsShown()
     return panel and panel:IsShown()
 end
 
+-- The entry currently displayed, so a caller (e.g. the title-bar collapse) can
+-- close the panel and later reopen it to the same quest.
+function DT.Details:GetEntry()
+    return lastEntry
+end
+
 -- Left-click behavior: open the panel for this entry, or close it if the same
 -- quest is clicked again (a quick toggle).
 function DT.Details:Toggle(entry)

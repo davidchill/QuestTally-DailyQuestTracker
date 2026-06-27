@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.5.2** — built and tested against Retail patch **12.0.x**.
+> **Version 0.6.0** — built and tested against Retail patch **12.0.x**.
 > Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
 > (Legion → Midnight) from first-party sources.
@@ -28,13 +28,18 @@ available, tracking completion, and helping you finish them, organized by
   and close buttons, and bottom tabs. **Sections start collapsed** on the All and
   Browse tabs so you drill into just what you need. Movable, with remembered
   position and persisted fold state.
+- **Collapse to a logo chip.** **Click the title-bar logo** to condense the whole
+  window — list, tabs, search, and any open side panels — to a small **logo-only
+  chip**; click again to restore everything, including the panels that were open.
+  The chip stays draggable.
 - **Pinned panel.** Middle-click any quest to **pin** it; a companion panel docks
   to the left of the window listing your pins (status + zone). Left-click a pinned
   row to open its details, right-click to un-pin. Toggle it with the title-bar
   **Pinned** button.
-- **Quest-kind tags.** A small inline badge labels each quest's kind — **Prof**,
-  **Pet**, **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**,
-  **Garrison** — so it groups by zone yet stays identifiable at a glance.
+- **Quest-kind tags.** A small inline badge labels each quest's kind — **Pet**,
+  **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**, **Garrison**
+  — so it groups by zone yet stays identifiable at a glance. **Profession** dailies
+  name the **specific profession** (e.g. *Jewelcrafting*, *Cooking*, *Fishing*).
 - **Daily vs Weekly.** Weekly quests are marked with a distinct **gold "Weekly"
   tag** so they're easy to tell apart from dailies, and the reset countdown is
   frequency-aware. Completion stays accurate automatically — the game resets
@@ -69,10 +74,16 @@ available, tracking completion, and helping you finish them, organized by
   live for **renown** factions and baked from Blizzard's API for classic ones.
 - **Search by name.** A **search bar** under the sub-bar filters the whole catalog
   by quest name as you type, with a **type-ahead suggestion** menu of matching names.
-  Results show as one flat *Search results* list with a live match count; clearing
-  the box returns to the active tab.
+  **Pick a suggestion (or click any result) to open it in the detail panel.** Results
+  show as one flat *Search results* list with a live match count; clearing the box
+  returns to the active tab.
 - **Search by location.** Three tabs: **Current Zone** *(default)* · **All**
-  (everything by expansion) · **Browse** (pick a Continent → Zone).
+  (everything by expansion) · **Faction** (grouped by reputation faction) ·
+  **Browse** (pick a Continent → Zone).
+- **Reputation bars.** On the **Faction** tab, each faction section opens with a
+  **live reputation bar** — your current standing with that faction shown as a
+  progress bar with the **status and numbers** in the middle (classic, renown,
+  friendship, and paragon all supported), in Blizzard's standing colors.
 - **Faction-aware.** Only your character's faction's dailies are shown.
 - **Reset timer, row actions.** Time until daily reset; **left-click** for
   details, **middle-click** to **pin**, **right-click** to **travel to the giver /
@@ -194,6 +205,7 @@ QuestTally/
 │   ├── ChecklistData.lua    Daily master list from warcraft.wiki (id/zone/giver)
 │   ├── ChecklistDataExtra.lua  API-found dailies/weeklies the wiki missed (~570; gaps + races)
 │   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords + API-baked reputation/honor (by id)
+│   ├── FactionIDs.lua        Baked faction name → factionID map (for the Faction-tab reputation bars)
 │   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
 │   ├── QuestRewards.lua      Baked rewards/objectives/descriptions (harvested)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)

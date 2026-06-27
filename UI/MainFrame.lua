@@ -14,6 +14,7 @@ local addonName, DT = ...
 DT.UI = {}
 
 local ROW_HEIGHT = 20
+local REPBAR_HEIGHT = 24        -- reputation bar row (Faction tab)
 local SECTION_HEIGHT = 24
 local SUBSECTION_HEIGHT = 21   -- nested zone / themed sub-group headers (level 2)
 local SUBSECTION_INDENT = 14   -- how far level-2 headers are inset from the left
@@ -87,6 +88,7 @@ DT.UI.browseContinent = nil    -- selected continent NAME
 DT.UI.browseZone = nil         -- selected zone NAME (nil = all zones)
 DT.UI.searchQuery = ""         -- active name filter (empty = inactive, normal mode)
 local browseTree = {}          -- cached continent->zone tree for the dropdowns
+local collapsed = false        -- title-bar collapsed to a logo-only chip (session only)
 
 -- The quest currently shown in the detail panel, kept highlighted in the list.
 -- Stored as id + title (not an entry reference) because rows/entries are rebuilt
@@ -153,6 +155,27 @@ local PROFESSION_WQ = {
     ["Tailoring World Quest"]     = true,
 }
 
+-- Profession dailies store the profession name directly in `category` (e.g.
+-- "Jewelcrafting", "Cooking"). NOTE: `category` is overloaded — most quests use
+-- it for a zone or holiday — so we match against this explicit whitelist of real
+-- professions rather than treating any category as a profession. This also catches
+-- entries whose `type` isn't "Profession" (e.g. Elemental Goo is type="Faction").
+local PROFESSIONS = {
+    ["Alchemy"]       = true, ["Blacksmithing"] = true, ["Cooking"]      = true,
+    ["Enchanting"]    = true, ["Engineering"]   = true, ["Fishing"]      = true,
+    ["Herbalism"]     = true, ["Inscription"]   = true, ["Jewelcrafting"]= true,
+    ["Leatherworking"]= true, ["Mining"]        = true, ["Skinning"]     = true,
+    ["Tailoring"]     = true, ["Archaeology"]   = true, ["First Aid"]    = true,
+}
+
+-- The specific profession to show on a quest's inline tag, or nil if not a
+-- profession daily. World-quest profession variants are excluded — world quests
+-- are filtered out of the list entirely and never render a row.
+local function professionLabel(e)
+    if e.category and PROFESSIONS[e.category] then return e.category end
+    return nil
+end
+
 local function isBattlePet(e)
     return e.category == "Battle Pets"
         or (e.category and e.category:find("Battle Pet", 1, true) ~= nil)
@@ -160,6 +183,7 @@ end
 
 local function isProfession(e)
     if e.type == "Profession" then return true end
+    if professionLabel(e) then return true end
     return e.category ~= nil and PROFESSION_WQ[e.category] == true
 end
 
@@ -173,8 +197,18 @@ end
 -- is just the zone, e.g. the TWW Ashenvale battle). Tag them by quest ID. Extend
 -- this set as new ones appear — it only drives the label, not the zone grouping.
 local PVP_QUESTS = {
-    [79090] = true, -- Repelling Invaders   (Ashenvale, Alliance)
-    [79098] = true, -- Clear the Forest!    (Ashenvale, Horde)
+    [79090] = true, -- Repelling Invaders   (Ashenvale, Alliance) -- detail-only, not yet a tracked entry
+    [79098] = true, -- Clear the Forest!    (Ashenvale, Horde)    -- detail-only, not yet a tracked entry
+    -- Halaa world-PvP dailies (Nagrand, TBC): objective is "Defeat 10 enemy
+    -- players", honor-rewarding, Wowhead-flagged "PvP required". Categorized by
+    -- zone in the data, so they carry no PvP signal without this.
+    [11502] = true, -- In Defense of Halaa  (Nagrand, Alliance)
+    [11503] = true, -- Enemies Old and New  (Nagrand, Horde)
+    -- Auchindoun spirit-tower dailies (Terokkar, TBC): "Secure a Spirit Tower" in
+    -- the contested Bone Wastes — world-PvP *zone control*, the same basis on
+    -- which PVP_ZONES already classifies Tol Barad as PvP.
+    [11505] = true, -- Spirits of Auchindoun (Terokkar, Alliance)
+    [11506] = true, -- Spirits of Auchindoun (Terokkar, Horde)
 }
 
 -- Contested PvP-control zones: every daily here is gated on your faction holding
@@ -495,6 +529,98 @@ local FACTION_ACCENT = { 0.64, 0.55, 0.86 }
 -- Quests with no known reputation reward bucket here; sorted to the bottom.
 local NO_FACTION = "No Reputation"
 
+-- Thousands-separated integer for the reputation bar's "cur / max" readout.
+local function commaNum(n)
+    local s = tostring(math.floor((n or 0) + 0.5))
+    local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+    return (out:gsub("^,", ""))
+end
+
+-- Bar colors for the systems the standard 8-step reaction palette doesn't cover.
+local RENOWN_BAR_COLOR     = { 0.35, 0.60, 0.95 }  -- major-faction renown (blue)
+local FRIENDSHIP_BAR_COLOR = { 0.40, 0.75, 0.55 }  -- friendship reps (teal-green)
+local PARAGON_BAR_COLOR    = { 0.72, 0.52, 0.95 }  -- past-exalted paragon (violet)
+local REP_BAR_FALLBACK     = { 0.45, 0.60, 0.90 }
+
+-- Resolve a faction NAME to the player's LIVE standing for the reputation bar.
+-- The Faction tab groups by name; DT.FactionIDs (baked) maps name -> factionID so
+-- we can hit the ID-based reputation API. Handles the three systems WoW exposes:
+-- major/renown, friendships, and classic 8-step factions (+ paragon past exalted).
+-- Returns a table: { discovered, level, cur, max, pct, color, maxed }.
+local function factionRepInfo(name)
+    local id = name and DT.FactionIDs and DT.FactionIDs[name]
+    if not id then return { discovered = false } end
+
+    -- Major / renown faction (Dragonflight+).
+    if C_Reputation and C_Reputation.IsMajorFaction and C_Reputation.IsMajorFaction(id) then
+        local d = C_MajorFactions and C_MajorFactions.GetMajorFactionData
+            and C_MajorFactions.GetMajorFactionData(id)
+        if not d or d.isUnlocked == false then return { discovered = false } end
+        local maxed = C_MajorFactions.HasMaximumRenown and C_MajorFactions.HasMaximumRenown(id)
+        local cur, max = d.renownReputationEarned or 0, d.renownLevelThreshold or 0
+        return {
+            discovered = true,
+            level = "Renown " .. (d.renownLevel or 0),
+            cur = cur, max = max,
+            pct = maxed and 1 or ((max > 0) and (cur / max) or 0),
+            color = RENOWN_BAR_COLOR, maxed = maxed,
+        }
+    end
+
+    -- Friendship faction (Brann, Tuskarr, classic friendships, ...).
+    if C_Reputation and C_Reputation.GetFriendshipReputation then
+        local fr = C_Reputation.GetFriendshipReputation(id)
+        if fr and (fr.friendshipFactionID or 0) > 0 then
+            local hasNext = fr.nextThreshold and fr.reactionThreshold
+            local cur = hasNext and ((fr.standing or 0) - fr.reactionThreshold) or 1
+            local max = hasNext and (fr.nextThreshold - fr.reactionThreshold) or 1
+            return {
+                discovered = true,
+                level = fr.reaction or "Friendship",
+                cur = cur, max = max,
+                pct = (max > 0) and (cur / max) or 1,
+                color = FRIENDSHIP_BAR_COLOR, maxed = not hasNext,
+            }
+        end
+    end
+
+    -- Classic 8-step faction. GetFactionDataByID returns nil for factions the
+    -- player has never encountered -> treat as not yet discovered.
+    if C_Reputation and C_Reputation.GetFactionDataByID then
+        local d = C_Reputation.GetFactionDataByID(id)
+        if d and d.name then
+            local reaction = d.reaction or 4
+            local lo, hi = d.currentReactionThreshold or 0, d.nextReactionThreshold or 0
+            local val = d.currentStanding or 0
+            local exalted = (reaction >= 8) or (hi <= lo)
+            local pal = _G.FACTION_BAR_COLORS and _G.FACTION_BAR_COLORS[reaction]
+            local info = {
+                discovered = true,
+                level = _G["FACTION_STANDING_LABEL" .. reaction] or "Neutral",
+                cur = val - lo, max = (hi > lo) and (hi - lo) or 0,
+                pct = exalted and 1 or ((hi > lo) and ((val - lo) / (hi - lo)) or 0),
+                color = pal and { pal.r, pal.g, pal.b } or REP_BAR_FALLBACK,
+                maxed = exalted,
+            }
+            -- Paragon overlay: reputation earned past Exalted, cycling to a cache.
+            if exalted and C_Reputation.IsFactionParagon and C_Reputation.IsFactionParagon(id) then
+                local pv, pthresh = C_Reputation.GetFactionParagonInfo(id)
+                if pthresh and pthresh > 0 then
+                    info.level = "Paragon"
+                    info.cur = (pv or 0) % pthresh
+                    info.max = pthresh
+                    info.pct = info.cur / pthresh
+                    info.color = PARAGON_BAR_COLOR
+                    info.maxed = false
+                end
+            end
+            return info
+        end
+    end
+
+    return { discovered = false }
+end
+
 -- Resolve a quest's PRIMARY reputation-faction NAME for grouping. Prefers the
 -- live-harvested rep cached this session, then the baked wiki rep (the broad
 -- source — ~70% of the catalog carries it). Returns nil when no rep is known, so
@@ -543,6 +669,11 @@ local function groupByFaction(entries)
             color = FACTION_ACCENT, key = key, collapsed = collapsed,
         }
         if not collapsed then
+            -- A live reputation bar tops each real faction section (not the
+            -- catch-all "No Reputation" bucket).
+            if name ~= NO_FACTION then
+                display[#display+1] = { type = "repbar", faction = name, depth = 1 }
+            end
             for _, e in ipairs(list) do
                 display[#display+1] = { type = "quest", entry = e, depth = 1 }
             end
@@ -688,21 +819,23 @@ local function buildSearchMode()
 end
 
 -- Distinct quest titles matching the query, sorted and capped, for the
--- type-ahead suggestion popup under the search box.
+-- type-ahead suggestion popup under the search box. Each result carries the
+-- backing entry so picking a suggestion can open it in the Details panel
+-- directly (first entry wins when several share a title).
 local SEARCH_SUGGEST_MAX = 8
 local function searchSuggestions(query)
     local q = (query or ""):lower()
-    local seen, titles = {}, {}
+    local seen, out = {}, {}
     for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
         local title = e.title
         if title and not seen[title] and title:lower():find(q, 1, true) then
             seen[title] = true
-            titles[#titles+1] = title
+            out[#out+1] = { title = title, entry = e }
         end
     end
-    table.sort(titles)
-    while #titles > SEARCH_SUGGEST_MAX do titles[#titles] = nil end
-    return titles
+    table.sort(out, function(a, b) return a.title < b.title end)
+    while #out > SEARCH_SUGGEST_MAX do out[#out] = nil end
+    return out
 end
 
 -- ---------------------------------------------------------------------------
@@ -800,11 +933,27 @@ local function acquireRow(parent)
         row.selectedEdge:SetColorTexture(0.46, 0.66, 0.92, 0.95)
         row.selectedEdge:Hide()
 
+        -- Reputation bar (Faction tab): a dark track, a colored fill sized to the
+        -- player's progress in the current standing, and centered status text.
+        -- Fill sits a sublevel above the track; text on OVERLAY above both.
+        row.repTrack = row:CreateTexture(nil, "ARTWORK", nil, 0)
+        row.repTrack:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.repTrack:Hide()
+        row.repFill = row:CreateTexture(nil, "ARTWORK", nil, 1)
+        row.repFill:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.repFill:Hide()
+        row.repText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        row.repText:SetJustifyH("CENTER")
+        row.repText:Hide()
+
         row.highlight = row:CreateTexture(nil, "HIGHLIGHT")
         row.highlight:SetAllPoints()
         row.highlight:SetColorTexture(1, 1, 1, 0.06)
 
         row:SetScript("OnClick", function(self, button)
+            -- Dismiss a lingering (non-modal) search type-ahead popup so it
+            -- doesn't hover over the list after you've picked from the list.
+            if DT.UI.HideDropMenu then DT.UI.HideDropMenu() end
             -- Section header: toggle its collapsed state.
             if self.sectionKey then
                 DT.DB:ToggleCollapsed(self.sectionKey)
@@ -919,6 +1068,9 @@ local function releaseAllRows()
         row.sectionKey = nil
         row.selected:Hide()
         row.selectedEdge:Hide()
+        row.repTrack:Hide()
+        row.repFill:Hide()
+        row.repText:Hide()
         row:Hide()
         row:ClearAllPoints()
         rowPool[#rowPool + 1] = row
@@ -1311,7 +1463,11 @@ end
 
 local MENU_PAD = 6
 local MENU_ROW_H = 18
-local function openDropMenu(dd)
+-- modal (default): a fullscreen catcher closes the menu on any outside click —
+-- right for the Browse dropdowns. modal=false skips the catcher so the menu does
+-- NOT sit over (and swallow clicks meant for) the quest list — used by the search
+-- type-ahead, which must let you click a result row underneath it.
+local function openDropMenu(dd, modal)
     local m = ensureDropMenu()
     local entries = dd.builder and dd.builder() or {}
     local y = -MENU_PAD
@@ -1345,7 +1501,7 @@ local function openDropMenu(dd)
     m:SetHeight(-y + MENU_PAD)
     m:ClearAllPoints()
     m:SetPoint("TOPLEFT", dd, "BOTTOMLEFT", 0, -2)
-    m.catcher:Show()
+    if modal == false then m.catcher:Hide() else m.catcher:Show() end
     m:Show()
 end
 
@@ -1387,6 +1543,9 @@ end
 local function hideDropMenu()
     if dropMenu then dropMenu:Hide() end
 end
+-- Exposed so the quest rows (whose OnClick is defined earlier) can dismiss a
+-- lingering non-modal search popup when a result is clicked.
+DT.UI.HideDropMenu = hideDropMenu
 
 -- A themed search box: dark chip with a magnifier glyph, an EditBox, and a clear
 -- (×) button that appears once there's text. Typing live-filters the list (the
@@ -1446,20 +1605,25 @@ local function createSearchBox(parent, width)
         if #list == 0 then hideDropMenu(); return end
         box.builder = function()
             local out = {}
-            for _, title in ipairs(list) do
-                out[#out+1] = { text = title, func = function()
-                    -- Programmatic set (userInput=false) so OnTextChanged won't
-                    -- re-open the menu; just filters to the chosen name.
-                    eb:SetText(title)
-                    eb:SetCursorPosition(#title)
-                    eb:SetFocus()
+            for _, s in ipairs(list) do
+                out[#out+1] = { text = s.title, func = function()
+                    -- Picking a suggestion IS selecting that result: open it in
+                    -- the Details panel. Open first so the row highlights when the
+                    -- list rebuilds, then mirror the name into the box (a
+                    -- programmatic set, userInput=false, so the menu won't re-open
+                    -- and the list filters down to the pick).
+                    DT.Details:Show(s.entry)
+                    eb:SetText(s.title)
+                    eb:SetCursorPosition(#s.title)
+                    eb:ClearFocus()
+                    hideDropMenu()
                 end }
             end
             return out
         end
         local m = ensureDropMenu()
         m.owner = box
-        openDropMenu(box)
+        openDropMenu(box, false)  -- non-modal: never block clicks on the results list
     end
 
     eb:SetScript("OnTextChanged", function(self, userInput)
@@ -1487,6 +1651,7 @@ local function createSearchBox(parent, width)
     eb:SetScript("OnEditFocusGained", function() placeholder:Hide() end)
     eb:SetScript("OnEditFocusLost", function(self)
         placeholder:SetShown((self:GetText() or "") == "")
+        hideDropMenu()
     end)
 
     clear:SetScript("OnClick", function()
@@ -1553,6 +1718,22 @@ local function createMainFrame()
     f.portrait:SetSize(18, 18)
     f.portrait:SetPoint("LEFT", f.titleBar, "LEFT", 9, 0)
     f.portrait:SetTexture("Interface\\AddOns\\QuestTally\\Media\\QuestTally-Logo.tga")
+
+    -- Clicking the logo collapses the whole window to a logo-only chip (and back).
+    -- Scoped to the logo so the rest of the title bar still works as a drag handle.
+    f.logoBtn = CreateFrame("Button", nil, f)
+    f.logoBtn:SetAllPoints(f.portrait)
+    f.logoBtn:SetFrameLevel(f:GetFrameLevel() + 5)
+    f.logoBtn:RegisterForClicks("LeftButtonUp")
+    f.logoBtn:SetScript("OnClick", function() DT.UI:ToggleCollapsed() end)
+    f.logoBtn:SetScript("OnEnter", function(self)
+        local isC = DT.UI:IsCollapsed()
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+        GameTooltip:SetText(isC and "Expand QuestTally" or "Collapse QuestTally", 1, 1, 1)
+        GameTooltip:AddLine("Click the logo to " .. (isC and "expand" or "collapse") .. " the window.", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    f.logoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.title:SetPoint("LEFT", f.portrait, "RIGHT", 7, 0)
@@ -1814,6 +1995,19 @@ local function createMainFrame()
     sp:Finish()
     f.settings = sp
 
+    -- Everything that hides when the window collapses to its logo chip. The
+    -- mode-conditional bits (dropdowns, collapse-all) are included so they hide on
+    -- collapse; on expand a Refresh re-evaluates their per-tab visibility, so it's
+    -- fine to blanket-Show them here first. The title bar, its bevels and the logo
+    -- stay — they ARE the chip. The Filters/Settings overlays and the side panels
+    -- are handled separately (snapshotted and restored) in SetCollapsed.
+    f.collapsibles = {
+        f.title, f.progress, f.close, f.settingsBtn, f.filtersBtn, f.pinnedBtn,
+        f.subBar, f.summary, f.reset, f.searchBox, f.scroll, f.scrollbar,
+        f.tabBar, f.tabHi, f.continentDD, f.zoneDD, f.collapseAllBtn,
+    }
+    for _, b in ipairs(f.modeButtons) do f.collapsibles[#f.collapsibles + 1] = b end
+
     return f
 end
 
@@ -1921,6 +2115,61 @@ local function renderDisplay(display)
             row.status:SetText("")
             y = y + ROW_HEIGHT * 2
 
+        elseif item.type == "repbar" then
+            -- Live reputation bar atop a faction section: track + progress fill +
+            -- centered "Standing — cur / max" (or "Not yet discovered").
+            local indent = (item.depth or 1) * SUBSECTION_INDENT
+            local left, rightPad = 12 + indent, 10
+            row:SetSize(CONTENT_WIDTH, REPBAR_HEIGHT)
+            row.entry = nil
+            row.sectionKey = nil
+            row:EnableMouse(false)
+            row.dot:Hide(); row.accent:Hide(); row.headerBg:Hide(); row.icon:Hide()
+            row.collapse:Hide(); row.headerTop:Hide(); row.headerBot:Hide()
+            row.badge:Hide(); row.badgeBg:Hide()
+            row.title:SetText(""); row.status:SetText("")
+
+            local info = factionRepInfo(item.faction)
+
+            row.repTrack:Show()
+            row.repTrack:ClearAllPoints()
+            row.repTrack:SetPoint("TOPLEFT", left, -4)
+            row.repTrack:SetPoint("BOTTOMRIGHT", -rightPad, 4)
+            row.repTrack:SetColorTexture(0.09, 0.10, 0.13, 0.95)
+
+            local trackW = CONTENT_WIDTH - left - rightPad
+            local pct = math.max(0, math.min(1, info.pct or 0))
+            row.repFill:ClearAllPoints()
+            row.repFill:SetPoint("TOPLEFT", row.repTrack, "TOPLEFT", 0, 0)
+            row.repFill:SetPoint("BOTTOMLEFT", row.repTrack, "BOTTOMLEFT", 0, 0)
+            if info.discovered and pct > 0 then
+                local col = info.color or REP_BAR_FALLBACK
+                row.repFill:SetWidth(math.max(1, trackW * pct))
+                row.repFill:SetColorTexture(col[1], col[2], col[3], 0.85)
+                row.repFill:Show()
+            else
+                row.repFill:Hide()
+            end
+
+            row.repText:Show()
+            row.repText:ClearAllPoints()
+            row.repText:SetPoint("CENTER", row.repTrack, "CENTER", 0, 0)
+            if info.discovered then
+                local txt = info.level or "?"
+                if info.maxed then
+                    txt = txt .. "  \226\128\148  Max"
+                elseif (info.max or 0) > 0 then
+                    txt = string.format("%s  \226\128\148  %s / %s",
+                        txt, commaNum(info.cur), commaNum(info.max))
+                end
+                row.repText:SetText(txt)
+                row.repText:SetTextColor(0.97, 0.97, 0.93)
+            else
+                row.repText:SetText("Not yet discovered")
+                row.repText:SetTextColor(0.55, 0.55, 0.58)
+            end
+            y = y + REPBAR_HEIGHT
+
         else
             local e = item.entry
             row:SetSize(CONTENT_WIDTH, ROW_HEIGHT)
@@ -1950,6 +2199,11 @@ local function renderDisplay(display)
             local kind = themedSubgroup(e)
             if kind then
                 tagText, tagColor = SUB_BADGE[kind], SUBGROUP_ACCENT[kind]
+                -- Profession dailies show the specific profession (e.g.
+                -- "Jewelcrafting") rather than the generic "Prof" chip.
+                if kind == SUB_PROFESSIONS then
+                    tagText = professionLabel(e) or tagText
+                end
             end
             -- Weekly takes priority over the kind tag: the daily/weekly split is the
             -- more salient distinction in a daily tracker, and weeklies are rare.
@@ -2070,6 +2324,68 @@ function DT.UI:Refresh()
 end
 
 -- ---------------------------------------------------------------------------
+-- Collapse / expand (title bar -> logo-only chip)
+-- ---------------------------------------------------------------------------
+-- Apply only the GEOMETRY half of the toggle: shrink to / grow from the logo
+-- chip and hide/show the body. Panel snapshot+restore lives in SetCollapsed so
+-- this can also be reused to silently un-collapse on close.
+local function applyCollapsedGeometry(f, on)
+    if on then
+        f._expW, f._expH = f:GetSize()
+        for _, el in ipairs(f.collapsibles) do el:Hide() end
+        f.portrait:ClearAllPoints()
+        f.portrait:SetPoint("CENTER", f.titleBar, "CENTER", 0, 0)
+        f:SetSize(30, 30)
+    else
+        f:SetSize(f._expW or 372, f._expH or 470)
+        f.portrait:ClearAllPoints()
+        f.portrait:SetPoint("LEFT", f.titleBar, "LEFT", 9, 0)
+        for _, el in ipairs(f.collapsibles) do el:Show() end
+    end
+end
+
+function DT.UI:IsCollapsed() return collapsed end
+
+function DT.UI:SetCollapsed(want)
+    local f = mainFrame
+    if not f then return end
+    want = not not want
+    if want == collapsed then return end
+
+    if want then
+        -- Snapshot which overlays/panels are open so expand can restore exactly
+        -- those (the Detail panel also needs the quest it was showing).
+        DT.UI._restore = {
+            pinned   = DT.Pinned  and DT.Pinned:IsShown()  or false,
+            details  = DT.Details and DT.Details:IsShown() or false,
+            entry    = DT.Details and DT.Details.GetEntry and DT.Details:GetEntry() or nil,
+            filters  = f.filters  and f.filters:IsShown()  or false,
+            settings = f.settings and f.settings:IsShown() or false,
+        }
+        if f.filters then f.filters:Hide() end
+        if f.settings then f.settings:Hide() end
+        if DT.Pinned then DT.Pinned:Hide() end
+        if DT.Details then DT.Details:Hide() end
+        if DT.UI.HideDropMenu then DT.UI.HideDropMenu() end
+        applyCollapsedGeometry(f, true)
+        collapsed = true
+    else
+        applyCollapsedGeometry(f, false)
+        collapsed = false
+        DT.UI:Refresh()  -- rebuilds the list + re-evaluates mode-conditional chrome
+        if f.scrollbar and f.scrollbar.Update then f.scrollbar:Update() end
+        local r = DT.UI._restore or {}
+        if r.pinned and DT.Pinned then DT.Pinned:Show() end
+        if r.details and r.entry and DT.Details then DT.Details:Show(r.entry) end
+        if r.filters and f.filters then f.filters:Show() end
+        if r.settings and f.settings then f.settings:Show() end
+        DT.UI._restore = nil
+    end
+end
+
+function DT.UI:ToggleCollapsed() self:SetCollapsed(not collapsed) end
+
+-- ---------------------------------------------------------------------------
 -- Show / hide / position
 -- ---------------------------------------------------------------------------
 function DT.UI:Show()
@@ -2080,6 +2396,13 @@ end
 
 function DT.UI:Hide()
     if mainFrame then
+        -- Closing always returns to the expanded layout (collapse is session-only
+        -- and a purely visual toggle); reset geometry silently, no panel restore.
+        if collapsed then
+            applyCollapsedGeometry(mainFrame, false)
+            collapsed = false
+        end
+        DT.UI._restore = nil
         if mainFrame.settings then mainFrame.settings:Hide() end
         if mainFrame.filters then mainFrame.filters:Hide() end
         mainFrame:Hide()
