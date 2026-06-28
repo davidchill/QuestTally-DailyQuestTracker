@@ -2,6 +2,34 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.7.1] - 2026-06-27
+
+A **quest-giver location** fix release. A batch of daily-quest givers displayed
+**"Various"** instead of a location in the detail panel because their baked
+coordinates were missing. This release backfills accurate coordinates — sourced
+from each NPC's actual Wowhead map pin and cross-referenced against a second
+source — so the giver line shows precise coordinates and a named landmark, and
+**TomTom waypoints land on the NPC** instead of falling back to a placeholder.
+
+### Fixed
+- **Quest-giver coordinates restored for 64 daily quests across 16 givers** that
+  previously showed **"Various"** with no usable location. Each now displays map
+  coordinates plus a real landmark — e.g. *Klaxxi'vess, Dread Wastes* (Kil'ruk,
+  Kaz'tik, Korven), *Temple of the White Tiger, Kun-Lai Summit* (Xuen, Lin
+  Tenderpaw), *Shado-Pan Garrison, Townlong Steppes* (Ban Bearheart),
+  *Violet Rise, Isle of Thunder* (High Arcanist Savor, Archmage Modera),
+  *Everywhen Inn, Thaldraszus* (Soridormi, Anduin Wrynn), and the Khadgar/Draven
+  capital-city and Korthia dailies.
+- **Klaxxi paragon coordinates corrected.** An earlier estimate placed all three
+  paragons at one shared point ~2 map-units off; they now use their individual
+  Wowhead pins, so TomTom arrows point at the right NPC within Klaxxi'vess.
+
+### Changed
+- **"Secrets of Soulbinding" (Darion Mograine) re-zoned** from *Shadowmoon Burial
+  Grounds* to **Tanaan Jungle** — Shadowmoon Burial Grounds was only the quest's
+  objective; the giver actually stands in Tanaan Jungle. Both the zone grouping
+  and the giver waypoint now resolve to the correct map.
+
 ## [0.7.0] - 2026-06-27
 
 A **client-compat, reward-data, and UI-polish** release. Updated for Retail

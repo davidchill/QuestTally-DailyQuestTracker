@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.7.0** — built and tested against Retail patch **12.0.7**.
+> **Version 0.7.1** — built and tested against Retail patch **12.0.7**.
 > Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
 > (Legion → Midnight) from first-party sources.

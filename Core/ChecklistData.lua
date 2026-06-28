@@ -1014,7 +1014,7 @@ e[#e+1]={id=36697,rawTitle="Assault on Magnarok",expansion="WOD",type="Faction",
 e[#e+1]={id=36698,rawTitle="Battle in Ashran",expansion="WOD",type="Faction",side="Horde",category="Garrison Support",giver="War Planning Map",zoneName="Garrison Support"}
 e[#e+1]={id=37203,rawTitle="Ashlei",expansion="WOD",type="Faction",side="Both",category="Shadowmoon Valley (alternate universe)",giver="Ashlei",zoneName="Shadowmoon Valley (alternate universe)"}
 e[#e+1]={id=37231,rawTitle="The Search Continues",expansion="WOD",type="Faction",side="Both",category="Iron Docks",giver="Fleet Master Seahorn",zoneName="Iron Docks"}
-e[#e+1]={id=37238,rawTitle="Secrets of Soulbinding",expansion="WOD",type="Faction",side="Both",category="Shadowmoon Burial Grounds",giver="Darion Mograine",zoneName="Shadowmoon Burial Grounds"}
+e[#e+1]={id=37238,rawTitle="Secrets of Soulbinding",expansion="WOD",type="Faction",side="Both",category="Tanaan Jungle",giver="Darion Mograine",zoneName="Tanaan Jungle"}
 e[#e+1]={id=37523,rawTitle="Assault on the Gorian Proving Grounds",expansion="WOD",type="Faction",side="Alliance",category="Garrison Support",zoneName="Garrison Support"}
 e[#e+1]={id=37524,rawTitle="Assault on the Gorian Proving Grounds",expansion="WOD",type="Faction",side="Horde",category="Garrison Support",zoneName="Garrison Support"}
 e[#e+1]={id=37940,rawTitle="Assault on Ironhold Harbor",expansion="WOD",type="Faction",side="Horde",category="Tanaan Jungle",giver="Tanaan Planning Map",zoneName="Tanaan Jungle"}
