@@ -1,23 +1,18 @@
 -- QuestData.lua
--- The catalog of KNOWN daily quests, grouped by expansion.
+-- Expansion classification for quest IDs.
 --
--- Why this file exists: the WoW API can tell us the status of any quest ID we
--- ask about, but it cannot list "every daily in the world." So to show dailies
--- the player has NOT yet picked up, we need a list of quest IDs to ask about.
--- That list lives here. Status is still 100% live -- this only tells the addon
--- WHICH quests to check.
+-- The shipped master list of dailies lives in ChecklistData/ChecklistDataExtra;
+-- this file's job is narrower: answer "which expansion does quest N belong to?"
+-- for any ID -- needed to bucket harvested and world-quest entries that carry no
+-- explicit expansion tag.
 --
--- Each entry:
---   [questID] = {
---       name    = "Display Name",        -- fallback label; live name is used when available
---       zone    = "Zone / Hub",          -- where it's picked up / done
---       faction = "Both" | "Alliance" | "Horde",
---       group   = "Optional sub-group",  -- e.g. a daily hub or reputation
---   }
---
--- This catalog starts small on purpose. It's designed to grow -- adding a quest
--- is a one-line addition and requires no other code changes. Quest IDs can be
--- found on Wowhead (the number in the quest's URL).
+-- Two sources, checked in order:
+--   1. An explicit per-quest override table (`catalog`), for the few IDs the
+--      numeric bands below would misclassify. Each [questID] = { name, zone,
+--      faction, group }; only the expansion key it's filed under is consulted
+--      today (the other fields are descriptive).
+--   2. The ID-band classifier -- Blizzard assigns quest IDs in roughly
+--      chronological order, so the number alone places everything else.
 local addonName, DT = ...
 
 DT.QuestData = {}
@@ -28,19 +23,6 @@ local catalog = {
         -- Argent Tournament dailies (still completable on Retail at level cap).
         [13796] = { name = "Threat From Above",        zone = "Icecrown - Argent Tournament", faction = "Both", group = "Argent Tournament" },
         [13790] = { name = "A Blade Fit For A Champion", zone = "Icecrown - Argent Tournament", faction = "Both", group = "Argent Tournament" },
-    },
-
-    LEGION = {
-        -- Example placeholder; replace/expand with real Legion world quest emissaries
-        -- or Broken Shore dailies as you verify IDs.
-    },
-
-    DRAGONFLIGHT = {
-        -- Example placeholder for DF reputation/profession dailies.
-    },
-
-    TWW = {
-        -- Example placeholder for The War Within daily content.
     },
 }
 
@@ -86,14 +68,4 @@ end
 function DT.QuestData:GetExpansionForQuest(questID)
     if not questID or questID <= 0 then return "OTHER" end
     return questToExpansion[questID] or expansionByIdBand(questID)
-end
-
--- Iterate every cataloged daily as (questID, info, expansionKey).
--- Used for "discovery" -- checking availability of dailies not yet in the log.
-function DT.QuestData:ForEach(callback)
-    for expKey, quests in pairs(catalog) do
-        for questID, info in pairs(quests) do
-            callback(questID, info, expKey)
-        end
-    end
 end

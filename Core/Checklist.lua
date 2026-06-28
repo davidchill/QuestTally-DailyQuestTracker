@@ -181,6 +181,13 @@ end
 local function appendWorldQuestEntries(list, opts, emitted)
     local wq = DT.WorldQuests
     if not wq then return end
+    -- World quests are OFF by default. Blizzard surfaces and tracks them natively
+    -- on the world map, and every main view filters them out regardless (see
+    -- applyKindFilters), so building the full ~3.6k-row catalog into entries -- each
+    -- requiring a live task-quest status read -- on every refresh is pure wasted
+    -- work when nothing will display them. Skip the whole pass unless the player
+    -- has explicitly opted in via the showWorldQuests setting.
+    if not DT.DB:GetSetting("showWorldQuests") then return end
     -- By default only currently-active world quests show (a tracker wants what's
     -- actionable, not all ~3.6k that exist). Opt in to the full catalog via the
     -- showInactiveWQ setting.
@@ -227,8 +234,32 @@ end
 --   continentName = "Northrend", zoneName = "Icecrown",
 --   undiscovered = false,   -- set false to hide quests with no learned ID
 -- }
+-- Per-frame memo for GetEntries(). Building the full entry list (catalog + baked,
+-- each with a live status read) is the addon's hottest operation, and one logical
+-- refresh calls it 2-3 times (the list, the Pinned panel, the Titan bar). GetTime()
+-- is constant within a frame, so every same-frame call can share a single build.
+-- A generation counter -- bumped by Invalidate() on any entry-affecting change (a
+-- pin toggled, a setting flipped) -- forces a rebuild even mid-frame, so the memo
+-- is never stale. Live quest status can only change across frames, where the
+-- GetTime() key already forces a fresh build.
+local entriesCache, entriesStamp, entriesCacheGen
+local entriesGen = 0
+
+-- Force the next GetEntries() to rebuild. Cheap (an int bump); call after any
+-- change that alters the entry list.
+function DT.Checklist:Invalidate()
+    entriesGen = entriesGen + 1
+end
+
 function DT.Checklist:GetEntries(opts)
     self:EnsureBuilt()
+    -- Serve the per-frame memo for the unfiltered call every live caller uses. An
+    -- opts-filtered call (none today) bypasses the cache to stay correct.
+    local useCache = (opts == nil) and (GetTime ~= nil)
+    if useCache and entriesCache and entriesStamp == GetTime()
+    and entriesCacheGen == entriesGen then
+        return entriesCache
+    end
     opts = opts or {}
     local resolution = buildResolution()
 
@@ -310,6 +341,10 @@ function DT.Checklist:GetEntries(opts)
     -- DB2 world-quest catalog. `emitted` keeps the three sources from duplicating.
     appendBakedEntries(list, opts, emitted)
     appendWorldQuestEntries(list, opts, emitted)
+
+    if useCache then
+        entriesCache, entriesStamp, entriesCacheGen = list, GetTime(), entriesGen
+    end
     return list
 end
 
@@ -409,8 +444,11 @@ function DT.Checklist:GetStats()
     end
 
     -- DB2 world-quest catalog (every WQ has a real ID; "completed" means done
-    -- for the current period).
-    if DT.WorldQuests then
+    -- for the current period). Gated by the SAME showWorldQuests setting that gates
+    -- GetEntries, so /qt stats reflects exactly the catalog scope the views show --
+    -- counting all ~3.6k WQs here while the list hides them would make the stats
+    -- line wildly over-report what's on screen.
+    if DT.WorldQuests and DT.DB:GetSetting("showWorldQuests") then
         for id, info in pairs(DT.WorldQuests) do
             tally(info.e or DT.QuestData:GetExpansionForQuest(id), true,
                   C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted

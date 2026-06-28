@@ -76,6 +76,9 @@ end
 
 function DT.DB:SetSetting(key, value)
     self.account.settings[key] = value
+    -- A setting change can alter which entries the checklist emits (seasonal,
+    -- profession/pet/race, world-quest gating), so drop the per-frame memo.
+    if DT.Checklist and DT.Checklist.Invalidate then DT.Checklist:Invalidate() end
 end
 
 -- Modern-UI section fold state. Keyed by a stable group key (expansion key,
@@ -224,5 +227,8 @@ function DT.DB:TogglePinned(questID)
     else
         self.char.pinned[questID] = true
     end
+    -- Pinned state is baked into each entry (and drives sort order), so a toggle
+    -- must invalidate the per-frame memo or the star won't update until next frame.
+    if DT.Checklist and DT.Checklist.Invalidate then DT.Checklist:Invalidate() end
     return self.char.pinned[questID] == true
 end

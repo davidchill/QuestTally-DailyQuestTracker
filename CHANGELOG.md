@@ -2,6 +2,49 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.7.2] - 2026-06-28
+
+A **performance, polish, and forward-compatibility** release. No new features —
+this pass makes the tracker noticeably lighter on a full quest log, corrects an
+internal version stamp, tidies dead data, and declares compatibility with the
+**12.1.0** PTR ahead of its launch.
+
+### Performance
+- **World-quest catalog is no longer built and discarded on every refresh.** The
+  ~3,600-row world-quest list was being assembled into entries — each requiring a
+  live task-quest status read (~11,000 API calls) — on every list rebuild, then
+  filtered out entirely by every view. It's now gated behind the (previously
+  unused) `showWorldQuests` setting and skipped on the default path. No visible
+  change: world quests were already hidden everywhere they could appear.
+- **The quest list is now memoized per frame.** A single refresh asks the
+  checklist engine for its entries 2–3 times (the main list, the Pinned panel, the
+  Titan bar). Those calls now share one build per frame instead of rebuilding the
+  whole catalog each time, with a generation counter that forces a fresh build the
+  instant a pin or setting changes — so nothing ever shows stale.
+- **The name search no longer rebuilds twice per keystroke.** Typing in the search
+  box ran a full catalog rebuild *and* a separate suggestion scan on every
+  keypress, synchronously. The work is now debounced (0.15s) and coalesced to the
+  last keystroke, so fast typing stays smooth.
+
+### Fixed
+- **Reported version corrected.** The in-game load message, the Titan plugin
+  registry, and `/qt stats` were stamped **0.7.0** while the addon was actually
+  0.7.1 (the `.toc` and code version had drifted apart). They now agree.
+- **`/qt stats` totals match what the tabs show.** The stats summary counted all
+  ~3,600 world quests even though the views hide them, wildly over-reporting. It
+  now follows the same world-quest gating as the list.
+
+### Changed
+- **Internal cleanup.** Removed vestigial placeholder tables and an unused
+  iterator from the quest-classification module, and corrected its now-misleading
+  header documentation. No behavioral change.
+
+### Compatibility
+- **Flagged compatible with the 12.1.0 PTR.** The TOC now lists both `120007`
+  (live 12.0.7) and `120100` (12.1.0), so the addon reads as up to date on both
+  clients — no "out of date" prompt on either. All game-API calls remain guarded,
+  so a missing or renamed function degrades gracefully rather than erroring.
+
 ## [0.7.1] - 2026-06-27
 
 A **quest-giver location** fix release. A batch of daily-quest givers displayed

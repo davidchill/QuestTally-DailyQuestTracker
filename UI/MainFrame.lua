@@ -1630,17 +1630,41 @@ local function createSearchBox(parent, width)
         openDropMenu(box, false)  -- non-modal: never block clicks on the results list
     end
 
+    -- Debounce the expensive search work. A full rebuild (buildSearchMode scans
+    -- the whole catalog) plus the suggestion scan are too heavy to run twice on
+    -- every keystroke, so the lightweight UI (placeholder, clear button) updates
+    -- immediately while the rebuild + type-ahead coalesce to the last keystroke in
+    -- a short window. Only one timer is ever in flight; it reads the latest query/
+    -- intent when it fires, so fast typing collapses to a single rebuild.
+    local SEARCH_DEBOUNCE = 0.15
+    local searchPending, searchWantSuggest = false, false
+    local function runSearch()
+        searchPending = false
+        DT.UI:Refresh()
+        -- Re-check focus: a pending timer must not re-pop the type-ahead after the
+        -- user dismissed it with Enter/Escape or by picking a result.
+        if searchWantSuggest and DT.UI.searchQuery ~= "" and eb:HasFocus() then
+            showSuggestions()
+        else
+            hideDropMenu()
+        end
+    end
+
     eb:SetScript("OnTextChanged", function(self, userInput)
         local text = self:GetText() or ""
         -- Trim leading/trailing spaces for matching but keep what the user typed.
         DT.UI.searchQuery = text:gsub("^%s+", ""):gsub("%s+$", "")
+        -- Lightweight, immediate feedback (no catalog scan here).
         placeholder:SetShown(text == "")
         clear:SetShown(text ~= "")
-        DT.UI:Refresh()
-        if userInput and DT.UI.searchQuery ~= "" then
-            showSuggestions()
-        else
-            hideDropMenu()
+        searchWantSuggest = userInput and DT.UI.searchQuery ~= ""
+        if not searchPending then
+            searchPending = true
+            if C_Timer and C_Timer.After then
+                C_Timer.After(SEARCH_DEBOUNCE, runSearch)
+            else
+                runSearch()
+            end
         end
     end)
     eb:SetScript("OnEscapePressed", function(self)
