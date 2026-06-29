@@ -2,6 +2,58 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.7.3] - 2026-06-28
+
+A **navigation, structure, and accuracy** release. The grouped views gain themed
+sub-sections and a calmer color hierarchy, the Expansion tab now sorts zones by
+where they actually are in the world, currency rewards finally show their icons,
+and quest givers can vary by faction.
+
+### Added
+- **Themed sub-sections within zones.** Each zone now splits its quests into
+  collapsible kind groups — Professions, Battle Pets, PvP, Incursions, Calling,
+  Combat Ally, Skyracing, Holiday, Garrison — instead of conveying the kind only
+  as a per-row badge. Direct (un-themed) quests still list first, then the kind
+  groups, then any geographic sub-zones. Works in every zone-grouped view (All,
+  Browse, Current Zone) through the one shared section emitter.
+- **Currency reward icons.** Baked currency rewards (e.g. *Oil*, *Apexis
+  Crystal*) shipped only a name + amount, so they rendered icon-less when a quest
+  wasn't in your log. A new `CurrencyIDs.lua` maps each of the 23 reward
+  currencies to its Blizzard currency ID — sourced from the first-party quest
+  cache — and the detail panel now resolves the icon live via `C_CurrencyInfo`.
+- **Faction-aware quest givers.** A giver can now stand in a different place per
+  faction. *Budd's Gambit* (Budd, a garrison NPC) is the first: Frostwall for
+  Horde, Lunarfall for Alliance, each with its own map and coordinates pulled
+  from Wowhead's pin data. The giver model gained optional `A`/`H` overrides;
+  every existing single-location giver is unchanged.
+
+### Changed
+- **"Race" is now "Skyracing"** in the sub-section headers (the compact row chip
+  still reads "Race").
+- **The Expansion tab groups zones by geography, not content patch.** Previously
+  a quest was filed by *when it was added* (its ID band), so Dragonflight
+  skyriding races dragged old zones like Blade's Edge Mountains under
+  Dragonflight, and original-world zones never surfaced at all. Zones now sort by
+  the expansion whose world they belong to — Blade's Edge under The Burning
+  Crusade, Deadwind Pass under a new **Classic (Vanilla)** group — mirroring how
+  the continent was already resolved from geography. The underlying per-quest
+  expansion tag is untouched (still used for stats and ID-band fallback).
+- **Calmer section color hierarchy.** Only the top-level folder of a view (the
+  expansion in All, the zone in Browse / Current Zone) carries a full-color bar.
+  Every nested folder drops to a neutral slate fill with just a thin colored
+  accent on its spine, icon, and title — a themed group shows its kind color, a
+  zone shows a hint of its parent's tint. Three same-hue bars no longer stack
+  into a wall of color.
+- **Collapse All now folds every folder at every level**, not just the top-level
+  sections in view. Re-opening any parent reveals its children already collapsed.
+- **The title-bar logo is larger** (18 → 22px), filling more of the bar without
+  changing its height.
+
+### Fixed
+- **Wrapped quest names are no longer cramped.** A long title that word-wrapped to
+  two lines was squeezed into a single fixed-height row and overlapped the row
+  below; rows now grow to fit a wrapped title.
+
 ## [0.7.2] - 2026-06-28
 
 A **performance, polish, and forward-compatibility** release. No new features —

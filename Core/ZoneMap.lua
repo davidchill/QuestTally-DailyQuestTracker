@@ -329,6 +329,50 @@ function DT.ZoneMap:ContinentForZone(zoneLabel, expansion)
     return ZONE_CONTINENT[zoneLabel]
 end
 
+-- Each continent/island belongs to one expansion's geography. This lets the
+-- Expansion view group a zone by WHERE IT IS rather than when its quests were
+-- added -- so a Dragonflight skyriding race in Blade's Edge (Outland) sorts under
+-- The Burning Crusade, not Dragonflight (mirrors the geography-not-content rule
+-- ContinentForZone already applies). Eastern Kingdoms / Kalimdor are Vanilla; the
+-- Cataclysm zones that sit ON those old continents are handled by ZONE_EXPANSION.
+local CONTINENT_EXPANSION = {
+    ["Eastern Kingdoms"]     = "CLASSIC",
+    ["Kalimdor"]             = "CLASSIC",
+    ["Outland"]              = "TBC",
+    ["Northrend"]            = "WRATH",
+    ["Deepholm"]             = "CATA",
+    ["Tol Barad"]            = "CATA",
+    ["Pandaria"]             = "MOP",
+    ["Draenor"]              = "WOD",
+    ["Broken Isles"]         = "LEGION",
+    ["Kul Tiras / Zandalar"] = "BFA",
+    ["The Shadowlands"]      = "SHADOWLANDS",
+    ["Dragon Isles"]         = "DRAGONFLIGHT",
+    ["Khaz Algar"]           = "TWW",
+}
+
+-- Cataclysm zones that physically sit on the Vanilla continents (Eastern Kingdoms
+-- / Kalimdor), so the continent map alone would mis-file them as Classic. Pinned
+-- to Cata by zone NAME, which wins over the continent fallback below.
+local ZONE_EXPANSION = {
+    ["Twilight Highlands"] = "CATA",
+    ["Mount Hyjal"]        = "CATA",
+    ["Uldum"]              = "CATA",
+    ["Vashj'ir"]           = "CATA",
+}
+
+-- Public: the GEOGRAPHIC expansion key for a normalized zone label (the expansion
+-- whose world the zone belongs to), or nil if we can't place it (caller then keeps
+-- the quest's own content-age expansion). `fallbackExpansion` disambiguates the
+-- few zone names that exist on two continents (passed through to ContinentForZone).
+function DT.ZoneMap:ExpansionForZone(zoneLabel, fallbackExpansion)
+    if not zoneLabel then return nil end
+    local zx = ZONE_EXPANSION[zoneLabel]
+    if zx then return zx end
+    local continent = self:ContinentForZone(zoneLabel, fallbackExpansion)
+    return continent and CONTINENT_EXPANSION[continent] or nil
+end
+
 -- Resolve an entry to (continentName, zoneName). Order: events bucket ->
 -- professions by expansion -> explicit category map -> expansion fallback.
 function DT.ZoneMap:Resolve(entry)

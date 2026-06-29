@@ -2,7 +2,7 @@
 ## Title: QuestTally - Daily Quest Tracker
 ## Notes: Designed to track ALL daily quests available in Retail from Vanilla through Midnight - lists what's available, tracks completion, and helps you finish them.
 ## Author: David Rodriguez
-## Version: 0.7.2
+## Version: 0.7.3
 ## SavedVariables: QuestTallyDB
 ## SavedVariablesPerCharacter: QuestTallyCharDB
 ## IconTexture: Interface\Icons\INV_Misc_Note_01
@@ -16,6 +16,7 @@ Core\ChecklistData.lua
 Core\ChecklistDataExtra.lua
 Core\WikiDetails.lua
 Core\FactionIDs.lua
+Core\CurrencyIDs.lua
 Core\ApiDetails.lua
 Core\QuestRewards.lua
 Core\WorldQuestData.lua

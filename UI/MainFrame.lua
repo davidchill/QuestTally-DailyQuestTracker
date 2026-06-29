@@ -266,7 +266,7 @@ local SUB_PVP         = "PvP"
 local SUB_INCURSIONS  = "Incursions"
 local SUB_CALLING     = "Calling"
 local SUB_ALLY        = "Combat Ally"
-local SUB_RACE        = "Race"
+local SUB_RACE        = "Skyracing"
 local SUB_HOLIDAY     = "Holiday"
 local SUB_GARRISON    = "Garrison"
 
@@ -301,6 +301,12 @@ local SUBGROUP_ACCENT = {
 -- so the daily-vs-weekly distinction reads at a glance (weeklies are the minority).
 local WEEKLY_ACCENT = { 0.95, 0.82, 0.40 }
 
+-- Neutral slate used for the BACKGROUND of kind sub-section headers. The kind's
+-- own accent (SUBGROUP_ACCENT) still colours the thin left spine, the icon and
+-- the title text, but the header fill stays a cool neutral so three nested
+-- same-hue bars (expansion -> zone -> kind) don't stack into a wall of colour.
+local NEUTRAL_SECTION_BG = { 0.42, 0.45, 0.52 }
+
 -- Short label drawn on a quest row's inline tag, per kind.
 local SUB_BADGE = {
     [SUB_PROFESSIONS] = "Prof",
@@ -313,6 +319,16 @@ local SUB_BADGE = {
     [SUB_HOLIDAY]     = "Holiday",
     [SUB_GARRISON]    = "Garrison",
 }
+
+-- Canonical order kind sub-sections render within a zone (matches the badge
+-- priority above so the on-screen ordering is predictable). Any kind missing
+-- here falls back to alphabetical after these.
+local KIND_ORDER = {
+    SUB_RACE, SUB_BATTLEPETS, SUB_PROFESSIONS, SUB_INCURSIONS,
+    SUB_PVP, SUB_CALLING, SUB_ALLY, SUB_GARRISON, SUB_HOLIDAY,
+}
+local KIND_ORDER_INDEX = {}
+for i, k in ipairs(KIND_ORDER) do KIND_ORDER_INDEX[k] = i end
 
 -- Canonical zone label for grouping. Defined once in Core (DT.Zones:ZoneLabel)
 -- so the Current Zone / All / Browse views, their dropdowns and filters all share
@@ -411,11 +427,23 @@ local function emitZoneWithSubzones(display, opts)
     }
     if collapsed then return end
 
-    -- Partition into direct (no sub-zone) and per-sub-zone buckets.
-    local direct, subNames, subGroups = {}, {}, {}
+    -- Partition a zone's entries into three buckets, all rendered at level+1:
+    --   * kind sub-sections (Professions, PvP, Race, ...) -- the themed grouping;
+    --   * geographic sub-zone sub-sections (e.g. Molten Front within Mount Hyjal);
+    --   * direct quests (neither a kind nor a sub-zone) -- shown straight under
+    --     the zone, above the sub-sections.
+    -- A quest carrying BOTH a kind and a sub-zone goes under its kind (the themed
+    -- grouping is the focus; such overlaps are rare).
+    local direct = {}
+    local kindNames, kindGroups = {}, {}
+    local subNames, subGroups = {}, {}
     for _, e in ipairs(opts.list) do
+        local kind = themedSubgroup(e)
         local sz = e.subZone
-        if sz then
+        if kind then
+            if not kindGroups[kind] then kindGroups[kind] = {}; kindNames[#kindNames+1] = kind end
+            kindGroups[kind][#kindGroups[kind] + 1] = e
+        elseif sz then
             if not subGroups[sz] then subGroups[sz] = {}; subNames[#subNames+1] = sz end
             subGroups[sz][#subGroups[sz] + 1] = e
         else
@@ -423,28 +451,62 @@ local function emitZoneWithSubzones(display, opts)
         end
     end
 
-    -- Direct quests first, then sub-zone sub-sections (alphabetical). `depth`
-    -- carries the parent section's level so renderDisplay can inset each row one
-    -- step past its header (a zone at level 2 in the All view, level 1 in Browse).
-    table.sort(direct, sortEntries)
-    for _, e in ipairs(direct) do display[#display+1] = { type = "quest", entry = e, depth = opts.level } end
-    table.sort(subNames)
-    for _, sz in ipairs(subNames) do
-        local list = subGroups[sz]
+    -- Helper: emit one collapsible sub-section header plus its rows, one level
+    -- deeper than the parent zone so renderDisplay insets the rows past the header.
+    -- All nested folders render with a neutral fill (see renderDisplay); `accent`
+    -- (optional) overrides the thin spine/icon/text colour for a themed kind group
+    -- (PvP, Skyracing, ...). Sub-zones pass none and inherit the parent's tint.
+    local function emitSub(text, list, key, accent)
         table.sort(list, sortEntries)
-        local key = opts.key .. "::SZ::" .. sz
-        local szCollapsed = isCollapsed(DT.DB, key)
+        local subCollapsed = isCollapsed(DT.DB, key)
         display[#display+1] = {
             type = "section", level = opts.level + 1,
-            text = sz, done = doneCount(list), total = #list,
-            color = opts.color, key = key, collapsed = szCollapsed,
+            text = text, done = doneCount(list), total = #list,
+            color = opts.color, key = key, collapsed = subCollapsed,
+            accent = accent,
         }
-        if not szCollapsed then
-            -- One level deeper than the parent zone, so these rows read as
-            -- belonging to the sub-zone rather than the zone above it.
+        if not subCollapsed then
             for _, e in ipairs(list) do display[#display+1] = { type = "quest", entry = e, depth = opts.level + 1 } end
         end
     end
+
+    -- Direct quests first. `depth` carries the parent section's level so each row
+    -- insets one step past its header (a zone at level 2 in the All view, 1 in Browse).
+    table.sort(direct, sortEntries)
+    for _, e in ipairs(direct) do display[#display+1] = { type = "quest", entry = e, depth = opts.level } end
+
+    -- Kind sub-sections, in the canonical badge order (unknown kinds alphabetical).
+    table.sort(kindNames, function(a, b)
+        local ia, ib = KIND_ORDER_INDEX[a], KIND_ORDER_INDEX[b]
+        if ia and ib then return ia < ib end
+        if ia or ib then return ia ~= nil end
+        return a < b
+    end)
+    for _, kind in ipairs(kindNames) do
+        emitSub(kind, kindGroups[kind], opts.key .. "::KIND::" .. kind, SUBGROUP_ACCENT[kind])
+    end
+
+    -- Geographic sub-zone sub-sections (alphabetical), after the kind groups.
+    table.sort(subNames)
+    for _, sz in ipairs(subNames) do
+        emitSub(sz, subGroups[sz], opts.key .. "::SZ::" .. sz)
+    end
+end
+
+-- The expansion a quest is GROUPED under in the Expansion view: its zone's
+-- geographic expansion (where the zone lives) rather than the quest's content-age
+-- expansion (when it was added). So a Dragonflight skyriding race in Blade's Edge
+-- sorts under The Burning Crusade, and old-world zones surface a Classic (Vanilla)
+-- group -- matching how the continent is already resolved from geography. Events
+-- are exempt (they intentionally bucket by their own seasonal expansion, like the
+-- continent logic exempts them). Falls back to the quest's own expansion whenever
+-- the zone can't be placed geographically.
+local function groupingExpansion(e)
+    if e.type ~= "Event" then
+        local geo = DT.ZoneMap and DT.ZoneMap:ExpansionForZone(zoneLabel(e), e.expansion)
+        if geo then return geo end
+    end
+    return e.expansion
 end
 
 -- Group entries by expansion, then by zone / themed sub-group within each
@@ -452,8 +514,9 @@ end
 local function groupByExpansion(entries)
     local groups, keys = {}, {}
     for _, e in ipairs(entries) do
-        if not groups[e.expansion] then groups[e.expansion] = {}; keys[#keys+1] = e.expansion end
-        table.insert(groups[e.expansion], e)
+        local key = groupingExpansion(e)
+        if not groups[key] then groups[key] = {}; keys[#keys+1] = key end
+        table.insert(groups[key], e)
     end
     table.sort(keys, function(a, b) return expansionOrderIndex(a) < expansionOrderIndex(b) end)
     local display = {}
@@ -1164,10 +1227,9 @@ end
 
 local function setAllTopCollapsed(collapse)
     if collapse then
-        -- Collapse only the sections in view (their sub-groups hide with them).
-        for _, key in ipairs(currentTopKeys) do
-            DT.DB:SetCollapsed(key, true)
-        end
+        -- Collapse every folder at every level (not just the top-level sections in
+        -- view), so re-opening any parent reveals its children already folded.
+        DT.DB:CollapseAll()
     else
         -- Expanding clears all fold state, and flags the upcoming rebuild as an
         -- "expand pass" so even never-yet-built sub-sections open (default-folded
@@ -1784,8 +1846,11 @@ local function createMainFrame()
     -- Title icon + text. The QuestTally app-icon logo (baked to TGA by
     -- _generator/build-logo-texture.js); its art carries its own border, so the
     -- texture is shown full-frame rather than trimmed like a stock action icon.
+    -- 22px in the 28px bar: fills more of the title bar's height than the original
+    -- 18px while keeping a ~3px margin off the top/bottom bevels (the bar height is
+    -- unchanged). Also fits the 30px collapsed chip with room to spare.
     f.portrait = f:CreateTexture(nil, "ARTWORK")
-    f.portrait:SetSize(18, 18)
+    f.portrait:SetSize(22, 22)
     f.portrait:SetPoint("LEFT", f.titleBar, "LEFT", 9, 0)
     f.portrait:SetTexture("Interface\\AddOns\\QuestTally\\Media\\QuestTally-Logo.tga")
 
@@ -2116,13 +2181,20 @@ local function renderDisplay(display)
             row.badge:Hide(); row.badgeBg:Hide()
             row:EnableMouse(true)
 
-            local c = item.color or THEME.progress
+            -- Only the TOP-LEVEL folder (level 1: the expansion in the All view, the
+            -- zone in Browse / Current Zone) carries a full-colour bar. Every nested
+            -- folder -- zones under an expansion, plus the kind/sub-zone groups under
+            -- those -- drops to a neutral slate fill, keeping just a thin coloured
+            -- accent on the spine/icon/text. `c` colours those lit elements: a themed
+            -- group's own kind colour (item.accent), else a hint of the parent's
+            -- logo/zone tint (item.color). `bg` fills the header behind them.
+            local c = item.accent or item.color or THEME.progress
+            local bg = sub and NEUTRAL_SECTION_BG or c
             -- Lit accent bar + chip (brighter top, darker bottom) and a tint
             -- gradient behind the header that fades to almost nothing at the base.
-            -- Nested headers are inset from the left and tinted a touch fainter so
-            -- they read as belonging under their expansion.
+            -- Nested headers are inset from the left and use the faint neutral fill.
             local lt1, lt2, lt3 = lighten(c, 0.15)
-            local bgTop = sub and 0.12 or 0.18
+            local bgTop = sub and 0.10 or 0.18
             row.accent:ClearAllPoints()
             row.accent:SetPoint("TOPLEFT", indent, 0)
             row.accent:SetPoint("BOTTOMLEFT", indent, 0)
@@ -2131,7 +2203,7 @@ local function renderDisplay(display)
             row.headerBg:ClearAllPoints()
             row.headerBg:SetPoint("TOPLEFT", 1 + indent, 0)
             row.headerBg:SetPoint("BOTTOMRIGHT", 0, 0)
-            setVGradient(row.headerBg, { c[1], c[2], c[3], bgTop }, { c[1], c[2], c[3], 0.03 })
+            setVGradient(row.headerBg, { bg[1], bg[2], bg[3], bgTop }, { bg[1], bg[2], bg[3], 0.03 })
             row.headerBg:Show()
             row.headerTop:ClearAllPoints()
             row.headerTop:SetPoint("TOPLEFT", 1 + indent, 0)
@@ -2309,6 +2381,18 @@ local function renderDisplay(display)
             row.title:SetText(pin .. (e.title or ("Quest " .. (e.questID or "?"))))
             row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
 
+            -- Grow the row to fit a title that word-wrapped to multiple lines.
+            -- The title has a fixed width, so long names wrap; at the default fixed
+            -- height the second line spills into the next row (cramped/overlapping).
+            -- Measure the laid-out text height and pad it so wrapped rows breathe.
+            -- Single-line titles measure under ROW_HEIGHT and keep the compact height.
+            local rowH = ROW_HEIGHT
+            local textH = row.title:GetStringHeight()
+            if textH and textH > ROW_HEIGHT then
+                rowH = math.ceil(textH) + 10
+            end
+            row:SetHeight(rowH)
+
             local hex = toHex(c)
             row.status:ClearAllPoints()
             row.status:SetPoint("RIGHT", -8, 0)
@@ -2319,7 +2403,7 @@ local function renderDisplay(display)
             local sel = entryIsSelected(e)
             row.selected:SetShown(sel)
             row.selectedEdge:SetShown(sel)
-            y = y + ROW_HEIGHT
+            y = y + rowH
         end
         activeRows[#activeRows+1] = row
     end

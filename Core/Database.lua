@@ -120,6 +120,18 @@ function DT.DB:ExpandAll()
     wipe(self.account.ui.collapsed)
 end
 
+-- Collapse every section we've ever built, at ALL nesting levels (not just the
+-- top-level folders currently on screen). `collapseSeen` records every key ever
+-- rendered -- expansions, zones, and the kind/sub-zone groups under them -- so
+-- folding them all means re-opening any parent reveals its children already
+-- folded. Nested folders never yet built default to collapsed on first reveal
+-- (no expand pass is active), so the whole tree ends up folded.
+function DT.DB:CollapseAll()
+    for key in pairs(self.account.ui.collapseSeen) do
+        self.account.ui.collapsed[key] = true
+    end
+end
+
 -- Record (or refresh) a daily we've seen live. `now` is the current server
 -- time in seconds (passed in so this module stays free of time calls).
 -- Returns true if this was the first time we'd ever seen this quest.

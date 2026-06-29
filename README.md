@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.7.2** — built and tested against Retail patch **12.0.7**, and
+> **Version 0.7.3** — built and tested against Retail patch **12.0.7**, and
 > flagged compatible with the **12.1.0** PTR (multi-version TOC).
 > Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
@@ -22,13 +22,17 @@ available, tracking completion, and helping you finish them, organized by
   **~3,600 world quests** (Legion → Midnight, from Blizzard's client database).
   Grouped by **expansion → zone**.
 - **Modern window.** A dark panel with subtle gradients and bevels (not flat),
-  the **QuestTally logo** in the title bar, **collapsible sections color-coded to
-  each expansion's logo** that **nest by zone — and again by sub-zone** (e.g.
-  *Molten Front* within *Mount Hyjal*, with sub-zone quests indented), an overall
-  **progress counter**, per-section `done / total` counts, custom themed scrollbars
-  and close buttons, and bottom tabs. **Sections start collapsed** on the All and
-  Browse tabs so you drill into just what you need. Movable, with remembered
-  position and persisted fold state.
+  the **QuestTally logo** in the title bar, and **collapsible sections** that
+  **nest by zone, then by quest kind and sub-zone** (e.g. a *Skyracing* or
+  *Professions* group, or *Molten Front* within *Mount Hyjal*, indented under
+  their zone). Color reads as a hierarchy: **only the top-level folder** (the
+  expansion, or the zone in Browse) carries its full **logo color**; nested
+  folders use a calm neutral bar with a thin colored accent — its kind color for a
+  themed group, a hint of the parent's tint for a zone. Plus an overall **progress
+  counter**, per-section `done / total` counts, custom themed scrollbars and close
+  buttons, and bottom tabs. **Sections start collapsed** on the All and Browse tabs
+  so you drill into just what you need. Movable, with remembered position and
+  persisted fold state.
 - **Collapse to a logo chip.** **Click the title-bar logo** to condense the whole
   window — list, tabs, search, and any open side panels — to a small **logo-only
   chip**; click again to restore everything, including the panels that were open.
@@ -37,10 +41,13 @@ available, tracking completion, and helping you finish them, organized by
   to the left of the window listing your pins (status + zone). Left-click a pinned
   row to open its details, right-click to un-pin. Toggle it with the title-bar
   **Pinned** button.
-- **Quest-kind tags.** A small inline badge labels each quest's kind — **Pet**,
-  **PvP**, **Incursion**, **Calling**, **Ally**, **Race**, **Holiday**, **Garrison**
-  — so it groups by zone yet stays identifiable at a glance. **Profession** dailies
-  name the **specific profession** (e.g. *Jewelcrafting*, *Cooking*, *Fishing*).
+- **Quest-kind sub-sections & tags.** Within each zone, quests gather into
+  collapsible **kind groups** — **Professions**, **Battle Pets**, **PvP**,
+  **Incursions**, **Calling**, **Combat Ally**, **Skyracing**, **Holiday**,
+  **Garrison** — with un-themed quests listed first. Each row also keeps a small
+  inline badge of its kind so it stays identifiable at a glance, and **Profession**
+  dailies name the **specific profession** (e.g. *Jewelcrafting*, *Cooking*,
+  *Fishing*).
 - **Daily vs Weekly.** Weekly quests are marked with a distinct **gold "Weekly"
   tag** so they're easy to tell apart from dailies, and the reset countdown is
   frequency-aware. Completion stays accurate automatically — the game resets
@@ -59,11 +66,14 @@ available, tracking completion, and helping you finish them, organized by
 - **Settings panel.** A **gear button** on the title bar holds the **Newest
   expansions first** sort toggle.
 - **Expand / collapse all.** On the **All** and **Browse** tabs, a one-click toggle
-  folds or unfolds every section on screen at once.
+  folds or unfolds every section at once — **Collapse All reaches every nested
+  folder**, so re-opening a parent reveals its children already folded.
 - **Quest givers & coordinates — baked in.** Dailies ship with their **giver name
   and (where the wiki has them) map coordinates**, so the tooltip shows the giver
-  and **right-click drops a travel waypoint**. Talking to a giver captures it
-  **live**, which overrides the baked data.
+  and **right-click drops a travel waypoint**. Givers that stand in a different
+  place per faction (e.g. a **garrison NPC** — Frostwall for Horde, Lunarfall for
+  Alliance) resolve to **your** faction's location and map. Talking to a giver
+  captures it **live**, which overrides the baked data.
 - **TomTom support (optional).** With [TomTom](https://www.curseforge.com/wow/addons/tomtom)
   installed, **Shift+Left-click** a quest to drop a TomTom waypoint (with the arrow)
   at its giver. Works fully without TomTom.
@@ -73,6 +83,8 @@ available, tracking completion, and helping you finish them, organized by
   When you've loaded a quest, Blizzard's **live** reward data (with item **icons** and
   quality colors) is shown; otherwise the baked first-party data fills in, **merged per
   reward type** so a category the live API omits (e.g. a legacy currency) still shows.
+  **Currency rewards show their icons too** — resolved live from the currency ID even
+  for quests you haven't picked up.
   Every reward type is baked from Blizzard's **Game Data API**; reputation also comes
   live for **renown** factions. **XP** follows your level — hidden at max level (where
   dailies grant none) and shown level-scaled while leveling.
@@ -82,8 +94,10 @@ available, tracking completion, and helping you finish them, organized by
   show as one flat *Search results* list with a live match count; clearing the box
   returns to the active tab.
 - **Search by location.** Three tabs: **Current Zone** *(default)* · **All**
-  (everything by expansion) · **Faction** (grouped by reputation faction) ·
-  **Browse** (pick a Continent → Zone).
+  (everything by expansion — zones sort by **where they are in the world**, so a
+  modern skyriding race in an old zone files under that zone's home expansion, and
+  original-world zones surface under **Classic (Vanilla)**) · **Faction** (grouped
+  by reputation faction) · **Browse** (pick a Continent → Zone).
 - **Reputation bars.** On the **Faction** tab, each faction section opens with a
   **live reputation bar** — your current standing with that faction shown as a
   progress bar with the **status and numbers** in the middle (classic, renown,
@@ -212,12 +226,13 @@ QuestTally/
 │   ├── ChecklistDataExtra.lua  API-found dailies/weeklies the wiki missed (~570; gaps + races)
 │   ├── WikiDetails.lua       Wiki rewards/objectives/desc/giver coords + API-baked reputation/honor (by id)
 │   ├── FactionIDs.lua        Baked faction name → factionID map (for the Faction-tab reputation bars)
+│   ├── CurrencyIDs.lua       Baked currency name → currencyID map (for live reward-icon resolution)
 │   ├── ApiDetails.lua        Quest descriptions baked from the Blizzard Game Data API
 │   ├── QuestRewards.lua      Consolidated baked rewards — items/currency/money/XP/honor/reputation (Game Data API)
 │   ├── WorldQuestData.lua    World-quest catalog from retail DB2 (Legion+)
 │   ├── QuestLog.lua         Live scanning, status logic, auto-learner, discovery
 │   ├── Zones.lua            Map/zone resolution + current-zone lookup
-│   ├── ZoneMap.lua          Pre-mapped continent/zone per category + per-quest overrides
+│   ├── ZoneMap.lua          Pre-mapped continent/zone per category + per-quest overrides + zone→expansion geography
 │   ├── Checklist.lua        Title↔ID matching engine + zone resolution
 │   └── Core.lua             Events, init, slash commands
 ├── UI/

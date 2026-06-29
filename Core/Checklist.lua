@@ -291,11 +291,21 @@ function DT.Checklist:GetEntries(opts)
             if not giver then
                 local wd = questID and DT.WikiDetails and DT.WikiDetails[questID]
                 if wd and wd.g then
-                    -- Wiki givers carry zone-relative x/y but no map ID, so the
-                    -- right-click waypoint can't place a pin from them alone. When
-                    -- we know the quest's map from live/harvested data, supply its
-                    -- ZONE-level map ID (matching the zone-relative coords).
-                    local gmap = wd.g.m
+                    -- A giver can stand in a different place per faction -- notably
+                    -- garrison NPCs (Frostwall for Horde, Lunarfall for Alliance).
+                    -- When wd.g carries an A/H override, use the player's faction's;
+                    -- name + loc stay shared on the base table, coords + map come
+                    -- from the override. Each override brings its OWN map ID (the
+                    -- garrison map), which differs from the quest's objective zone.
+                    local gv = wd.g
+                    if playerFaction == "Alliance" and wd.g.A then gv = wd.g.A
+                    elseif playerFaction == "Horde" and wd.g.H then gv = wd.g.H end
+                    -- Wiki givers carry zone-relative x/y but usually no map ID, so
+                    -- the right-click waypoint can't place a pin from them alone.
+                    -- When we know the quest's map from live/harvested data, supply
+                    -- its ZONE-level map ID (matching the zone-relative coords). A
+                    -- faction override (gv.m) supplies its own map directly.
+                    local gmap = gv.m
                     if not gmap then
                         local lm = (resolved and resolved.mapID) or (baked and baked.m)
                         if lm and DT.Zones then
@@ -310,7 +320,7 @@ function DT.Checklist:GetEntries(opts)
                     if not gmap and DT.Zones and DT.Zones.MapIDForZone then
                         gmap = DT.Zones:MapIDForZone(zoneName, continentName)
                     end
-                    giver = { name = wd.g.n, mapID = gmap, x = wd.g.x, y = wd.g.y, loc = wd.g.loc }
+                    giver = { name = wd.g.n, mapID = gmap, x = gv.x, y = gv.y, loc = wd.g.loc }
                 elseif entry.giver then
                     giver = { name = entry.giver }
                 end

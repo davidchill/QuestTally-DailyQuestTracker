@@ -6,14 +6,14 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.7.2"
+DT.VERSION = "0.7.3"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
 -- but we keep our own table so the addon doesn't break if those constants
 -- are missing on older clients.
 DT.EXPANSIONS = {
-    { key = "CLASSIC",     id = 0,  name = "Classic",            short = "Vanilla" },
+    { key = "CLASSIC",     id = 0,  name = "Classic (Vanilla)",  short = "Vanilla" },
     { key = "TBC",         id = 1,  name = "The Burning Crusade", short = "TBC" },
     { key = "WRATH",       id = 2,  name = "Wrath of the Lich King", short = "WotLK" },
     { key = "CATA",        id = 3,  name = "Cataclysm",          short = "Cata" },

@@ -245,6 +245,19 @@ end
 -- earlier by the harvester (DT.DB:GetQuestDetails). The shape mirrors what
 -- Harvester:readRewards produces: lists of { name, icon, count, quality }.
 -- ---------------------------------------------------------------------------
+-- Resolve a baked currency's icon from its NAME. Unlike item rewards, baked
+-- currency rewards ship no icon file ID (QuestRewards.lua `cu` carries only name +
+-- amount), so a not-in-log quest's currencies would render icon-less. We map the
+-- name to its currencyID (CurrencyIDs.lua) and ask the live C_CurrencyInfo API for
+-- the current icon -- fetched live rather than baked, since Blizzard occasionally
+-- re-arts a currency. Returns a texture file ID, or nil if unmapped/unavailable.
+local function currencyIcon(name)
+    local id = name and DT.CurrencyIDs and DT.CurrencyIDs[name]
+    if not id then return nil end
+    local info = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
+    return info and info.iconFileID or nil
+end
+
 -- `skip` (optional): the `shown` flags returned by renderRewards -- categories
 -- the live API already rendered, so we don't duplicate them. `alreadyShown`: true
 -- when the live pass rendered any section, so our first header uses the tighter
@@ -279,7 +292,7 @@ local function renderBakedRewards(content, y, rewards, skip, alreadyShown)
         sectionHeader("Currency:")
         for _, it in ipairs(rewards.currencies) do
             y = addLine(content, y, { text = (it.count or 1) .. "x " .. it.name,
-                                      icon = it.icon, indent = 6 })
+                                      icon = it.icon or currencyIcon(it.name), indent = 6 })
         end
     end
     -- XP hidden for max-level characters (see playerAtMaxLevel); while leveling
