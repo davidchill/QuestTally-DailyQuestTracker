@@ -2,14 +2,28 @@
 ## Title: QuestTally - Daily Quest Tracker
 ## Notes: Designed to track ALL daily quests available in Retail from Vanilla through Midnight - lists what's available, tracks completion, and helps you finish them.
 ## Author: David Rodriguez
-## Version: 0.7.3
+## Version: 0.8.0
 ## SavedVariables: QuestTallyDB
 ## SavedVariablesPerCharacter: QuestTallyCharDB
 ## IconTexture: Interface\Icons\INV_Misc_Note_01
 ## OptionalDeps: Titan, TomTom
 
+# Embedded libraries (load FIRST so everything below can use them). Standard,
+# unmodified community libraries, credited in README.md. LibStub + the
+# LibDataBroker stack power the optional broker / minimap button; HereBeDragons-2.0
+# powers Today's Route (zone->world coordinate math). HereBeDragons-Pins-2.0 is kept
+# loaded (but presently unused) for the map-pins feature, which is disabled for now
+# -- see the commented Integrations\MapPins.lua line below.
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+Libs\HereBeDragons\HereBeDragons-2.0.lua
+Libs\HereBeDragons\HereBeDragons-Pins-2.0.lua
+
 # Load order matters: constants and data first, then logic, then UI.
 Core\Constants.lua
+Core\Changelog.lua
 Core\Database.lua
 Core\QuestData.lua
 Core\ChecklistData.lua
@@ -24,11 +38,17 @@ Core\QuestLog.lua
 Core\Zones.lua
 Core\ZoneMap.lua
 Core\Checklist.lua
+Core\Route.lua
 Core\Core.lua
 UI\MainFrame.lua
 UI\DetailPanel.lua
 UI\PinnedPanel.lua
 
-# Optional integrations (each guards for its host addon and no-ops if absent).
+# Optional integrations (each guards for its host addon/library and no-ops if absent).
 Integrations\TitanPanel.lua
 Integrations\TomTom.lua
+Integrations\Broker.lua
+# Map pins disabled for now (the file is kept for an easy re-add later; the
+# HereBeDragons libraries above stay loaded for it). Uncomment to restore, and
+# re-add the "Map pins" Filters checkbox + the DT.MapPins:Refresh() call in Core.lua.
+# Integrations\MapPins.lua

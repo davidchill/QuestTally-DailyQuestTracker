@@ -21,7 +21,15 @@ local ACCOUNT_DEFAULTS = {
         showProfessions = true,     -- show profession dailies (Cooking, Fishing, gathering WQs, ...)
         showBattlePets = true,      -- show battle pet dailies / pet battle world quests
         showRaces = false,          -- show skyriding/dragonriding race courses (off by default; lots of variants)
+        showMapPins = true,         -- drop world-map + minimap pins at available dailies' givers in your current zone
+        todaysRoute = false,        -- order the Current Zone tab + Pinned panel as a nearest-giver travel route
     },
+    -- LibDBIcon stores the minimap button's angle + hidden state here (account-wide).
+    minimap = { hide = false },
+    -- Daily-activity streak (account-wide): consecutive daily-reset periods in which
+    -- you completed at least one tracked daily. `lastDay` is the period id of the
+    -- most recent completion (see QuestLog:GetDailyPeriodId).
+    streak = { current = 0, best = 0, lastDay = nil },
     -- Per-section collapsed state for the modern UI, keyed by a stable group key
     -- (e.g. an expansion key or zone name). ui.collapsed[key] = true when folded.
     -- collapseSeen tracks which keys have had the "start folded" default applied,
@@ -227,6 +235,47 @@ function DT.DB:GetHarvestedCount()
         end
     end
     return n
+end
+
+-- Record that a tracked daily was completed in the daily period `periodId` (a
+-- monotonically increasing integer that bumps by 1 each daily reset; computed by
+-- QuestLog:GetDailyPeriodId and passed in so this module stays time-call-free).
+-- Extends the streak when the previous completion was the period immediately
+-- before; otherwise the streak restarts at 1. Counts at most once per period.
+function DT.DB:RecordDailyActivity(periodId)
+    if not periodId then return end
+    local s = self.account.streak
+    if s.lastDay == periodId then return end          -- already counted this period
+    if s.lastDay == periodId - 1 then
+        s.current = (s.current or 0) + 1               -- consecutive period
+    else
+        s.current = 1                                  -- first ever, or streak broken
+    end
+    s.lastDay = periodId
+    if (s.current or 0) > (s.best or 0) then s.best = s.current end
+end
+
+-- Current and best daily streak. `periodId` is today's period (QuestLog:
+-- GetDailyPeriodId). The current streak is live: it survives "today not done yet"
+-- (last activity was the previous period) but reads 0 once a whole period has
+-- lapsed with no completion. Returns (current, best).
+function DT.DB:GetStreak(periodId)
+    local s = self.account.streak
+    local best = s.best or 0
+    if not s.lastDay or not periodId then return 0, best end
+    if s.lastDay >= periodId - 1 then return s.current or 0, best end
+    return 0, best  -- a full period passed with nothing -> streak broken
+end
+
+-- The addon version this character's owner last saw the changelog for. Used to pop
+-- the "what's new" changelog once after an update (nil on a fresh install -> shown
+-- once as a welcome). Account-wide so alts don't each re-show it.
+function DT.DB:GetLastSeenVersion()
+    return self.account.lastSeenVersion
+end
+
+function DT.DB:SetLastSeenVersion(v)
+    self.account.lastSeenVersion = v
 end
 
 function DT.DB:IsPinned(questID)

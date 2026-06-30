@@ -1,12 +1,13 @@
 -- PinnedPanel.lua
--- A companion pane docked to the LEFT edge of the tracker window (mirroring the
--- DetailPanel, which docks right). It lists the quests the player has pinned by
--- middle-clicking a row, so favourites stay in view regardless of which tab or
--- zone the main list is showing.
+-- The "Tracked" companion pane docked to the LEFT edge of the tracker window
+-- (mirroring the DetailPanel, which docks right). It lists the quests the player
+-- has tracked by middle-clicking a row, so they stay in view regardless of which
+-- tab or zone the main list is showing.
 --
--- Each pinned row is clickable: left-click opens that quest in the detail panel,
--- right-click un-pins it. The list rebuilds whenever a quest is pinned/unpinned
--- or the tracker refreshes.
+-- Each row uses the shared click scheme (left = details, middle = untrack, ...).
+-- The list rebuilds whenever a quest is tracked/untracked or the tracker refreshes.
+-- (Internal names stay "Pinned"/"pinned" so saved tracked quests aren't lost; the
+-- user-facing concept is "Tracked".)
 local addonName, DT = ...
 
 DT.Pinned = {}
@@ -27,7 +28,7 @@ local function acquireRow(parent)
     if not r then
         r = CreateFrame("Button", nil, parent)
         r:SetHeight(ROW_HEIGHT)
-        r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        r:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
         r.hl = r:CreateTexture(nil, "HIGHLIGHT")
         r.hl:SetAllPoints()
@@ -50,18 +51,11 @@ local function acquireRow(parent)
         r.sub:SetJustifyH("LEFT")
         r.sub:SetWordWrap(false)
 
+        -- Same click scheme as the main list (L=details, M=track/untrack,
+        -- Shift+M=Wowhead, R=map pin, Shift+R=TomTom). Middle-click here untracks the
+        -- quest, which drops its row on the next refresh.
         r:SetScript("OnClick", function(self, button)
-            local e = self.entry
-            if not e then return end
-            if button == "RightButton" then
-                if e.questID then
-                    DT.DB:TogglePinned(e.questID)
-                    DT.UI:Refresh()       -- repaint the pin marker in the main list
-                    DT.Pinned:Refresh()   -- drop the row from this panel
-                end
-            else
-                if DT.Details then DT.Details:Toggle(e) end
-            end
+            if DT.UI and DT.UI.RowAction then DT.UI:RowAction(self.entry, button) end
         end)
         r:SetScript("OnEnter", function(self)
             local e = self.entry
@@ -70,7 +64,12 @@ local function acquireRow(parent)
             GameTooltip:SetText(e.title or "", 1, 1, 1)
             if e.zoneName then GameTooltip:AddLine(e.zoneName, 0.7, 0.7, 0.7) end
             GameTooltip:AddLine("Left-click: details", 0.5, 0.8, 1)
-            GameTooltip:AddLine("Right-click: unpin", 0.5, 0.8, 1)
+            GameTooltip:AddLine("Middle-click: untrack", 0.5, 0.8, 1)
+            GameTooltip:AddLine("Shift-middle-click: Wowhead link", 0.5, 0.8, 1)
+            GameTooltip:AddLine("Right-click: map pin to giver", 0.5, 0.8, 1)
+            if DT.TomTom and DT.TomTom:IsAvailable() then
+                GameTooltip:AddLine("Shift-right-click: TomTom waypoint", 0.5, 0.8, 1)
+            end
             GameTooltip:Show()
         end)
         r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -136,8 +135,21 @@ local function render()
     end
     panel.empty:Hide()
 
+    -- Today's Route mode reorders the pins into nearest-giver travel order (across
+    -- zones, via HereBeDragons world coords) and numbers them; otherwise they keep
+    -- the status-ranked order from gatherPinned. Either way we render a uniform
+    -- { entry, step } list (step is nil when route mode is off).
+    local items
+    if DT.Route and DT.DB:GetSetting("todaysRoute") then
+        items = DT.Route:Order(pinned)
+    else
+        items = {}
+        for _, e in ipairs(pinned) do items[#items + 1] = { entry = e } end
+    end
+
     local y = 0
-    for _, e in ipairs(pinned) do
+    for _, item in ipairs(items) do
+        local e = item.entry
         local row = acquireRow(content)
         row.entry = e
         row:SetPoint("TOPLEFT", 0, -y)
@@ -145,10 +157,18 @@ local function render()
 
         local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
         row.dot:SetColorTexture(c[1], c[2], c[3], 1)
-        row.title:SetText(e.title or ("Quest " .. (e.questID or "?")))
+        local distPrefix = (DT.Route and item.dist)
+            and ("|cffffd100" .. DT.Route:FormatDistance(item.dist) .. "|r  ") or ""
+        row.title:SetText(distPrefix .. (e.title or ("Quest " .. (e.questID or "?"))))
         row.title:SetTextColor(0.92, 0.92, 0.90)
 
         local label = DT.STATUS_LABEL[e.status] or ""
+        -- Append live objective progress ("12/20") to an in-progress pin's status,
+        -- where the wider sub-line has room for both label and fraction.
+        if e.status == DT.STATUS.IN_PROGRESS and e.questID and DT.QuestLog.GetObjectiveProgress then
+            local prog = DT.QuestLog:GetObjectiveProgress(e.questID)
+            if prog then label = label .. "  " .. prog end
+        end
         local zone = e.zoneName or ""
         local sub = label
         if zone ~= "" then sub = (label ~= "" and (label .. "  |cff606060•|r  ") or "") .. zone end
@@ -208,7 +228,7 @@ local function createPanel()
 
     p.title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     p.title:SetPoint("TOPLEFT", LINE_PAD, -14)
-    p.title:SetText("Pinned")
+    p.title:SetText("Tracked")
 
     p.count = p:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     p.count:SetPoint("LEFT", p.title, "RIGHT", 6, 0)
@@ -224,7 +244,7 @@ local function createPanel()
     p.empty:SetPoint("TOPLEFT", p.divider, "BOTTOMLEFT", 0, -12)
     p.empty:SetPoint("TOPRIGHT", p.divider, "BOTTOMRIGHT", 0, -12)
     p.empty:SetJustifyH("LEFT")
-    p.empty:SetText("No pinned quests yet.\n\nMiddle-click any quest in the list to pin it here.")
+    p.empty:SetText("No tracked quests yet.\n\nMiddle-click any quest in the list to track it here.")
     p.empty:SetTextColor(0.6, 0.6, 0.62)
 
     local scroll, content

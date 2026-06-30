@@ -82,12 +82,96 @@ function DT.UI:ShowWowheadLink(questID)
     StaticPopup_Show("QUESTTALLY_WOWHEAD", nil, nil, url)
 end
 
+-- Generic "copy this text" popup (same Ctrl+C pattern as the Wowhead link), used
+-- by the About page's Discord copy button. The prompt label is the first arg; the
+-- pre-selected text is passed as data.
+StaticPopupDialogs["QUESTTALLY_COPY"] = {
+    text = "%s",
+    button1 = OKAY,
+    hasEditBox = true,
+    editBoxWidth = 260,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+    OnShow = function(self, data)
+        local eb = self.editBox or (self.GetEditBox and self:GetEditBox())
+        if eb and data then
+            eb:SetText(data)
+            eb:HighlightText()
+            eb:SetFocus()
+        end
+    end,
+    EditBoxOnEnterPressed = function(self) self:GetParent():Hide() end,
+    EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+    EditBoxOnTextChanged = function(self, data)
+        if data and self:GetText() ~= data then
+            self:SetText(data)
+            self:HighlightText()
+        end
+    end,
+}
+
+-- Pop a copyable-text dialog: `label` is the prompt line, `text` is pre-selected.
+function DT.UI:ShowCopyText(label, text)
+    if not text then return end
+    StaticPopup_Show("QUESTTALLY_COPY", label or "Press Ctrl+C to copy:", nil, text)
+end
+
+-- Shared quest-row click handling for the main list AND the Tracked panel, so the
+-- click scheme lives in one place:
+--   Left            — quest details / select
+--   Middle          — track / untrack (adds to the Tracked panel)
+--   Shift+Middle    — open the Wowhead quest link
+--   Right           — set a map pin / waypoint at the giver
+--   Shift+Right     — set a TomTom waypoint at the giver (if TomTom is installed)
+-- `e` is a quest entry (with .questID/.title/.giver). Callers handle non-quest rows
+-- (e.g. section headers) before calling this.
+function DT.UI:RowAction(e, button)
+    if not e then return end
+    if IsShiftKeyDown() then
+        if button == "MiddleButton" then
+            if e.questID then self:ShowWowheadLink(e.questID) end
+        elseif button == "RightButton" then
+            -- Explicit `if` so AddGiverWaypoint's second return (`reason`) survives.
+            local ok, reason
+            if DT.TomTom then ok, reason = DT.TomTom:AddGiverWaypoint(e) end
+            if ok then
+                print(string.format("|cff33ff99QuestTally|r: TomTom waypoint set to %s.",
+                    (e.giver and e.giver.name) or (e.title or "the quest giver")))
+            elseif reason == "nolocation" then
+                print("|cff33ff99QuestTally|r: no known giver location for this "
+                    .. "quest yet — visit its giver once so QuestTally can learn it.")
+            else
+                print("|cff33ff99QuestTally|r: TomTom isn't installed — install it "
+                    .. "to set waypoints with Shift+Right Click.")
+            end
+        end
+        return
+    end
+    if button == "LeftButton" then
+        if DT.Details then DT.Details:Toggle(e) end
+    elseif button == "MiddleButton" then
+        if e.questID then
+            DT.DB:TogglePinned(e.questID)
+            self:Refresh()
+            if DT.Pinned then DT.Pinned:Refresh() end
+        end
+    elseif button == "RightButton" then
+        if DT.QuestLog:SetGiverWaypoint(e.giver) then
+            local g = e.giver
+            print(string.format("|cff33ff99QuestTally|r: map pin set to %s%s.",
+                (e.title or "quest"), (g and g.name) and (" — " .. g.name) or ""))
+        else
+            print("|cff33ff99QuestTally|r: no known giver location for this "
+                .. "quest yet — visit its giver once so QuestTally can learn it.")
+        end
+    end
+end
+
 -- Current view state.
-DT.UI.mode = "ZONE"            -- ZONE | ALL (Expansion) | FACTION | BROWSE
-DT.UI.browseContinent = nil    -- selected continent NAME
-DT.UI.browseZone = nil         -- selected zone NAME (nil = all zones)
-DT.UI.searchQuery = ""         -- active name filter (empty = inactive, normal mode)
-local browseTree = {}          -- cached continent->zone tree for the dropdowns
+DT.UI.mode = "ZONE"            -- ZONE | ALL (Expansion) | FACTION | SEARCH
+DT.UI.searchQuery = ""         -- active search query (empty = inactive / Search-home)
 local collapsed = false        -- title-bar collapsed to a logo-only chip (session only)
 
 -- The quest currently shown in the detail panel, kept highlighted in the list.
@@ -589,6 +673,10 @@ end
 -- accent and the per-expansion tints, so the Faction tab reads as its own view.
 local FACTION_ACCENT = { 0.64, 0.55, 0.86 }
 
+-- Section accent for currency groups on the Search tab: a warm gold (coin-like),
+-- distinct from the violet faction and blue zone accents.
+local CURRENCY_ACCENT = { 0.85, 0.70, 0.32 }
+
 -- Quests with no known reputation reward bucket here; sorted to the bottom.
 local NO_FACTION = "No Reputation"
 
@@ -705,6 +793,60 @@ local function primaryFactionName(e)
     return nil
 end
 
+-- Every reputation-faction NAME a quest rewards (deduped), drawn from all baked
+-- sources plus this session's live data. Unlike primaryFactionName (first faction
+-- only), this returns the FULL set, so the reputation filter can match a quest
+-- that grants several factions -- e.g. the Outland "WANTED" dailies that award
+-- Consortium + Thrallmar + Honor Hold at once. Returns an array, or nil if the
+-- quest has no known rep. Source priority mirrors the detail panel's
+-- bestReputation (live -> consolidated baked -> wiki); we union them all here.
+local function entryFactions(e)
+    local qid = e.questID
+    if not qid then return nil end
+    local names, seen = {}, {}
+    local function add(list)
+        if type(list) ~= "table" then return end
+        for _, r in ipairs(list) do
+            local n = r.name or r.n
+            if n and n ~= "" and not seen[n] then
+                seen[n] = true
+                names[#names + 1] = n
+            end
+        end
+    end
+    local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(qid)
+    if live and live.rewards then add(live.rewards.reputation) end
+    local b = DT.BakedDetails and DT.BakedDetails[qid]
+    if b and b.r then add(b.r.rep) end
+    local w = DT.WikiDetails and DT.WikiDetails[qid]
+    if w then add(w.rep) end
+    return (#names > 0) and names or nil
+end
+
+-- Every CURRENCY NAME a quest rewards (deduped), from the consolidated baked
+-- rewards (QuestRewards `cu`) and this session's live data. Used by the unified
+-- Search tab to match "which dailies give currency X". Returns an array, or nil.
+local function entryCurrencies(e)
+    local qid = e.questID
+    if not qid then return nil end
+    local names, seen = {}, {}
+    local function add(list)
+        if type(list) ~= "table" then return end
+        for _, c in ipairs(list) do
+            local n = c.name or c.n
+            if n and n ~= "" and not seen[n] then
+                seen[n] = true
+                names[#names + 1] = n
+            end
+        end
+    end
+    local live = DT.DB and DT.DB.GetQuestDetails and DT.DB:GetQuestDetails(qid)
+    if live and live.rewards then add(live.rewards.currencies) end
+    local b = DT.BakedDetails and DT.BakedDetails[qid]
+    if b and b.r then add(b.r.cu) end
+    return (#names > 0) and names or nil
+end
+
 -- Group entries by primary reputation faction (flat — one section per faction).
 -- Faction sections are alphabetical; the catch-all "No Reputation" sinks to the
 -- bottom. Mirrors groupByZone's section/fold handling so the existing collapse,
@@ -764,18 +906,39 @@ local function buildZoneMode()
         if zoneLabel(e) == target then entries[#entries+1] = e end
     end
     local display = {}
-    emitZoneWithSubzones(display, {
-        level = 1,
-        text  = zone.zoneName,
-        list  = entries,
-        color = ZONE_ACCENT,
-        -- Distinct "CZONE:" key so this view's fold state is independent of the
-        -- Browse tab (which folds by default under the shared "ZONE:" key).
-        key   = "CZONE:" .. zone.zoneName,
-    })
-    if #entries == 0 then
-        display[#display+1] = { type = "message",
-            text = "No known dailies mapped to this zone yet." }
+    if DT.DB:GetSetting("todaysRoute") then
+        -- Today's Route: one flat, always-open section listing the zone's dailies
+        -- nearest-first, each tagged with its distance from you; completed /
+        -- unplaceable ones trail without a distance. Reuses the search display shape.
+        local ordered = DT.Route:Order(entries)
+        display[#display+1] = {
+            type = "section", level = 1,
+            text = "Today's Route — " .. zone.zoneName,
+            done = doneCount(entries), total = #entries,
+            color = ZONE_ACCENT, key = "ROUTE:" .. zone.zoneName, collapsed = false,
+        }
+        for _, o in ipairs(ordered) do
+            display[#display+1] = { type = "quest", entry = o.entry, depth = 1,
+                                    routeDist = DT.Route:FormatDistance(o.dist) }
+        end
+        if #entries == 0 then
+            display[#display+1] = { type = "message",
+                text = "No known dailies mapped to this zone yet." }
+        end
+    else
+        emitZoneWithSubzones(display, {
+            level = 1,
+            text  = zone.zoneName,
+            list  = entries,
+            color = ZONE_ACCENT,
+            -- Distinct "CZONE:" key so this view's fold state is independent of the
+            -- Browse tab (which folds by default under the shared "ZONE:" key).
+            key   = "CZONE:" .. zone.zoneName,
+        })
+        if #entries == 0 then
+            display[#display+1] = { type = "message",
+                text = "No known dailies mapped to this zone yet." }
+        end
     end
     -- Breadcrumb reads as a path, broad -> specific: "Eastern Kingdoms — Elwynn
     -- Forest". The continent is muted (parent context); the current zone is the
@@ -791,31 +954,109 @@ local function buildZoneMode()
     return display, sub
 end
 
-local function buildBrowseMode()
-    local all = applyKindFilters(DT.Checklist:GetEntries())
-    browseTree = DT.Zones:BuildTree(all)
+-- The Search tab (formerly Browse) with an EMPTY box: a brief prompt of what you
+-- can search. (A later increment turns this into a clickable directory of
+-- factions / currencies / zones.)
+local function buildSearchHomeMode()
+    return {
+        { type = "message",
+          text = "Search dailies by quest name, currency, reputation / faction, or zone."
+              .. "\n\nStart typing in the box above." },
+    }, "Search"
+end
 
-    -- Default the continent selection to the first available.
-    if not DT.UI.browseContinent and browseTree[1] then
-        DT.UI.browseContinent = browseTree[1].name
+-- The Search tab with a query: ONE search matched across four dimensions and
+-- grouped by what matched -- Factions (with rep bars), Currencies, Zones, then
+-- loose Quests (name matches not already shown under a dimension). Each section
+-- header carries a muted "— Faction / Currency / Zone" tag so it's clear why it
+-- matched. All sections render open. Reuses entryFactions / entryCurrencies.
+local function buildUnifiedSearchMode()
+    local q = (DT.UI.searchQuery or ""):lower()
+    local all = applyKindFilters(DT.Checklist:GetEntries())
+
+    local function newBuckets() return { map = {}, order = {} } end
+    local function put(b, key, e)
+        if not b.map[key] then b.map[key] = {}; b.order[#b.order + 1] = key end
+        table.insert(b.map[key], e)
     end
 
-    -- Filter on the SAME canonical names the dropdowns are built from (BuildTree
-    -- uses ZoneLabel and "Other" for a missing continent), so a selected zone
-    -- always matches its section header and the per-zone counts are accurate.
-    local entries = {}
+    local facs, curs, zones = newBuckets(), newBuckets(), newBuckets()
+    local shown, quests = {}, {}
+
     for _, e in ipairs(all) do
-        if (e.continentName or "Other") == DT.UI.browseContinent
-        and (not DT.UI.browseZone or (zoneLabel(e) or "Unknown") == DT.UI.browseZone) then
-            entries[#entries+1] = e
+        local matched = false
+        local fs = entryFactions(e)
+        if fs then
+            for _, n in ipairs(fs) do
+                if n:lower():find(q, 1, true) then put(facs, n, e); matched = true end
+            end
+        end
+        local cs = entryCurrencies(e)
+        if cs then
+            for _, n in ipairs(cs) do
+                if n:lower():find(q, 1, true) then put(curs, n, e); matched = true end
+            end
+        end
+        local zl = zoneLabel(e)
+        if zl and zl:lower():find(q, 1, true) then put(zones, zl, e); matched = true end
+        if matched and e.questID then shown[e.questID] = true end
+
+        -- Title matches go to the loose "Quests" group, unless the quest already
+        -- appears under a faction/currency/zone section above.
+        local t  = (e.title or ""):lower()
+        local rt = (e.rawTitle or ""):lower()
+        if (t:find(q, 1, true) or rt:find(q, 1, true))
+        and not (e.questID and shown[e.questID]) then
+            quests[#quests + 1] = e
         end
     end
 
-    local display = groupByZone(entries)
-    if #display == 0 then
-        display = { { type = "message", text = "No dailies for this selection." } }
+    local display, total = {}, 0
+    local function emitGroup(b, accent, tag, withRepBar)
+        table.sort(b.order)
+        for _, name in ipairs(b.order) do
+            local list = b.map[name]
+            table.sort(list, sortEntries)
+            total = total + #list
+            display[#display + 1] = {
+                type = "section", level = 1,
+                text = name .. "  |cff707070— " .. tag .. "|r",
+                done = doneCount(list), total = #list,
+                color = accent, key = "SEARCH:" .. tag .. ":" .. name, collapsed = false,
+            }
+            if withRepBar then
+                display[#display + 1] = { type = "repbar", faction = name, depth = 1 }
+            end
+            for _, e in ipairs(list) do
+                display[#display + 1] = { type = "quest", entry = e, depth = 1 }
+            end
+        end
     end
-    return display, string.format("Browse  |cff707070— %d dailies total|r", #all)
+
+    emitGroup(facs,  FACTION_ACCENT,  "Faction",  true)
+    emitGroup(curs,  CURRENCY_ACCENT, "Currency", false)
+    emitGroup(zones, ZONE_ACCENT,     "Zone",     false)
+
+    if #quests > 0 then
+        table.sort(quests, sortEntries)
+        total = total + #quests
+        display[#display + 1] = {
+            type = "section", level = 1, text = "Quests  |cff707070— name match|r",
+            done = doneCount(quests), total = #quests,
+            color = { 0.60, 0.62, 0.66 }, key = "SEARCH:QUESTS", collapsed = false,
+        }
+        for _, e in ipairs(quests) do
+            display[#display + 1] = { type = "quest", entry = e, depth = 1 }
+        end
+    end
+
+    if #display == 0 then
+        return { { type = "message",
+                   text = 'Nothing matches "' .. (DT.UI.searchQuery or "") .. '".' } },
+               "Search  |cff707070— no matches|r"
+    end
+    return display,
+           string.format("Search  |cff707070— %d result%s|r", total, total == 1 and "" or "s")
 end
 
 local function buildAllMode()
@@ -833,7 +1074,8 @@ local function buildAllMode()
 end
 
 -- The Faction tab: the same filtered catalog as the Expansion tab, grouped by the
--- reputation faction each quest rewards instead of by expansion/zone.
+-- reputation faction each quest rewards instead of by expansion/zone. An active
+-- search narrows this view (see buildFactionSearchMode) -- including by faction name.
 local function buildFactionMode()
     local entries = applyKindFilters(DT.Checklist:GetEntries())
     local completed = 0
@@ -842,6 +1084,71 @@ local function buildFactionMode()
     end
     return groupByFaction(entries),
            string.format("Faction  |cff707070— %d quests, |r|cff66cc66%d completed|r", #entries, completed)
+end
+
+-- Faction tab + active search: filter the faction grouping to matches. A quest is
+-- placed under EVERY rewarded faction whose name matches the query (so typing a
+-- faction name surfaces that faction's section with its rep bar and all of its
+-- dailies -- this is what the old dropdown did); a quest whose TITLE matches but no
+-- faction does is placed under its primary faction. Sections render open (it's a
+-- search result). Reuses entryFactions for the "every rewarded faction" lookup.
+local function buildFactionSearchMode()
+    local q = (DT.UI.searchQuery or ""):lower()
+    local groups, order = {}, {}
+    local function bucket(name)
+        if not groups[name] then groups[name] = {}; order[#order + 1] = name end
+        return groups[name]
+    end
+
+    for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
+        local placed = false
+        local fs = entryFactions(e)
+        if fs then
+            for _, n in ipairs(fs) do
+                if n:lower():find(q, 1, true) then
+                    table.insert(bucket(n), e); placed = true
+                end
+            end
+        end
+        if not placed then
+            local t  = (e.title or ""):lower()
+            local rt = (e.rawTitle or ""):lower()
+            if t:find(q, 1, true) or rt:find(q, 1, true) then
+                table.insert(bucket(primaryFactionName(e) or NO_FACTION), e)
+            end
+        end
+    end
+
+    if #order == 0 then
+        return { { type = "message",
+                   text = 'No factions or quests match "' .. (DT.UI.searchQuery or "") .. '".' } },
+               "Faction  |cff707070— no matches|r"
+    end
+
+    table.sort(order, function(a, b)
+        if (a == NO_FACTION) ~= (b == NO_FACTION) then return b == NO_FACTION end
+        return a < b
+    end)
+
+    local display, count = {}, 0
+    for _, name in ipairs(order) do
+        local list = groups[name]
+        table.sort(list, sortEntries)
+        count = count + #list
+        display[#display + 1] = {
+            type = "section", level = 1, text = name,
+            done = doneCount(list), total = #list,
+            color = FACTION_ACCENT, key = "FACSEARCH:" .. name, collapsed = false,
+        }
+        if name ~= NO_FACTION then
+            display[#display + 1] = { type = "repbar", faction = name, depth = 1 }
+        end
+        for _, e in ipairs(list) do
+            display[#display + 1] = { type = "quest", entry = e, depth = 1 }
+        end
+    end
+    return display,
+           string.format("Faction  |cff707070— %d result%s|r", count, count == 1 and "" or "s")
 end
 
 -- Search mode: a name filter that overrides whatever tab is active. Matches the
@@ -881,22 +1188,41 @@ local function buildSearchMode()
                          #matches, #matches == 1 and "" or "es")
 end
 
--- Distinct quest titles matching the query, sorted and capped, for the
--- type-ahead suggestion popup under the search box. Each result carries the
--- backing entry so picking a suggestion can open it in the Details panel
--- directly (first entry wins when several share a title).
+-- Type-ahead suggestions under the search box, sorted and capped. Quest-title
+-- suggestions carry the backing entry so picking one opens it in the Details panel.
+-- On the Faction tab, matching faction NAMES are suggested first (marked `faction`,
+-- entry-less) -- picking one just fills the box, which filters the view to that
+-- faction. One catalog pass collects both.
 local SEARCH_SUGGEST_MAX = 8
 local function searchSuggestions(query)
     local q = (query or ""):lower()
-    local seen, out = {}, {}
+    local factionMode = (DT.UI.mode == "FACTION")
+    local titleSeen, titleOut = {}, {}
+    local facSeen, facOut = {}, {}
     for _, e in ipairs(applyKindFilters(DT.Checklist:GetEntries())) do
         local title = e.title
-        if title and not seen[title] and title:lower():find(q, 1, true) then
-            seen[title] = true
-            out[#out+1] = { title = title, entry = e }
+        if title and not titleSeen[title] and title:lower():find(q, 1, true) then
+            titleSeen[title] = true
+            titleOut[#titleOut+1] = { title = title, entry = e }
+        end
+        if factionMode then
+            local fs = entryFactions(e)
+            if fs then
+                for _, n in ipairs(fs) do
+                    if not facSeen[n] and n:lower():find(q, 1, true) then
+                        facSeen[n] = true
+                        facOut[#facOut+1] = { title = n, faction = true }
+                    end
+                end
+            end
         end
     end
-    table.sort(out, function(a, b) return a.title < b.title end)
+    table.sort(facOut, function(a, b) return a.title < b.title end)
+    table.sort(titleOut, function(a, b) return a.title < b.title end)
+    -- Factions first (the tab's focus), then quest names.
+    local out = {}
+    for _, s in ipairs(facOut)   do out[#out+1] = s end
+    for _, s in ipairs(titleOut) do out[#out+1] = s end
     while #out > SEARCH_SUGGEST_MAX do out[#out] = nil end
     return out
 end
@@ -1025,60 +1351,9 @@ local function acquireRow(parent)
             end
             local e = self.entry
             if not e then return end
-            if IsShiftKeyDown() then
-                if button == "LeftButton" then
-                    -- Shift+Left: drop a TomTom waypoint at the quest giver.
-                    -- NOTE: guard with an explicit `if`, not `DT.TomTom and ...`.
-                    -- The `and` operator truncates its right side to ONE value, so
-                    -- it would drop AddGiverWaypoint's second return (`reason`),
-                    -- making every failure look like "notomtom".
-                    local ok, reason
-                    if DT.TomTom then
-                        ok, reason = DT.TomTom:AddGiverWaypoint(e)
-                    end
-                    if ok then
-                        print(string.format("|cff33ff99QuestTally|r: TomTom waypoint set to %s.",
-                            (e.giver and e.giver.name) or (e.title or "the quest giver")))
-                    elseif reason == "nolocation" then
-                        print("|cff33ff99QuestTally|r: no known giver location for this "
-                            .. "quest yet — visit its giver once so QuestTally can learn it.")
-                    else  -- "notomtom" or DT.TomTom missing
-                        print("|cff33ff99QuestTally|r: TomTom isn't installed — install it "
-                            .. "to set waypoints with Shift+Left Click.")
-                    end
-                elseif button == "RightButton" then
-                    -- Shift+Right: copyable Wowhead link (needs a known quest ID).
-                    if e.questID then DT.UI:ShowWowheadLink(e.questID) end
-                end
-                return
-            end
-            if button == "LeftButton" then
-                -- Left-click: open the details pane (rewards / objectives).
-                DT.Details:Toggle(e)
-            elseif button == "MiddleButton" then
-                -- Middle-click: pin/unpin (this used to be left-click).
-                if e.questID then
-                    DT.DB:TogglePinned(e.questID)
-                    DT.UI:Refresh()
-                    if DT.Pinned then DT.Pinned:Refresh() end
-                end
-            elseif button == "RightButton" then
-                if not e.questID then return end
-                -- If the quest isn't in the log yet and we know its giver's
-                -- location, point the waypoint at the giver so you can go get it.
-                -- Otherwise super-track the quest (objective / turn-in).
-                local inLog = C_QuestLog.GetLogIndexForQuestID
-                    and C_QuestLog.GetLogIndexForQuestID(e.questID) ~= nil
-                if not inLog and DT.QuestLog:SetGiverWaypoint(e.giver) then
-                    local g = e.giver
-                    print(string.format("|cff33ff99QuestTally|r: waypoint set to %s%s.",
-                        (e.title or "quest"),
-                        (g and g.name) and (" — " .. g.name) or ""))
-                elseif C_SuperTrack and C_SuperTrack.SetSuperTrackedQuestID then
-                    C_SuperTrack.SetSuperTrackedQuestID(e.questID)
-                    print("|cff33ff99QuestTally|r: tracking " .. (e.title or e.questID))
-                end
-            end
+            -- Shared scheme: L=details, M=track/untrack, Shift+M=Wowhead,
+            -- R=map pin, Shift+R=TomTom (see DT.UI:RowAction).
+            DT.UI:RowAction(e, button)
         end)
         row:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
@@ -1103,18 +1378,16 @@ local function acquireRow(parent)
             GameTooltip:AddLine(" ")
             GameTooltip:AddLine("Left-click: quest details", 0.5, 0.8, 1)
             if e.questID then
-                GameTooltip:AddLine("Middle-click: pin/unpin", 0.5, 0.8, 1)
+                GameTooltip:AddLine("Middle-click: track / untrack", 0.5, 0.8, 1)
+                GameTooltip:AddLine("Shift-middle-click: Wowhead link", 0.5, 0.8, 1)
                 if e.giver and e.giver.x then
-                    GameTooltip:AddLine("Right-click: travel to giver / track quest", 0.5, 0.8, 1)
-                else
-                    GameTooltip:AddLine("Right-click: track quest", 0.5, 0.8, 1)
+                    GameTooltip:AddLine("Right-click: map pin to giver", 0.5, 0.8, 1)
+                    if DT.TomTom and DT.TomTom:IsAvailable() then
+                        GameTooltip:AddLine("Shift-right-click: TomTom waypoint", 0.5, 0.8, 1)
+                    end
                 end
-                if DT.TomTom and DT.TomTom:IsAvailable() and e.giver and e.giver.x then
-                    GameTooltip:AddLine("Shift-left-click: TomTom waypoint", 0.5, 0.8, 1)
-                end
-                GameTooltip:AddLine("Shift-right-click: Wowhead link", 0.5, 0.8, 1)
             else
-                GameTooltip:AddLine("Not yet seen in-game; pick it up to track it live.", 0.6, 0.55, 0.7)
+                GameTooltip:AddLine("Not yet seen in-game; pick it up once so QuestTally can show its live status.", 0.6, 0.55, 0.7)
             end
             GameTooltip:Show()
         end)
@@ -1142,61 +1415,16 @@ local function releaseAllRows()
 end
 
 -- ---------------------------------------------------------------------------
--- Dropdowns (Browse mode)
--- ---------------------------------------------------------------------------
-local function refreshDropdownLabels()
-    if not mainFrame then return end
-    mainFrame.continentDD:SetText(DT.UI.browseContinent or "Continent")
-    mainFrame.zoneDD:SetText(DT.UI.browseZone or "All Zones")
-end
-
--- Menu builders: each returns an array of { text=, checked=, func=, disabled= }
--- entries consumed by the custom themed dropdown (see createDropdown).
-local function buildContinentMenu()
-    local entries = {}
-    if #browseTree == 0 then
-        entries[1] = { text = "No dailies available", disabled = true }
-        return entries
-    end
-    for _, c in ipairs(browseTree) do
-        entries[#entries + 1] = {
-            text = c.name,
-            checked = (c.name == DT.UI.browseContinent),
-            func = function()
-                DT.UI.browseContinent = c.name
-                DT.UI.browseZone = nil
-                DT.UI:Refresh()
-            end,
-        }
-    end
-    return entries
-end
-
-local function buildZoneMenu()
-    local entries = { {
-        text = "All Zones",
-        checked = (DT.UI.browseZone == nil),
-        func = function() DT.UI.browseZone = nil; DT.UI:Refresh() end,
-    } }
-    for _, c in ipairs(browseTree) do
-        if c.name == DT.UI.browseContinent then
-            for _, z in ipairs(c.zones) do
-                entries[#entries + 1] = {
-                    text = string.format("%s (%d)", z.name, z.count),
-                    checked = (z.name == DT.UI.browseZone),
-                    func = function() DT.UI.browseZone = z.name; DT.UI:Refresh() end,
-                }
-            end
-        end
-    end
-    return entries
-end
-
--- ---------------------------------------------------------------------------
 -- Mode tabs
 -- ---------------------------------------------------------------------------
 local function setMode(mode)
     DT.UI.mode = mode
+    -- Leaving the Search tab clears any active query (the box is hidden elsewhere,
+    -- so a lingering search couldn't be seen or cleared). Setting the text fires
+    -- OnTextChanged, which resets DT.UI.searchQuery and refreshes.
+    if mode ~= "SEARCH" and mainFrame and mainFrame.searchBox and mainFrame.searchBox.editBox then
+        mainFrame.searchBox.editBox:SetText("")
+    end
     DT.UI:Refresh()
 end
 
@@ -1240,8 +1468,17 @@ local function setAllTopCollapsed(collapse)
     end
 end
 
+-- Sync the title-bar Route button's lit/dim state to the todaysRoute setting.
+local function updateRouteButton()
+    if not mainFrame or not mainFrame.routeBtn then return end
+    local on = DT.DB:GetSetting("todaysRoute")
+    mainFrame.routeBtn.active:SetShown(on)
+    mainFrame.routeBtn.label:SetTextColor(on and 1 or 0.85, on and 0.97 or 0.85, on and 0.78 or 0.82)
+end
+
 local function updateModeButtons()
     if not mainFrame then return end
+    updateRouteButton()
     for _, b in ipairs(mainFrame.modeButtons) do
         local active = (b.mode == DT.UI.mode)
         b.bg:SetShown(active)
@@ -1251,26 +1488,22 @@ local function updateModeButtons()
             b.label:SetTextColor(0.55, 0.55, 0.52)
         end
     end
-    -- Layout below the sub-bar, top to bottom: the always-visible search bar
-    -- (+28 over the old base of 54), then — in Browse mode only — the continent/
-    -- zone dropdowns (+32). An active search overrides the tab content, so the
-    -- Browse dropdowns are irrelevant then and hide, reclaiming their band.
+    -- The search box now lives ONLY on the Search tab (search has its own home). On
+    -- the other tabs it's hidden and the list rises to fill the freed band. (The old
+    -- Browse continent/zone dropdowns were removed with the Search-tab redesign.)
     local searching = (DT.UI.searchQuery ~= "")
-    local showDropdowns = (DT.UI.mode == "BROWSE") and not searching
-    mainFrame.continentDD:SetShown(showDropdowns)
-    mainFrame.zoneDD:SetShown(showDropdowns)
+    local onSearch = (DT.UI.mode == "SEARCH")
+    mainFrame.searchBox:SetShown(onSearch)
     mainFrame.scroll:ClearAllPoints()
-    mainFrame.scroll:SetPoint("TOPLEFT", 12, showDropdowns and -114 or -82)
+    mainFrame.scroll:SetPoint("TOPLEFT", 12, onSearch and -82 or -54)
     mainFrame.scroll:SetPoint("BOTTOMRIGHT", -18, 32)
 
-    -- The All and Browse tabs (both grouped/collapsible) show the
-    -- expand/collapse-all toggle at the right of the sub-bar; the reset countdown
-    -- shifts left to make room when it's visible. The Current Zone tab has a
-    -- single section, so the toggle would be pointless there.
-    -- Search shows a single flat "Search results" section, so the expand/collapse
-    -- toggle is pointless there (as in Current Zone) and hides.
+    -- The Expansion and Faction tabs (grouped/collapsible, when not searching) show
+    -- the expand/collapse-all toggle at the right of the sub-bar; the reset countdown
+    -- shifts left to make room. Current Zone is a single section, and the Search tab
+    -- shows flat/force-open results, so the toggle is pointless there.
     local hasGroups = not searching
-        and (DT.UI.mode == "ALL" or DT.UI.mode == "FACTION" or DT.UI.mode == "BROWSE")
+        and (DT.UI.mode == "ALL" or DT.UI.mode == "FACTION")
     mainFrame.collapseAllBtn:SetShown(hasGroups)
     mainFrame.reset:ClearAllPoints()
     if hasGroups then
@@ -1280,6 +1513,81 @@ local function updateModeButtons()
         mainFrame.reset:SetPoint("RIGHT", mainFrame.subBar, "RIGHT", -10, 0)
     end
 end
+
+-- ---------------------------------------------------------------------------
+-- Continuous route updates (TomTom-arrow style)
+-- ---------------------------------------------------------------------------
+-- While Today's Route is active and a routed surface is on screen, re-route as the
+-- player moves so the step order and numbers track live position. Three guards keep
+-- it cheap: a time throttle (a couple checks per second), a movement gate (only
+-- rebuild once you've actually moved, in HBD world yards), and a visibility gate
+-- (only when a route view is showing). A stationary player costs ~nothing.
+local LibStub = _G.LibStub
+local routeHBD
+local function getRouteHBD()
+    if routeHBD == nil then
+        routeHBD = (LibStub and LibStub("HereBeDragons-2.0", true)) or false
+    end
+    return routeHBD or nil
+end
+
+local ROUTE_TICK    = 0.5        -- seconds between position checks
+local ROUTE_MOVE_SQ = 8 * 8      -- re-route after moving ~8 yards (world coords are yards)
+local routeAccum, lastRX, lastRY, lastRInst = 0, nil, nil, nil
+
+-- Which routed surfaces, if any, are currently visible. Returns (zoneView, pinnedView).
+local function routeSurfacesVisible()
+    if not DT.DB:GetSetting("todaysRoute") then return false, false end
+    local zoneView = mainFrame and mainFrame:IsShown()
+        and DT.UI.mode == "ZONE" and (DT.UI.searchQuery or "") == ""
+    local pinnedView = DT.Pinned and DT.Pinned:IsShown()
+    return zoneView, pinnedView
+end
+
+local routeTicker = CreateFrame("Frame")
+routeTicker:SetScript("OnUpdate", function(_, elapsed)
+    routeAccum = routeAccum + elapsed
+    if routeAccum < ROUTE_TICK then return end
+    routeAccum = 0
+
+    local zoneView, pinnedView = routeSurfacesVisible()
+    if not (zoneView or pinnedView) then return end
+
+    local HBD = getRouteHBD()
+    if not HBD then return end
+    local x, y, inst = HBD:GetPlayerWorldPosition()
+    if not x then return end
+
+    -- Movement gate: skip the rebuild unless we changed instance or moved enough.
+    if lastRInst == inst and lastRX then
+        local dx, dy = x - lastRX, y - lastRY
+        if dx * dx + dy * dy < ROUTE_MOVE_SQ then return end
+    end
+    lastRX, lastRY, lastRInst = x, y, inst
+
+    -- A zone-view refresh rebuilds the pinned panel too; otherwise refresh only it.
+    if zoneView then
+        DT.UI:Refresh()
+    elseif pinnedView then
+        DT.Pinned:Refresh()
+    end
+end)
+
+-- Live-ticking reset countdown: refresh just the sub-bar timer text once a second
+-- (a full list rebuild would be wasteful), so the countdown visibly ticks instead
+-- of only updating on quest events. Cheap: a single SetText when the window is open.
+local resetAccum = 0
+local resetTicker = CreateFrame("Frame")
+resetTicker:SetScript("OnUpdate", function(_, elapsed)
+    resetAccum = resetAccum + elapsed
+    if resetAccum < 1 then return end
+    resetAccum = 0
+    if not (mainFrame and mainFrame:IsShown() and mainFrame.reset and mainFrame.reset:IsShown()) then
+        return
+    end
+    local secs = DT.QuestLog:GetSecondsUntilReset()
+    mainFrame.reset:SetText("resets |cffffd100" .. DT.QuestLog:FormatCountdown(secs) .. "|r")
+end)
 
 -- ---------------------------------------------------------------------------
 -- Frame creation
@@ -1672,13 +1980,22 @@ local function createSearchBox(parent, width)
         box.builder = function()
             local out = {}
             for _, s in ipairs(list) do
-                out[#out+1] = { text = s.title, func = function()
-                    -- Picking a suggestion IS selecting that result: open it in
-                    -- the Details panel. Open first so the row highlights when the
-                    -- list rebuilds, then mirror the name into the box (a
-                    -- programmatic set, userInput=false, so the menu won't re-open
-                    -- and the list filters down to the pick).
-                    DT.Details:Show(s.entry)
+                -- Tag faction suggestions so they're unmistakably NOT quests: the
+                -- name in the faction accent colour plus a muted "— Faction" label.
+                -- The box still receives the clean name (s.title) on pick.
+                local display = s.faction
+                    and ("|cff" .. toHex(FACTION_ACCENT) .. s.title .. "|r  |cff707070— Faction|r")
+                    or s.title
+                out[#out+1] = { text = display, func = function()
+                    -- Picking a suggestion IS selecting that result. A quest opens in
+                    -- the Details panel (first, so the row highlights when the list
+                    -- rebuilds); a faction suggestion just narrows the view. Either
+                    -- way mirror the name into the box (a programmatic set,
+                    -- userInput=false, so the menu won't re-open and the list filters
+                    -- down to the pick).
+                    if not s.faction and DT.Details then
+                        DT.Details:Show(s.entry)
+                    end
                     eb:SetText(s.title)
                     eb:SetCursorPosition(#s.title)
                     eb:ClearFocus()
@@ -1705,7 +2022,12 @@ local function createSearchBox(parent, width)
         DT.UI:Refresh()
         -- Re-check focus: a pending timer must not re-pop the type-ahead after the
         -- user dismissed it with Enter/Escape or by picking a result.
-        if searchWantSuggest and DT.UI.searchQuery ~= "" and eb:HasFocus() then
+        -- On the Search tab the floating popup is suppressed entirely: the live
+        -- grouped results (factions / currencies / zones / quests) already serve as
+        -- the auto-populate, and a popup anchored under the box would just overlap
+        -- them. Other tabs keep the popup (their search is a flat overlay).
+        if searchWantSuggest and DT.UI.searchQuery ~= "" and eb:HasFocus()
+        and DT.UI.mode ~= "SEARCH" then
             showSuggestions()
         else
             hideDropMenu()
@@ -1755,6 +2077,211 @@ local function createSearchBox(parent, width)
     box:SetScript("OnMouseDown", function() eb:SetFocus() end)
 
     return box
+end
+
+-- ---------------------------------------------------------------------------
+-- Help & Settings window
+-- ---------------------------------------------------------------------------
+-- An independent, draggable pop-up with three content tabs -- Guide, About,
+-- Changelog -- over a fixed Settings band. Created lazily (ensureHelpWindow) and
+-- parented to UIParent so DT.UI:ShowChangelog can pop it on login without opening
+-- the tracker. Opened/closed by the title-bar gear button.
+local helpWindow
+
+-- The Guide page text. Mirrors the in-game features and how to use them.
+local HELP_GUIDE =
+    "|cffffd100Tabs|r\n"
+    .. "|cff8ec5ffCurrent Zone|r — dailies in the zone you're standing in.\n"
+    .. "|cff8ec5ffExpansion|r — every tracked daily, grouped by expansion then zone.\n"
+    .. "|cff8ec5ffFaction/Rep|r — grouped by the reputation faction each rewards, with a live reputation bar per faction.\n"
+    .. "|cff8ec5ffSearch|r — one box that searches by quest name, currency, reputation/faction, or zone. Results group by what matched.\n\n"
+    .. "|cffffd100Row clicks|r\n"
+    .. "|cff8ec5ffLeft-click|r — open quest details (rewards, objectives, giver, description) / select.\n"
+    .. "|cff8ec5ffMiddle-click|r — track / untrack (shows in the Tracked panel).\n"
+    .. "|cff8ec5ffShift + Middle-click|r — open the Wowhead quest link.\n"
+    .. "|cff8ec5ffRight-click|r — set a map pin / waypoint at the giver.\n"
+    .. "|cff8ec5ffShift + Right-click|r — set a TomTom waypoint (if TomTom is installed).\n\n"
+    .. "|cffffd100Title-bar buttons|r\n"
+    .. "|cff8ec5ffRoute|r — orders the Current Zone tab and Tracked panel as a nearest-giver path, updating as you move.\n"
+    .. "|cff8ec5ffTracked|r — show / hide the quests you've tracked (middle-click a quest to track it).\n"
+    .. "|cff8ec5ffFilters|r — choose which kinds of quests appear (Holiday, Profession, Battle Pet, Skyriding).\n\n"
+    .. "|cffffd100Good to know|r\n"
+    .. "The sub-bar shows a live countdown to the next daily reset.\n"
+    .. "A minimap button (and any data-broker bar) shows your done / total.\n"
+    .. "Your daily streak appears in |cffffd100/qt stats|r and the minimap tooltip.\n"
+    .. "Status colours: |cffd1ae47Available|r · |cff6b99c7In Progress|r · |cff75b875Ready to turn in|r · |cff737578Done today|r.\n\n"
+    .. "|cffffd100Slash commands|r\n"
+    .. "|cffffd100/qt|r toggle · |cffffd100/qt stats|r checklist & streak · |cffffd100/qt help|r all commands."
+
+local URL_COMMENTS = "https://www.curseforge.com/wow/addons/questtally-daily-quest-tracker/comments"
+local URL_ISSUES   = "https://legacy.curseforge.com/wow/addons/questtally-daily-quest-tracker/settings/issues"
+
+local HELP_ABOUT =
+    "|cffffd100About QuestTally|r\n"
+    .. "QuestTally is a solo project by me, Soap64. This tool is something I've felt I've always needed, just never got around to actually building. I saw the CurseForge addon contest and decided to take my shot.\n\n"
+    .. "It's free, and ships only first-party data. Because of how Blizzard maintains their old (pre-Cata) vs new quest data, it's a lot more legwork than you'd think, so please let me know if you see anything off!\n\n"
+    .. "|cffffd100Get in touch|r\n"
+    .. "Use the buttons below to drop a comment or report an issue on CurseForge (each opens a copyable link)."
+
+-- Render DT.CHANGELOG into display text: a version header + bullet notes per entry.
+local function buildChangelogText()
+    if not DT.CHANGELOG or #DT.CHANGELOG == 0 then return "No changelog available." end
+    local parts = {}
+    for _, e in ipairs(DT.CHANGELOG) do
+        parts[#parts + 1] = "|cffffd100v" .. e.version .. "|r  |cff707070"
+            .. (e.date or "") .. "|r"
+        for _, line in ipairs(e.notes or {}) do
+            parts[#parts + 1] = "  • " .. line
+        end
+        parts[#parts + 1] = " "  -- blank spacer between versions
+    end
+    return table.concat(parts, "\n")
+end
+
+local function createInfoWindow()
+    local w = CreateFrame("Frame", "QuestTallyHelpWindow", UIParent, "BackdropTemplate")
+    w:SetSize(440, 520)
+    w:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    w:SetFrameStrata("DIALOG")
+    w:SetToplevel(true)
+    w:EnableMouse(true)
+    w:SetMovable(true)
+    w:RegisterForDrag("LeftButton")
+    w:SetScript("OnDragStart", w.StartMoving)
+    w:SetScript("OnDragStop", w.StopMovingOrSizing)
+    if w.SetBackdrop then
+        w:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        w:SetBackdropColor(0.07, 0.08, 0.10, 0.99)
+        w:SetBackdropBorderColor(unpack(THEME.panelEdge))
+    end
+    w:Hide()
+
+    local titleBar = makeStrip(w, "BORDER", THEME.titleBg, THEME.titleBg2)
+    titleBar:SetPoint("TOPLEFT", 1, -1)
+    titleBar:SetPoint("TOPRIGHT", -1, -1)
+    titleBar:SetHeight(26)
+
+    local title = w:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
+    title:SetText("QuestTally  |cff707070—|r  Help & Settings")
+    title:SetTextColor(0.95, 0.95, 0.92)
+
+    local close = createCloseButton(w)
+    close:SetPoint("RIGHT", titleBar, "RIGHT", -6, 0)
+    close:SetScript("OnClick", function() w:Hide() end)
+
+    -- Settings band, pinned to the bottom; the content area fills the space above it.
+    -- Kept as a home for future options -- the only former toggle ("newest
+    -- expansions first") was retired in favour of that being the baked-in default.
+    local setBlock = CreateFrame("Frame", nil, w)
+    setBlock:SetPoint("BOTTOMLEFT", 1, 1)
+    setBlock:SetPoint("BOTTOMRIGHT", -1, 1)
+    setBlock:SetHeight(64)
+
+    local sdiv = setBlock:CreateTexture(nil, "ARTWORK")
+    sdiv:SetColorTexture(THEME.panelEdge[1], THEME.panelEdge[2], THEME.panelEdge[3], 1)
+    sdiv:SetHeight(1)
+    sdiv:SetPoint("TOPLEFT", setBlock, "TOPLEFT", 13, 0)
+    sdiv:SetPoint("TOPRIGHT", setBlock, "TOPRIGHT", -13, 0)
+
+    local setHeader = setBlock:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    setHeader:SetPoint("TOPLEFT", sdiv, "BOTTOMLEFT", 0, -10)
+    setHeader:SetText("Settings")
+    setHeader:SetTextColor(0.82, 0.68, 0.28)
+
+    local setPlaceholder = setBlock:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    setPlaceholder:SetPoint("TOPLEFT", setHeader, "BOTTOMLEFT", 0, -7)
+    setPlaceholder:SetText("More options coming soon.")
+    setPlaceholder:SetTextColor(0.55, 0.55, 0.58)
+
+    -- Content scroll (between the page tabs and the settings band).
+    local scroll, content, helpBar = createScrollFrame(w, 440 - 30)
+    scroll:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 13, -32)
+    scroll:SetPoint("BOTTOMRIGHT", setBlock, "TOPRIGHT", -22, 8)
+
+    local pageText = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    pageText:SetPoint("TOPLEFT", 2, -2)
+    pageText:SetWidth(440 - 30 - 10)
+    pageText:SetJustifyH("LEFT")
+    pageText:SetJustifyV("TOP")
+    pageText:SetSpacing(4)
+    pageText:SetTextColor(0.86, 0.86, 0.84)
+
+    -- CurseForge link buttons, shown only on the About page, floating at the bottom
+    -- of the content area (above the settings band). WoW can't open a browser, so
+    -- each pops a copyable URL (Ctrl+C), like the Wowhead link.
+    local issueBtn = createThemedButton(w, "Report an issue", 130, 18)
+    issueBtn:SetPoint("BOTTOMRIGHT", setBlock, "TOPRIGHT", -16, 8)
+    issueBtn:SetScript("OnClick", function()
+        DT.UI:ShowCopyText("Report an issue — press Ctrl+C to copy the link:", URL_ISSUES)
+    end)
+    issueBtn:Hide()
+
+    local commentBtn = createThemedButton(w, "Drop a comment", 130, 18)
+    commentBtn:SetPoint("RIGHT", issueBtn, "LEFT", -6, 0)
+    commentBtn:SetScript("OnClick", function()
+        DT.UI:ShowCopyText("Drop a comment — press Ctrl+C to copy the link:", URL_COMMENTS)
+    end)
+    commentBtn:Hide()
+
+    local PAGES = { guide = HELP_GUIDE, about = HELP_ABOUT }  -- changelog built live
+
+    -- Page tabs (mirroring the bottom mode-tab look: a hidden active fill + a
+    -- dim/bright label that lights when selected).
+    w.tabs = {}
+    local function setPage(name)
+        w.page = name
+        pageText:SetText(name == "changelog" and buildChangelogText() or (PAGES[name] or ""))
+        content:SetHeight(math.max((pageText:GetStringHeight() or 0) + 12, 10))
+        scroll:SetVerticalScroll(0)
+        if helpBar and helpBar.Update then helpBar:Update() end
+        local onAbout = (name == "about")
+        issueBtn:SetShown(onAbout)
+        commentBtn:SetShown(onAbout)
+        for key, tab in pairs(w.tabs) do
+            local active = (key == name)
+            tab.bg:SetShown(active)
+            tab.label:SetTextColor(active and 0.95 or 0.58, active and 0.95 or 0.58, active and 0.92 or 0.56)
+        end
+    end
+    w.SetPage = setPage
+
+    local tabDefs = { { "guide", "Guide" }, { "about", "About" }, { "changelog", "Changelog" } }
+    local prev
+    for _, t in ipairs(tabDefs) do
+        local tab = CreateFrame("Button", nil, w)
+        tab:SetSize(96, 18)
+        if prev then
+            tab:SetPoint("LEFT", prev, "RIGHT", 4, 0)
+        else
+            tab:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 12, -7)
+        end
+        tab.bg = makeStrip(tab, "BACKGROUND", THEME.tabActive, THEME.tabActive2)
+        tab.bg:SetAllPoints()
+        tab.bg:Hide()
+        tab.label = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        tab.label:SetPoint("CENTER")
+        tab.label:SetText(t[2])
+        tab.hl = makeStrip(tab, "HIGHLIGHT", { 1, 1, 1, 0.06 })
+        tab.hl:SetAllPoints()
+        tab:SetScript("OnClick", function() setPage(t[1]) end)
+        w.tabs[t[1]] = tab
+        prev = tab
+    end
+
+    w:SetScript("OnShow", function()
+        setPage(w.page or "guide")
+    end)
+
+    return w
+end
+
+local function ensureHelpWindow()
+    if not helpWindow then helpWindow = createInfoWindow() end
+    return helpWindow
 end
 
 local function createMainFrame()
@@ -1910,8 +2437,8 @@ local function createMainFrame()
     f.settingsBtn:SetScript("OnEnter", function(self)
         self.cog:SetVertexColor(1, 1, 1)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Settings", 1, 1, 1)
-        GameTooltip:AddLine("Sort order and other options.", 0.7, 0.7, 0.7)
+        GameTooltip:SetText("Help & Settings", 1, 1, 1)
+        GameTooltip:AddLine("A feature guide plus options.", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
     f.settingsBtn:SetScript("OnLeave", function(self)
@@ -1920,7 +2447,8 @@ local function createMainFrame()
     end)
     f.settingsBtn:SetScript("OnClick", function()
         if f.filters then f.filters:Hide() end
-        if f.settings then f.settings:SetShown(not f.settings:IsShown()) end
+        local w = ensureHelpWindow()
+        w:SetShown(not w:IsShown())
     end)
 
     -- "Filters" button toggles the content-filter panel (which KINDS of quests to
@@ -1929,7 +2457,7 @@ local function createMainFrame()
     f.filtersBtn = createThemedButton(f, "Filters", 52, 18)
     f.filtersBtn:SetPoint("RIGHT", f.settingsBtn, "LEFT", -4, 0)
     f.filtersBtn:SetScript("OnClick", function()
-        if f.settings then f.settings:Hide() end
+        if helpWindow then helpWindow:Hide() end
         if f.filters then f.filters:SetShown(not f.filters:IsShown()) end
     end)
     f.filtersBtn:SetScript("OnEnter", function(self)
@@ -1940,24 +2468,52 @@ local function createMainFrame()
     end)
     f.filtersBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- "Pinned" button toggles the companion panel of middle-clicked favourites,
-    -- docked to the left edge of the window.
-    f.pinnedBtn = createThemedButton(f, "Pinned", 52, 18)
+    -- "Tracked" button toggles the companion panel of middle-clicked quests, docked
+    -- to the left edge of the window. (The internal name stays `pinned` so saved
+    -- tracked quests aren't lost; the user-facing concept is "tracked".)
+    f.pinnedBtn = createThemedButton(f, "Tracked", 56, 18)
     f.pinnedBtn:SetPoint("RIGHT", f.filtersBtn, "LEFT", -4, 0)
     f.pinnedBtn:SetScript("OnClick", function()
         if DT.Pinned then DT.Pinned:Toggle() end
     end)
     f.pinnedBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Pinned quests", 1, 1, 1)
-        GameTooltip:AddLine("Show/hide your middle-clicked favourites.", 0.7, 0.7, 0.7)
+        GameTooltip:SetText("Tracked quests", 1, 1, 1)
+        GameTooltip:AddLine("Show/hide the quests you've tracked (middle-click).", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
     f.pinnedBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- Overall progress counter, right-aligned before the Pinned button.
+    -- "Route" button: toggles Today's Route ordering (nearest-giver travel order)
+    -- on the Current Zone tab and the Pinned panel. A lit accent overlay marks the
+    -- active state; tracked by updateRouteButton on every refresh.
+    f.routeBtn = createThemedButton(f, "Route", 50, 18)
+    f.routeBtn:SetPoint("RIGHT", f.pinnedBtn, "LEFT", -4, 0)
+    f.routeBtn.active = makeStrip(f.routeBtn, "ARTWORK",
+        { ZONE_ACCENT[1], ZONE_ACCENT[2], ZONE_ACCENT[3], 0.55 },
+        { ZONE_ACCENT[1] * 0.55, ZONE_ACCENT[2] * 0.55, ZONE_ACCENT[3] * 0.55, 0.55 })
+    f.routeBtn.active:SetPoint("TOPLEFT", 1, -1)
+    f.routeBtn.active:SetPoint("BOTTOMRIGHT", -1, 1)
+    f.routeBtn.active:Hide()
+    f.routeBtn:SetScript("OnClick", function()
+        DT.DB:SetSetting("todaysRoute", not DT.DB:GetSetting("todaysRoute"))
+        DT.UI:Refresh()
+        if DT.Pinned then DT.Pinned:Refresh() end
+    end)
+    f.routeBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("Today's Route", 1, 1, 1)
+        GameTooltip:AddLine("Order the Current Zone tab and Tracked panel as a", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine("nearest-giver travel route from where you stand.", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(DT.DB:GetSetting("todaysRoute") and "Currently: on" or "Currently: off",
+            0.5, 0.8, 1)
+        GameTooltip:Show()
+    end)
+    f.routeBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -- Overall progress counter, right-aligned before the title-bar buttons.
     f.progress = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.progress:SetPoint("RIGHT", f.pinnedBtn, "LEFT", -8, 0)
+    f.progress:SetPoint("RIGHT", f.routeBtn, "LEFT", -8, 0)
     f.progress:SetJustifyH("RIGHT")
 
     -- Context sub-bar (zone / reset info).
@@ -1991,15 +2547,6 @@ local function createMainFrame()
     f.searchBox:SetPoint("TOPLEFT", f.subBar, "BOTTOMLEFT", 10, -4)
     f.searchBox:SetPoint("TOPRIGHT", f.subBar, "BOTTOMRIGHT", -10, -4)
 
-    -- Browse dropdowns (shown only in browse mode), sitting under the search bar.
-    f.continentDD = createDropdown(f, 132)
-    f.continentDD:SetPoint("TOPLEFT", f.searchBox, "BOTTOMLEFT", 0, -4)
-    f.continentDD:SetBuilder(buildContinentMenu)
-
-    f.zoneDD = createDropdown(f, 176)
-    f.zoneDD:SetPoint("LEFT", f.continentDD, "RIGHT", 6, 0)
-    f.zoneDD:SetBuilder(buildZoneMenu)
-
     -- Scroll list (its top is repositioned per mode in updateModeButtons). The
     -- custom scrollbar is anchored to the scroll frame's right edge, so it tracks
     -- those repositions automatically.
@@ -2020,7 +2567,7 @@ local function createMainFrame()
     f.tabHi:SetHeight(1)
 
     f.modeButtons = {}
-    local modes = { { "ZONE", "Current Zone" }, { "ALL", "Expansion" }, { "FACTION", "Faction" }, { "BROWSE", "Browse" } }
+    local modes = { { "ZONE", "Current Zone" }, { "ALL", "Expansion" }, { "FACTION", "Faction/Rep" }, { "SEARCH", "Search" } }
     local n = #modes
     for i, m in ipairs(modes) do
         local b = CreateFrame("Button", nil, f)
@@ -2121,16 +2668,14 @@ local function createMainFrame()
     fp:AddCheck("Skyriding",
         function() return DT.DB:GetSetting("showRaces") end,
         function(v) DT.DB:SetSetting("showRaces", v) end)
+    -- (The "Map pins" toggle was removed with the map-pins feature; see the disabled
+    -- Integrations\MapPins.lua in the .toc. Re-add it here when re-enabling pins.)
     fp:Finish()
     f.filters = fp
 
-    -- Settings panel: non-filter options (sort order, etc.), opened by the gear.
-    local sp = createTogglePanel("Settings")
-    sp:AddCheck("Newest expansions first",
-        function() return DT.DB:GetSetting("expansionOrder") == "NEWEST" end,
-        function(v) DT.DB:SetSetting("expansionOrder", v and "NEWEST" or "OLDEST") end)
-    sp:Finish()
-    f.settings = sp
+    -- The Help & Settings window is an independent, lazily-created frame (see
+    -- ensureHelpWindow at file scope) so it can pop the changelog on login without
+    -- forcing the tracker open. The gear button just toggles it.
 
     -- Everything that hides when the window collapses to its logo chip. The
     -- mode-conditional bits (dropdowns, collapse-all) are included so they hide on
@@ -2139,9 +2684,9 @@ local function createMainFrame()
     -- stay — they ARE the chip. The Filters/Settings overlays and the side panels
     -- are handled separately (snapshotted and restored) in SetCollapsed.
     f.collapsibles = {
-        f.title, f.progress, f.close, f.settingsBtn, f.filtersBtn, f.pinnedBtn,
+        f.title, f.progress, f.close, f.settingsBtn, f.filtersBtn, f.pinnedBtn, f.routeBtn,
         f.subBar, f.summary, f.reset, f.searchBox, f.scroll, f.scrollbar,
-        f.tabBar, f.tabHi, f.continentDD, f.zoneDD, f.collapseAllBtn,
+        f.tabBar, f.tabHi, f.collapseAllBtn,
     }
     for _, b in ipairs(f.modeButtons) do f.collapsibles[#f.collapsibles + 1] = b end
 
@@ -2374,11 +2919,15 @@ local function renderDisplay(display)
 
             local done = (e.status == DT.STATUS.COMPLETED)
             local pin = e.pinned and "|cffffd100*|r " or ""
+            -- Today's Route distance tag ("142m") in the zone accent, ahead of the
+            -- tracked star. Only set on routed rows (Current Zone tab in route mode).
+            local step = item.routeDist
+                and ("|cff" .. toHex(ZONE_ACCENT) .. item.routeDist .. "|r  ") or ""
             row.title:SetFontObject("GameFontHighlight")
             row.title:ClearAllPoints()
             row.title:SetPoint("LEFT", titleAnchor, "RIGHT", titleGap, 0)
             row.title:SetWidth(titleWidth)
-            row.title:SetText(pin .. (e.title or ("Quest " .. (e.questID or "?"))))
+            row.title:SetText(step .. pin .. (e.title or ("Quest " .. (e.questID or "?"))))
             row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
 
             -- Grow the row to fit a title that word-wrapped to multiple lines.
@@ -2394,9 +2943,18 @@ local function renderDisplay(display)
             row:SetHeight(rowH)
 
             local hex = toHex(c)
+            -- For an accepted quest, show its live objective progress ("12/20") in
+            -- place of the redundant "In Progress" label -- the steel-blue dot already
+            -- signals the status, and the fraction is the useful bit. Falls back to the
+            -- label when there's no countable progress (e.g. a single yes/no objective).
+            local statusLabel = DT.STATUS_LABEL[e.status] or ""
+            if e.status == DT.STATUS.IN_PROGRESS and e.questID then
+                local prog = DT.QuestLog:GetObjectiveProgress(e.questID)
+                if prog then statusLabel = prog end
+            end
             row.status:ClearAllPoints()
             row.status:SetPoint("RIGHT", -8, 0)
-            row.status:SetText("|cff" .. hex .. (DT.STATUS_LABEL[e.status] or "") .. "|r")
+            row.status:SetText("|cff" .. hex .. statusLabel .. "|r")
             row.dot:SetAlpha(done and 0.5 or 1)
 
             -- Keep the open-detail quest highlighted as the list rebuilds.
@@ -2456,12 +3014,19 @@ function DT.UI:Refresh()
 
     local display, summary
     if DT.UI.searchQuery ~= "" then
-        -- A name search overrides the active tab's content (the tab highlight
-        -- stays, so clearing the box returns to that view).
-        display, summary = buildSearchMode()
-    elseif DT.UI.mode == "BROWSE" then
-        display, summary = buildBrowseMode()
-        refreshDropdownLabels()
+        -- A search overrides the active tab's content (the tab highlight stays, so
+        -- clearing the box returns to that view). The Search tab runs the full
+        -- multi-dimension search (name + currency + faction + zone, grouped); the
+        -- Faction tab matches faction names too; every other tab is a flat name list.
+        if DT.UI.mode == "SEARCH" then
+            display, summary = buildUnifiedSearchMode()
+        elseif DT.UI.mode == "FACTION" then
+            display, summary = buildFactionSearchMode()
+        else
+            display, summary = buildSearchMode()
+        end
+    elseif DT.UI.mode == "SEARCH" then
+        display, summary = buildSearchHomeMode()
     elseif DT.UI.mode == "ALL" then
         display, summary = buildAllMode()
     elseif DT.UI.mode == "FACTION" then
@@ -2471,7 +3036,7 @@ function DT.UI:Refresh()
     end
 
     mainFrame.summary:SetText(summary or "")
-    local reset = DT.QuestLog:FormatDuration(DT.QuestLog:GetSecondsUntilReset())
+    local reset = DT.QuestLog:FormatCountdown(DT.QuestLog:GetSecondsUntilReset())
     mainFrame.reset:SetText("resets |cffffd100" .. reset .. "|r")
 
     -- Record the on-screen top-level sections so the expand/collapse-all toggle
@@ -2531,11 +3096,11 @@ function DT.UI:SetCollapsed(want)
             pinned   = DT.Pinned  and DT.Pinned:IsShown()  or false,
             details  = DT.Details and DT.Details:IsShown() or false,
             entry    = DT.Details and DT.Details.GetEntry and DT.Details:GetEntry() or nil,
-            filters  = f.filters  and f.filters:IsShown()  or false,
-            settings = f.settings and f.settings:IsShown() or false,
+            filters  = f.filters    and f.filters:IsShown()    or false,
+            help     = helpWindow and helpWindow:IsShown() or false,
         }
         if f.filters then f.filters:Hide() end
-        if f.settings then f.settings:Hide() end
+        if helpWindow then helpWindow:Hide() end
         if DT.Pinned then DT.Pinned:Hide() end
         if DT.Details then DT.Details:Hide() end
         if DT.UI.HideDropMenu then DT.UI.HideDropMenu() end
@@ -2550,7 +3115,7 @@ function DT.UI:SetCollapsed(want)
         if r.pinned and DT.Pinned then DT.Pinned:Show() end
         if r.details and r.entry and DT.Details then DT.Details:Show(r.entry) end
         if r.filters and f.filters then f.filters:Show() end
-        if r.settings and f.settings then f.settings:Show() end
+        if r.help and helpWindow then helpWindow:Show() end
         DT.UI._restore = nil
     end
 end
@@ -2566,6 +3131,16 @@ function DT.UI:Show()
     self:Refresh()
 end
 
+-- Open the Help & Settings window straight to the Changelog page. Independent of
+-- the tracker window (used to pop "what's new" on the first login after an update).
+function DT.UI:ShowChangelog()
+    local w = ensureHelpWindow()
+    -- Show first, THEN set the page: showing fires OnShow (which would otherwise
+    -- restore the last page), so setting it afterward guarantees the Changelog tab.
+    w:Show()
+    w:SetPage("changelog")
+end
+
 function DT.UI:Hide()
     if mainFrame then
         -- Closing always returns to the expanded layout (collapse is session-only
@@ -2575,7 +3150,7 @@ function DT.UI:Hide()
             collapsed = false
         end
         DT.UI._restore = nil
-        if mainFrame.settings then mainFrame.settings:Hide() end
+        if helpWindow then helpWindow:Hide() end
         if mainFrame.filters then mainFrame.filters:Hide() end
         mainFrame:Hide()
     end

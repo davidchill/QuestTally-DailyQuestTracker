@@ -69,6 +69,8 @@ function QuestTally_GetTooltipText()
     local total  = c.total or 0
     local discovered = total - unseen   -- dailies with a resolved (known) quest ID
     local reset = DT.QuestLog:FormatDuration(DT.QuestLog:GetSecondsUntilReset())
+    local streakCur, streakBest = DT.DB:GetStreak(DT.QuestLog:GetDailyPeriodId())
+    local streakText = streakCur .. " (best " .. streakBest .. ")"
 
     local lines = {
         "Ready to turn in\t" .. ready,
@@ -80,6 +82,7 @@ function QuestTally_GetTooltipText()
         "Discovered\t" .. discovered .. "/" .. total,
         " \t ",
         "Next reset\t" .. reset,
+        "Daily streak\t" .. streakText,
         " \t ",
         TitanUtils_GetGreenText and TitanUtils_GetGreenText("Left-click: open tracker")
             or "Left-click: open tracker",

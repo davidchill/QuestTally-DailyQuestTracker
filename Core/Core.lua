@@ -48,6 +48,13 @@ local function requestRefresh()
         if DT.Titan and DT.Titan.Update then
             DT.Titan:Update()
         end
+        -- Optional LibDataBroker feed (minimap button / display-addon text); reads
+        -- the same checklist data, so it rides the same throttle. No-ops if LDB is
+        -- absent. (The map-pins refresh was removed with that feature; re-add a
+        -- DT.MapPins:Refresh() call here when re-enabling Integrations\MapPins.lua.)
+        if DT.Broker and DT.Broker.Update then
+            DT.Broker:Update()
+        end
     end)
 end
 DT.RequestRefresh = requestRefresh
@@ -77,7 +84,17 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
     end
 
     if event == "PLAYER_LOGIN" then
-        -- UI is created lazily on first open; nothing required here yet.
+        -- First login after an update (or a fresh install): pop the changelog once,
+        -- then remember this version so it won't show again until the next update.
+        -- Delayed so it lands after the initial loading screen settles.
+        if DT.DB:GetLastSeenVersion() ~= DT.VERSION then
+            DT.DB:SetLastSeenVersion(DT.VERSION)
+            if C_Timer and C_Timer.After then
+                C_Timer.After(4, function()
+                    if DT.UI and DT.UI.ShowChangelog then DT.UI:ShowChangelog() end
+                end)
+            end
+        end
         return
     end
 
@@ -89,6 +106,16 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
     end
     if event == "QUEST_DETAIL" then
         DT.QuestLog:ScanQuestDetail()
+        requestRefresh()
+        return
+    end
+
+    -- A tracked daily turned in advances the daily-activity streak (counted at most
+    -- once per reset period). arg1 is the completed quest's ID.
+    if event == "QUEST_TURNED_IN" then
+        if arg1 and DT.Checklist:IsKnownDaily(arg1) then
+            DT.DB:RecordDailyActivity(DT.QuestLog:GetDailyPeriodId())
+        end
         requestRefresh()
         return
     end
@@ -133,6 +160,9 @@ local function printStats()
     end
     print(string.format("   harvested: %d dailies have baked rewards/details.",
         DT.DB:GetHarvestedCount()))
+    local cur, best = DT.DB:GetStreak(DT.QuestLog:GetDailyPeriodId())
+    print(string.format("   daily streak: |cffffd100%d|r day%s running (best %d).",
+        cur, cur == 1 and "" or "s", best))
     print("Discovery grows automatically as you pick up dailies in-game.")
 end
 

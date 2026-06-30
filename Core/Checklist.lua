@@ -373,6 +373,26 @@ function DT.Checklist:FindByTitle(name)
     return metaForTitle(name)
 end
 
+-- Public: is this quest ID a daily/weekly we ship in the catalog? Built once from
+-- the master checklist (real IDs) plus the harvested non-world-quest dailies. Used
+-- to tell whether a just-turned-in quest counts toward the daily-activity streak.
+local dailyIdSet
+function DT.Checklist:IsKnownDaily(questID)
+    if not questID then return false end
+    if not dailyIdSet then
+        dailyIdSet = {}
+        for _, entry in ipairs(DT.ChecklistData.entries) do
+            if entry.id then dailyIdSet[entry.id] = true end
+        end
+        if DT.BakedDetails then
+            for id, info in pairs(DT.BakedDetails) do
+                if info.k ~= "worldquest" then dailyIdSet[id] = true end
+            end
+        end
+    end
+    return dailyIdSet[questID] == true
+end
+
 -- Public: entries for every DISCOVERED daily (a learned quest ID), enriched with
 -- checklist metadata and resolved zone. These are the only quests we can place
 -- on a map, so the zone views are built from this.

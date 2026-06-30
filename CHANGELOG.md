@@ -2,6 +2,61 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.8.0] - 2026-06-30
+
+A **major feature** release. QuestTally gains embedded libraries (a first), a
+full-fledged unified Search tab, a distance-aware Today's Route, a LibDataBroker
+minimap button, a tabbed Help/About/Changelog window, a daily streak, and a
+reworked click scheme — and "Pinned" becomes "Tracked" throughout.
+
+### Added
+
+- **Embedded libraries.** The addon now bundles standard, unmodified community
+  libraries in `Libs/` — LibStub, CallbackHandler-1.0, LibDataBroker-1.1,
+  LibDBIcon-1.0, and HereBeDragons-2.0 / -Pins-2.0 — credited in the README. (Quest
+  *data* is still 100% first-party; these are *code* libraries.)
+- **Unified Search tab** (replaces Browse). One box matches across **quest name,
+  currency, reputation/faction, and zone**, with results grouped by what matched
+  (Factions with rep bars, Currencies, Zones, then loose Quests), each section
+  tagged. Zone is now a search dimension, so geographic browsing isn't lost.
+- **Today's Route.** A title-bar **Route** toggle orders the Current Zone tab and
+  the Tracked panel **nearest-giver first**, tagging each row with its **live
+  distance in yards** (via HereBeDragons), re-sorting as you move.
+- **LibDataBroker feed + minimap button.** A standard broker any display bar
+  (Bazooka, ChocolateBar, ElvUI, …) can show, plus a LibDBIcon minimap button —
+  done/total with a per-status, reset, and streak tooltip.
+- **Help & Settings window.** The gear opens a draggable pop-up with **Guide**,
+  **About** (CurseForge comment/issue links), and **Changelog** tabs over a Settings
+  section. The changelog auto-pops once on the first login after an update
+  (`Core/Changelog.lua` ships the in-game version history).
+- **Daily streak.** Turning in tracked dailies builds a current/best streak, shown
+  in `/qt stats`, the broker/minimap tooltip, and the Titan plugin.
+- **Reputation in search.** The Faction/Rep tab's search also matches faction names
+  (and the type-ahead tags faction suggestions distinctly from quests).
+- **Objective progress & currency holdings.** In-progress rows show a live `12/20`
+  count; currency reward lines show how much you already hold `(have 1,234)` /
+  `(1,234 / 5,000)` when capped.
+
+### Changed
+
+- **"Pinned" is now "Tracked"** everywhere user-facing — the button, the side panel,
+  tooltips, and the Guide. (The saved-variable field stays `pinned` so existing
+  tracked quests aren't lost.)
+- **New click scheme** (shared by the list and the Tracked panel): **Left** details
+  / select · **Middle** track/untrack · **Shift+Middle** Wowhead link · **Right**
+  map pin at the giver · **Shift+Right** TomTom waypoint.
+- **Search lives only on the Search tab** now (removed from Expansion and
+  Faction/Rep); the Faction tab gained the "/Rep" label.
+- **Live-ticking reset countdown** — the sub-bar timer now updates every second
+  (calm hours-out, ticking seconds under an hour).
+- The Settings "Newest expansions first" toggle was retired — it's the baked-in
+  default now; the Settings section remains for future options.
+
+### Removed
+
+- **Map pins** (world-map / minimap giver pins) are **disabled for now** — the
+  feature and its HereBeDragons libraries stay in the package for an easy re-add.
+
 ## [0.7.3] - 2026-06-28
 
 A **navigation, structure, and accuracy** release. The grouped views gain themed

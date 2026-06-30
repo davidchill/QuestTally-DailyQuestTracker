@@ -145,6 +145,22 @@ end
 -- fill in only the categories the live API omitted from baked data -- the live
 -- API silently drops some rewards (e.g. legacy currencies like the Lesser Charm
 -- of Good Fortune), and we must not lose them just because money/items loaded.
+-- A "how much you already hold" suffix for a currency reward line, resolved live
+-- from the currencyID: "(have 1,234)" normally, or "(1,234 / 5,000)" when the
+-- currency is capped -- so you can see at a glance how close a reward gets you to
+-- the cap. Returns "" when the id is unknown or the live API has nothing.
+local function currencyHeldSuffix(id)
+    if not id then return "" end
+    local info = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
+    if not info or not info.quantity then return "" end
+    local big = BreakUpLargeNumbers or tostring
+    local have = big(info.quantity)
+    if info.maxQuantity and info.maxQuantity > 0 then
+        return "  |cff808080(" .. have .. " / " .. big(info.maxQuantity) .. ")|r"
+    end
+    return "  |cff808080(have " .. have .. ")|r"
+end
+
 local function renderRewards(content, y, questID)
     local shown = {}
 
@@ -192,9 +208,9 @@ local function renderRewards(content, y, questID)
         sectionHeader("Currency:")
         shown.currencies = true
         for i = 1, numCurr do
-            local name, texture, numItems = GetQuestLogRewardCurrencyInfo(i, questID)
+            local name, texture, numItems, currencyID = GetQuestLogRewardCurrencyInfo(i, questID)
             if name then
-                y = addLine(content, y, { text = (numItems or 1) .. "x " .. name,
+                y = addLine(content, y, { text = (numItems or 1) .. "x " .. name .. currencyHeldSuffix(currencyID),
                                           icon = texture, indent = 6 })
             end
         end
@@ -291,7 +307,8 @@ local function renderBakedRewards(content, y, rewards, skip, alreadyShown)
     if rewards.currencies and not skip.currencies then
         sectionHeader("Currency:")
         for _, it in ipairs(rewards.currencies) do
-            y = addLine(content, y, { text = (it.count or 1) .. "x " .. it.name,
+            local id = it.id or (DT.CurrencyIDs and DT.CurrencyIDs[it.name])
+            y = addLine(content, y, { text = (it.count or 1) .. "x " .. it.name .. currencyHeldSuffix(id),
                                       icon = it.icon or currencyIcon(it.name), indent = 6 })
         end
     end

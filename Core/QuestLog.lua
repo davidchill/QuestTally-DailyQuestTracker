@@ -186,12 +186,63 @@ function DT.QuestLog:GetSecondsUntilReset(freq)
     return nil
 end
 
+-- Public: a stable id for the current daily-reset period -- an integer that bumps
+-- by exactly 1 at each daily reset, without needing to know the reset hour. Built
+-- from when the CURRENT period ends (now + seconds-until-reset) bucketed into days,
+-- so two timestamps in the same daily window share an id and consecutive windows
+-- differ by 1. Used to drive the daily-activity streak. Returns nil if time is
+-- unavailable.
+function DT.QuestLog:GetDailyPeriodId()
+    local now = GetServerTime and GetServerTime() or (time and time()) or nil
+    if not now then return nil end
+    local untilReset = self:GetSecondsUntilReset() or 0
+    return math.floor((now + untilReset) / 86400)
+end
+
 -- Public: format a seconds value as "Hh Mm".
 function DT.QuestLog:FormatDuration(seconds)
     if not seconds or seconds < 0 then return "?" end
     local h = math.floor(seconds / 3600)
     local m = math.floor((seconds % 3600) / 60)
     return string.format("%dh %02dm", h, m)
+end
+
+-- Public: a live countdown string for the sub-bar's ticking timer. Far-out resets
+-- read calm ("6h 32m" -- nothing meaningful changes second to second hours away);
+-- once under an hour the seconds tick ("42m 09s"), and under a minute it's just
+-- seconds. Distinct from FormatDuration (kept stable for the Titan/broker tooltips).
+function DT.QuestLog:FormatCountdown(seconds)
+    if not seconds or seconds < 0 then return "?" end
+    local h = math.floor(seconds / 3600)
+    local m = math.floor((seconds % 3600) / 60)
+    local s = math.floor(seconds % 60)
+    if h > 0 then return string.format("%dh %02dm", h, m) end
+    if m > 0 then return string.format("%dm %02ds", m, s) end
+    return string.format("%ds", s)
+end
+
+-- Public: compact objective progress for a quest currently in the log, or nil.
+-- For a single-objective quest it's that objective's fulfilled/required ("12/20");
+-- for a multi-objective quest it's the count of FINISHED objectives over the total
+-- ("2/3"). Returns nil when the quest isn't accepted, has no countable objective
+-- (a lone yes/no step), or exposes no objective data yet.
+function DT.QuestLog:GetObjectiveProgress(questID)
+    if not (questID and C_QuestLog and C_QuestLog.GetQuestObjectives) then return nil end
+    -- Objective data is only populated while the quest is in the log.
+    if not (C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(questID)) then
+        return nil
+    end
+    local objs = C_QuestLog.GetQuestObjectives(questID)
+    if not objs or #objs == 0 then return nil end
+    if #objs == 1 then
+        local o = objs[1]
+        local req = o.numRequired or 0
+        if req > 1 then return (o.numFulfilled or 0) .. "/" .. req end
+        return nil  -- single boolean objective: a fraction would be meaningless
+    end
+    local finished = 0
+    for _, o in ipairs(objs) do if o.finished then finished = finished + 1 end end
+    return finished .. "/" .. #objs
 end
 
 -- Public: counts by status for a quick summary line.
