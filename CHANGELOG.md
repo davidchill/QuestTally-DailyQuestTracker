@@ -2,6 +2,71 @@
 
 All notable changes to QuestTally are documented here.
 
+## [0.9.0] - 2026-07-01
+
+A **tracking-precision & UI** release. Today's Route now updates live and reaches
+every tab, quest status becomes a colour-blind-safe checkbox, the colour language is
+rationalised so green means only "done", and a batch of polish (completion bar,
+uniform rows, smarter filters, richer tooltips) lands throughout. `PinnedPanel.lua`
+is renamed to `TrackedPanel.lua` to match the user-facing "Tracked" name.
+
+### Added
+
+- **Status checkboxes (colour-blind safe).** The per-quest status dot is now a small
+  **checkbox**: an empty box (border tinted to the status colour) while a quest is
+  outstanding, a **sage-filled box with a check** once it's done today. The *shape*
+  carries "done or not" without relying on colour, while the border hue still conveys
+  the finer status. Shared by the main list and the Tracked panel
+  (`DT.UI:StyleStatusCheckbox`).
+- **Completion bar.** A slim bar at the title/sub-bar seam fills (in the completion
+  sage) to the on-screen **done / total**, so overall progress reads at a glance
+  alongside the counter.
+- **Route on every tab.** Today's Route now tags **nearby quests on the Expansion and
+  Faction/Rep tabs** with their live distance too — **tag-only**, so those tabs keep
+  their grouping and order; only quests in your current map instance get a tag.
+- **"Arrived" cue.** Within ~10 yards of a giver a quest shows a **green marker + green
+  title** (mirroring TomTom's arrival arrow) while the honest yardage keeps ticking —
+  because a straight-line distance to a giver never truly hits zero.
+- **"Show completed" filter.** A new Filters toggle hides finished rows to declutter;
+  section and title-bar **counts still include them** (only the rows are dropped).
+- **Filters count.** The Filters button shows how many categories are enabled
+  (`Filters (3)`), with the same in its tooltip.
+- **First-run hint.** The first time the tracker is opened, a one-line pointer to the
+  hover controls and the Guide is printed (once per account).
+
+### Changed
+
+- **Green means one thing.** Introduced `DT.COMPLETE_GREEN` (sage) as the single
+  source of truth for **done / ready / arrived** — the Ready-to-Turn-In status, the
+  progress counter, the route "arrived" cue, and the completed checkbox all reference
+  it. The **Battle Pet** badge moved off green to a warm **brown/tan**, so no
+  non-completion element is green. (Expansion brand greens are untouched.)
+- **Live route updates.** Distances now update as you move on **every** route surface
+  through one consolidated, movement-gated ticker; the grouped tabs get a lightweight
+  **in-place tag update** instead of a rebuild.
+- **One interaction scheme.** The quest-row control tooltip is defined once
+  (`DT.UI:AppendActionHints`) and reused by the main list and the Tracked panel, so
+  the scheme reads identically everywhere and matches the Guide.
+- **Toggle state on the title bar.** The **Tracked** and **Filters** buttons now light
+  up when their panel is open, matching the Route button.
+- **Uniform row height.** Long quest names truncate with an **ellipsis** (full name in
+  the tooltip) instead of wrapping and growing the row.
+- **Clearer empty state.** The Current Zone empty message now explains that discovery
+  is passive (dailies are learned as you pick them up or talk to their givers).
+- **Renamed** `UI/PinnedPanel.lua` → `UI/TrackedPanel.lua`. Internal identifiers
+  (`DT.Pinned`, frame names) are intentionally kept for saved-variable compatibility.
+
+### Fixed
+
+- **Changelog popup opened blank.** The first-login "what's new" popup came up empty
+  because it was invoked as a method (`w:SetPage("changelog")`), and the implicit
+  `self` swallowed the page argument. It now opens on the Changelog page as intended.
+- **Frozen route distance.** The distance tag no longer stays stale as you walk;
+  standing on a giver now reads as **arrived** rather than a never-zero yardage.
+- **Route memory churn.** Removed redundant tickers and the full-catalog rebuild that
+  ran every tick on the Expansion/Faction tabs (it read as a memory leak); the live
+  update is now a cheap in-place tag repaint.
+
 ## [0.8.0] - 2026-06-30
 
 A **major feature** release. QuestTally gains embedded libraries (a first), a

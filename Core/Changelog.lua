@@ -8,6 +8,14 @@
 local addonName, DT = ...
 
 DT.CHANGELOG = {
+    { version = "0.9.0", date = "2026-07-01", notes = {
+        "Status is now a checkbox — empty until done, green-checked when complete (color-blind friendly).",
+        "Today's Route tags nearby quests on the Expansion & Faction tabs too, and marks a giver \"arrived\" as you reach it.",
+        "Green now means one thing — done / ready / arrived; Battle Pet badges are now brown.",
+        "New \"Show completed\" filter; the Filters button shows how many categories are on.",
+        "Slim completion bar under the title bar; long quest names truncate cleanly.",
+        "Fixed the what's-new popup opening blank; smoother, lighter route updates.",
+    } },
     { version = "0.8.0", date = "2026-06-30", notes = {
         "New unified Search tab — search by quest name, currency, faction, or zone.",
         "Today's Route now tags each quest with its live distance (yards), nearest first.",

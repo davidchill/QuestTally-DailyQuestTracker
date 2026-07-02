@@ -6,7 +6,7 @@
 local addonName, DT = ...
 
 DT.ADDON_NAME = addonName
-DT.VERSION = "0.8.0"
+DT.VERSION = "0.9.0"
 
 -- Expansion catalog keys. We order them so the UI can display oldest -> newest
 -- (or reverse). `id` matches Blizzard's LE_EXPANSION_* constants where useful,
@@ -45,12 +45,20 @@ DT.STATUS = {
     UNKNOWN      = "UNKNOWN",
 }
 
+-- THE one "completion" green (sage). It means exactly one thing across the whole
+-- addon -- done / ready / arrived -- and nothing else. Everything that signals
+-- completion references this single table: the Ready-to-Turn-In status, the
+-- title-bar progress counter, the route "arrived" marker, and the completed
+-- checkbox. (Expansion brand greens are a separate identity family and keep their
+-- own hues.) Change it here to retune every completion cue at once.
+DT.COMPLETE_GREEN = { 0.46, 0.72, 0.46 } -- sage
+
 -- Colors used by the UI (r, g, b in 0-1). Tuned darker and lower-saturation so
 -- nothing glows against the dark panel; each still reads as its own status.
 DT.COLORS = {
     [DT.STATUS.AVAILABLE]    = { 0.82, 0.68, 0.28 }, -- muted amber
     [DT.STATUS.IN_PROGRESS]  = { 0.42, 0.60, 0.78 }, -- steel blue
-    [DT.STATUS.READY_TURNIN] = { 0.46, 0.72, 0.46 }, -- sage green
+    [DT.STATUS.READY_TURNIN] = DT.COMPLETE_GREEN,    -- the shared completion sage
     [DT.STATUS.COMPLETED]    = { 0.45, 0.45, 0.47 }, -- gray
     [DT.STATUS.INACTIVE]     = { 0.36, 0.38, 0.44 }, -- dim slate (exists, not up now)
     [DT.STATUS.UNDISCOVERED] = { 0.40, 0.36, 0.48 }, -- muted purple

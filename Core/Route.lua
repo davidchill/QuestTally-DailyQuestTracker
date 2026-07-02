@@ -86,6 +86,44 @@ function DT.Route:Order(entries)
     return ordered
 end
 
+-- "Arrival" threshold, mirroring TomTom's default Arrival Distance (10 yд). A
+-- straight-line distance to a giver's stored point can't reach 0: you physically
+-- stop ~interaction range from an NPC (collision), and baked giver coords are
+-- quantized to 3 decimals (~a few yards on a large map), leaving a 3-7 yard floor
+-- even when standing on the giver. Rather than mask the number, callers use
+-- IsArrived to flag the row as reached (the way TomTom flips its arrow to the
+-- "arrived" state) while still showing the honest live yardage.
+local ARRIVE_YARDS = 10
+
+-- Public: true when `dist` is close enough to treat the giver as reached. Nil dist
+-- (unplaceable / cross-instance) is never "arrived".
+function DT.Route:IsArrived(dist)
+    return dist ~= nil and dist <= ARRIVE_YARDS
+end
+
+-- Public: build a lookup { [entry] = yards } for every entry whose giver is routable
+-- AND sits in the player's current map instance (the only case where a straight-line
+-- distance is meaningful). Entries elsewhere / unplaceable are simply absent. Reads
+-- the player world position ONCE, so it's cheap to tag a whole tab's worth of rows
+-- without reordering them (the grouped tabs want the tag, not a route).
+function DT.Route:DistanceLookup(entries)
+    local lookup = {}
+    local HBD = getHBD()
+    if not HBD then return lookup end
+    local px, py, pInst = HBD:GetPlayerWorldPosition()
+    if not px then return lookup end
+    for _, e in ipairs(entries) do
+        if ROUTABLE_STATUS[e.status] then
+            local wx, wy, inst = giverWorld(HBD, e)
+            if wx and inst == pInst then
+                local dx, dy = wx - px, wy - py
+                lookup[e] = math.sqrt(dx * dx + dy * dy)
+            end
+        end
+    end
+    return lookup
+end
+
 -- Public: format a distance for display, e.g. "142 yd", or nil if no distance.
 -- The value is in yards: HereBeDragons world coordinates are a yard grid, so the
 -- straight-line distance computed in Order() is already in yards.

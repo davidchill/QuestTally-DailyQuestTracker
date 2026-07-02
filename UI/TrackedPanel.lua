@@ -1,4 +1,4 @@
--- PinnedPanel.lua
+-- TrackedPanel.lua
 -- The "Tracked" companion pane docked to the LEFT edge of the tracker window
 -- (mirroring the DetailPanel, which docks right). It lists the quests the player
 -- has tracked by middle-clicking a row, so they stay in view regardless of which
@@ -17,6 +17,11 @@ local LINE_PAD = 12
 local ROW_HEIGHT = 34
 local panel  -- created lazily on first Show
 
+-- Shared completion sage (see DT.COMPLETE_GREEN) + its inline hex, for the route
+-- "arrived" cue -- kept identical to the main list.
+local GREEN = DT.COMPLETE_GREEN
+local GREEN_HEX = DT.ToHex(DT.COMPLETE_GREEN)
+
 -- ---------------------------------------------------------------------------
 -- Row pool. Each row is a clickable button with a status dot, a title, and a
 -- small "<status> • <zone>" sub-line. Recycled between renders like the main list.
@@ -34,10 +39,20 @@ local function acquireRow(parent)
         r.hl:SetAllPoints()
         r.hl:SetColorTexture(1, 1, 1, 0.06)
 
-        r.dot = r:CreateTexture(nil, "ARTWORK")
-        r.dot:SetTexture("Interface\\Buttons\\WHITE8X8")
-        r.dot:SetSize(8, 8)
-        r.dot:SetPoint("TOPLEFT", 2, -5)
+        -- Status checkbox, matching the main list (empty = outstanding, sage +
+        -- check = done today). Styled per-render by DT.UI:StyleStatusCheckbox.
+        r.dot = CreateFrame("Frame", nil, r, "BackdropTemplate")
+        r.dot:SetSize(11, 11)
+        r.dot:SetPoint("TOPLEFT", 1, -6)
+        r.dot:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        r.dot.check = r.dot:CreateTexture(nil, "OVERLAY")
+        r.dot.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+        r.dot.check:SetPoint("CENTER", 0, 0)
+        r.dot.check:SetSize(15, 15)
+        r.dot.check:Hide()
 
         r.title = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
         r.title:SetPoint("TOPLEFT", r.dot, "TOPRIGHT", 8, 2)
@@ -57,19 +72,25 @@ local function acquireRow(parent)
         r:SetScript("OnClick", function(self, button)
             if DT.UI and DT.UI.RowAction then DT.UI:RowAction(self.entry, button) end
         end)
+        -- Hover tooltip mirrors the main list (title, zone, giver, then the shared
+        -- interaction scheme) so the controls read identically everywhere. The action
+        -- lines come from DT.UI:AppendActionHints -- the single source of truth.
         r:SetScript("OnEnter", function(self)
             local e = self.entry
             if not e then return end
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:SetText(e.title or "", 1, 1, 1)
             if e.zoneName then GameTooltip:AddLine(e.zoneName, 0.7, 0.7, 0.7) end
-            GameTooltip:AddLine("Left-click: details", 0.5, 0.8, 1)
-            GameTooltip:AddLine("Middle-click: untrack", 0.5, 0.8, 1)
-            GameTooltip:AddLine("Shift-middle-click: Wowhead link", 0.5, 0.8, 1)
-            GameTooltip:AddLine("Right-click: map pin to giver", 0.5, 0.8, 1)
-            if DT.TomTom and DT.TomTom:IsAvailable() then
-                GameTooltip:AddLine("Shift-right-click: TomTom waypoint", 0.5, 0.8, 1)
+            if e.giver and e.giver.name then
+                local where = ""
+                if e.giver.x and e.giver.y then
+                    where = string.format("  |cff808080(%.1f, %.1f)|r", e.giver.x * 100, e.giver.y * 100)
+                elseif e.giver.loc and e.giver.loc ~= "" then
+                    where = "  |cff808080" .. e.giver.loc .. "|r"
+                end
+                GameTooltip:AddLine("Giver: " .. e.giver.name .. where, 0.9, 0.8, 0.4)
             end
+            if DT.UI and DT.UI.AppendActionHints then DT.UI:AppendActionHints(GameTooltip, e) end
             GameTooltip:Show()
         end)
         r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -156,11 +177,25 @@ local function render()
         row:SetPoint("TOPRIGHT", 0, -y)
 
         local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
-        row.dot:SetColorTexture(c[1], c[2], c[3], 1)
-        local distPrefix = (DT.Route and item.dist)
-            and ("|cffffd100" .. DT.Route:FormatDistance(item.dist) .. "|r  ") or ""
+        DT.UI:StyleStatusCheckbox(row.dot, c, e.status == DT.STATUS.COMPLETED)
+        -- Route distance tag. Once you're within the arrival threshold we still show
+        -- the honest yardage (it never truly hits 0 -- see Route.IsArrived), but mark
+        -- the row "arrived" with the shared completion sage (• + green title), mirroring
+        -- how TomTom flips its arrow when you reach a waypoint.
+        local arrived = DT.Route and DT.Route:IsArrived(item.dist)
+        local distPrefix = ""
+        if DT.Route and item.dist then
+            local distStr = DT.Route:FormatDistance(item.dist)
+            distPrefix = arrived
+                and ("|cff" .. GREEN_HEX .. "\226\128\162 " .. distStr .. "|r  ")  -- • + yards, sage
+                or  ("|cffffd100" .. distStr .. "|r  ")                            -- yards, amber
+        end
         row.title:SetText(distPrefix .. (e.title or ("Quest " .. (e.questID or "?"))))
-        row.title:SetTextColor(0.92, 0.92, 0.90)
+        if arrived then
+            row.title:SetTextColor(GREEN[1], GREEN[2], GREEN[3])
+        else
+            row.title:SetTextColor(0.92, 0.92, 0.90)
+        end
 
         local label = DT.STATUS_LABEL[e.status] or ""
         -- Append live objective progress ("12/20") to an in-progress pin's status,
@@ -268,6 +303,9 @@ end
 -- ---------------------------------------------------------------------------
 -- Public API
 -- ---------------------------------------------------------------------------
+-- Live distance updates while Today's Route is on are driven by the shared route
+-- ticker in MainFrame.lua (it refreshes this panel on movement, alongside the main
+-- list), so there's no separate ticker here.
 function DT.Pinned:Show()
     -- Never paint over the collapsed logo chip (see DT.Details:Show).
     if DT.UI and DT.UI.IsCollapsed and DT.UI:IsCollapsed() then return end

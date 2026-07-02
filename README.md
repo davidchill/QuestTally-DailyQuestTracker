@@ -5,7 +5,7 @@ available on Retail — from Vanilla through Midnight** — listing what's
 available, tracking completion, and helping you finish them, organized by
 **expansion** and **zone**.
 
-> **Version 0.8.0** — built and tested against Retail patch **12.0.7**, and
+> **Version 0.9.0** — built and tested against Retail patch **12.0.7**, and
 > flagged compatible with the **12.1.0** PTR (multi-version TOC).
 > Catalog covers **~1,950 dailies & weeklies across every expansion** (wiki +
 > Blizzard-API gap-fill, multi-source cross-referenced) plus **~3,600 world quests**
@@ -29,7 +29,8 @@ available, tracking completion, and helping you finish them, organized by
   expansion in Expansion, the faction in Faction/Rep) carries its full **logo
   color**; nested folders use a calm neutral bar with a thin colored accent — its
   kind color for a themed group, a hint of the parent's tint for a zone. Plus an
-  overall **progress counter**, per-section `done / total` counts, custom themed
+  overall **progress counter** with a slim **completion bar** beneath the title bar,
+  per-section `done / total` counts, custom themed
   scrollbars and close buttons, and bottom tabs. **Sections start collapsed** on the
   Expansion tab so you drill into just what you need. Movable, with remembered
   position and persisted fold state.
@@ -44,8 +45,11 @@ available, tracking completion, and helping you finish them, organized by
 - **Today's Route.** A title-bar **Route** button orders the **Current Zone** tab
   and the **Tracked** panel **nearest-giver first**, tagging each quest with its
   **live distance** (in yards) from where you're standing. The list re-sorts as you
-  move, so the closest quest is always on top. Uses [HereBeDragons](https://www.curseforge.com/wow/addons/herebedragons)
-  for the coordinate math.
+  move, so the closest quest is always on top, and it also **tags nearby quests on the
+  Expansion and Faction/Rep tabs** (those keep their grouping — only quests in your
+  current area get a distance). As you reach a giver the row shows an **"arrived" cue**
+  (a green marker + title, like TomTom's arrow), while the yardage keeps ticking. Uses
+  [HereBeDragons](https://www.curseforge.com/wow/addons/herebedragons) for the math.
 - **Quest-kind sub-sections & tags.** Within each zone, quests gather into
   collapsible **kind groups** — **Professions**, **Battle Pets**, **PvP**,
   **Incursions**, **Calling**, **Combat Ally**, **Skyracing**, **Holiday**,
@@ -58,7 +62,10 @@ available, tracking completion, and helping you finish them, organized by
   frequency-aware. Completion stays accurate automatically — the game resets
   weeklies on the weekly timer and the addon reads your status live.
 - **Live status, always accurate.** Reads your real quest log and completion
-  flags — never stale. Each quest is color-coded:
+  flags — never stale. Status shows as a **checkbox** — an **empty box** (tinted to
+  the status colour) while a quest is outstanding, a **green-checked box** once it's
+  done today — so completion reads by *shape*, not colour alone (colour-blind safe).
+  The border colour still codes the finer status:
   - 🟡 **Available** · 🔵 **In Progress** · 🟢 **Ready to Turn In** ·
     ⚪ **Done Today** · ⚫ **Not Active** *(world quest not currently up)* ·
     🟣 **Not Yet Seen**
@@ -66,8 +73,10 @@ available, tracking completion, and helping you finish them, organized by
   the map, so QuestTally focuses on the dailies it *doesn't* surface well.
 - **Filters menu.** A **Filters** button on the title bar toggles the content
   categories — **Holiday / Seasonal**, **Profession**, **Battle Pet**, and
-  **Skyriding** (Skyriding and Holiday are **hidden by default**) — so the list
-  stays focused year-round.
+  **Skyriding** (Skyriding and Holiday are **hidden by default**) — plus a
+  **Show completed** toggle to hide dailies you've already finished today (the
+  done/total counts still include them). The button shows how many categories are on
+  (e.g. **Filters (3)**), so a short list is never a mystery.
 - **Help & Settings window.** A **gear button** on the title bar opens a pop-up with
   three tabs — a **Guide** (features and shortcuts), an **About** page (with
   CurseForge comment / issue links), and a **Changelog** (which also pops once on
@@ -266,7 +275,7 @@ QuestTally/
 ├── UI/
 │   ├── MainFrame.lua        The tracker window (3 modes, dark theme + DT.UI.Skin)
 │   ├── DetailPanel.lua      Per-quest details pane, right side (rewards/reputation/honor/objectives/desc; live-preferred)
-│   └── PinnedPanel.lua      "Tracked" pane, left side (middle-clicked quests; internal name kept)
+│   └── TrackedPanel.lua     "Tracked" pane, left side (middle-clicked quests; internal DT.Pinned name kept)
 ├── Media/
 │   └── QuestTally-Logo.tga  Title-bar logo (baked from the first-party art)
 └── Integrations/

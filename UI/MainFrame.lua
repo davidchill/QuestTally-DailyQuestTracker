@@ -42,7 +42,7 @@ local THEME = {
     divider    = { 1, 1, 1, 0.06 },
     bevelHi    = { 1, 1, 1, 0.05 },   -- top highlight hairline
     bevelLo    = { 0, 0, 0, 0.35 },   -- bottom shadow hairline
-    progress   = { 0.55, 0.72, 0.34 }, -- green-ish counter text
+    progress   = DT.COMPLETE_GREEN,    -- done/total counter -> the shared completion sage
 }
 
 -- Popup that shows a copyable Wowhead URL. Addons can't open a browser directly,
@@ -166,6 +166,57 @@ function DT.UI:RowAction(e, button)
             print("|cff33ff99QuestTally|r: no known giver location for this "
                 .. "quest yet — visit its giver once so QuestTally can learn it.")
         end
+    end
+end
+
+-- THE canonical interaction scheme, appended to a GameTooltip after a spacer. This is
+-- the single source of truth for the quest-row controls -- every list that shows quest
+-- rows (the main list, the Tracked panel) calls this so the scheme reads identically
+-- across the whole addon; the Guide text mirrors the same wording. Lines are gated to
+-- what's actually possible for this entry (needs a known quest id / giver location /
+-- TomTom installed) so we never advertise an action that would just print "no info".
+-- Keep this in lockstep with RowAction (the handler) and HELP_GUIDE (the reference).
+function DT.UI:AppendActionHints(tt, e)
+    if not (tt and e) then return end
+    local KEY = { 0.5, 0.8, 1 }  -- shared light-blue for every control line
+    tt:AddLine(" ")
+    tt:AddLine("Left-click: quest details / select", KEY[1], KEY[2], KEY[3])
+    if e.questID then
+        tt:AddLine("Middle-click: track / untrack", KEY[1], KEY[2], KEY[3])
+        tt:AddLine("Shift + Middle-click: open the Wowhead quest link", KEY[1], KEY[2], KEY[3])
+    end
+    if e.giver and e.giver.x then
+        tt:AddLine("Right-click: set a map pin / waypoint at the giver", KEY[1], KEY[2], KEY[3])
+        if DT.TomTom and DT.TomTom:IsAvailable() then
+            tt:AddLine("Shift + Right-click: set a TomTom waypoint", KEY[1], KEY[2], KEY[3])
+        end
+    end
+    if not e.questID then
+        tt:AddLine("Not yet seen in-game; pick it up once so QuestTally can show its live status.",
+            0.6, 0.55, 0.7)
+    end
+end
+
+-- Paint a row's status checkbox (a small BackdropTemplate box with a check child) for
+-- a status colour + completion flag. Shared by the main list and the Tracked panel so
+-- the checklist glyph looks identical everywhere:
+--   * outstanding -> hollow box, border tinted to the status colour (finer state);
+--   * done today  -> filled with the shared completion sage + a check (colour-blind
+--     safe: the CHECK carries "done", not the colour alone).
+function DT.UI:StyleStatusCheckbox(box, statusColor, completed)
+    if not box then return end
+    if completed then
+        local g = DT.COMPLETE_GREEN
+        box:SetBackdropColor(g[1], g[2], g[3], 0.90)
+        box:SetBackdropBorderColor(g[1] * 0.7, g[2] * 0.7, g[3] * 0.7, 1)
+        if box.check then
+            box.check:SetVertexColor(0.10, 0.18, 0.10, 1)  -- dark check on the sage fill
+            box.check:Show()
+        end
+    else
+        box:SetBackdropColor(0, 0, 0, 0.35)                -- hollow, dark interior
+        box:SetBackdropBorderColor(statusColor[1], statusColor[2], statusColor[3], 1)
+        if box.check then box.check:Hide() end
     end
 end
 
@@ -371,7 +422,8 @@ end
 -- Accent colors for each kind (used for the row tags).
 local SUBGROUP_ACCENT = {
     [SUB_PROFESSIONS] = { 0.85, 0.62, 0.28 }, -- warm amber (a wrench / forge feel)
-    [SUB_BATTLEPETS]  = { 0.52, 0.74, 0.42 }, -- soft green (a critter / paw feel)
+    [SUB_BATTLEPETS]  = { 0.70, 0.50, 0.34 }, -- warm brown/tan (fur); moved off green
+                                              -- so green reads only as completion
     [SUB_PVP]         = { 0.86, 0.38, 0.36 }, -- red (conflict)
     [SUB_INCURSIONS]  = { 0.64, 0.46, 0.86 }, -- purple (nightmare / void)
     [SUB_CALLING]     = { 0.40, 0.70, 0.74 }, -- teal (covenant callings)
@@ -644,6 +696,10 @@ end
 local ZONE_ACCENT = DT.ZONE_ACCENT
 local CONTINENT_ACCENT = DT.CONTINENT_ACCENT
 local toHex = DT.ToHex
+-- The shared completion green (see DT.COMPLETE_GREEN) + its inline hex, used for the
+-- route "arrived" cue and the completed checkbox so every completion signal matches.
+local COMPLETE_GREEN = DT.COMPLETE_GREEN
+local COMPLETE_GREEN_HEX = toHex(DT.COMPLETE_GREEN)
 local function groupByZone(entries)
     local groups, names = {}, {}
     for _, e in ipairs(entries) do
@@ -890,6 +946,12 @@ end
 -- ---------------------------------------------------------------------------
 -- Mode display builders. Each returns (displayList, summaryText).
 -- ---------------------------------------------------------------------------
+-- Empty-state for the Current Zone tab. A new user won't know discovery is passive,
+-- so the second sentence tells them WHY it's empty and how it fills in (rather than
+-- reading as "this zone has none").
+local ZONE_EMPTY_MSG = "No known dailies mapped to this zone yet.  "
+    .. "QuestTally learns them automatically as you pick up dailies or talk to their quest givers."
+
 local function buildZoneMode()
     local zone = DT.Zones and DT.Zones:GetPlayerZone() or nil
     if not zone or not zone.zoneName then
@@ -917,13 +979,14 @@ local function buildZoneMode()
             done = doneCount(entries), total = #entries,
             color = ZONE_ACCENT, key = "ROUTE:" .. zone.zoneName, collapsed = false,
         }
+        -- Distance tags/arrival flags are applied centrally in Refresh
+        -- (tagRouteDistances), so all tabs render them identically; here we only
+        -- need Order's nearest-first sequence.
         for _, o in ipairs(ordered) do
-            display[#display+1] = { type = "quest", entry = o.entry, depth = 1,
-                                    routeDist = DT.Route:FormatDistance(o.dist) }
+            display[#display+1] = { type = "quest", entry = o.entry, depth = 1 }
         end
         if #entries == 0 then
-            display[#display+1] = { type = "message",
-                text = "No known dailies mapped to this zone yet." }
+            display[#display+1] = { type = "message", text = ZONE_EMPTY_MSG }
         end
     else
         emitZoneWithSubzones(display, {
@@ -936,8 +999,7 @@ local function buildZoneMode()
             key   = "CZONE:" .. zone.zoneName,
         })
         if #entries == 0 then
-            display[#display+1] = { type = "message",
-                text = "No known dailies mapped to this zone yet." }
+            display[#display+1] = { type = "message", text = ZONE_EMPTY_MSG }
         end
     end
     -- Breadcrumb reads as a path, broad -> specific: "Eastern Kingdoms — Elwynn
@@ -1276,15 +1338,31 @@ local function acquireRow(parent)
         row.icon:SetPoint("LEFT", 10, 0)
         row.icon:Hide()
 
-        -- Status dot (quest rows only).
-        row.dot = row:CreateTexture(nil, "ARTWORK")
-        row.dot:SetSize(9, 9)
+        -- Status checkbox (quest rows only). A small bordered box that reads as a
+        -- checklist item: empty (border tinted to the status colour) while a quest is
+        -- outstanding, filled green with a check once it's done today. The shape --
+        -- empty vs checked -- carries "done or not" WITHOUT relying on colour, so it's
+        -- readable for colour-blind players; the border hue still conveys the finer
+        -- status for everyone else. Styled per-render by DT.UI:StyleStatusCheckbox.
+        row.dot = CreateFrame("Frame", nil, row, "BackdropTemplate")
+        row.dot:SetSize(11, 11)
         row.dot:SetPoint("LEFT", 12, 0)
-        row.dot:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row.dot:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1,
+        })
+        row.dot.check = row.dot:CreateTexture(nil, "OVERLAY")
+        row.dot.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+        row.dot.check:SetPoint("CENTER", 0, 0)
+        row.dot.check:SetSize(15, 15)
+        row.dot.check:Hide()
 
         row.title = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         row.title:SetPoint("LEFT", row.dot, "RIGHT", 7, 0)
         row.title:SetJustifyH("LEFT")
+        -- Single line: a long title truncates with an ellipsis (full name is in the
+        -- hover tooltip) instead of wrapping, so every quest row is the same height.
+        row.title:SetWordWrap(false)
 
         row.status = row:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
         row.status:SetJustifyH("RIGHT")
@@ -1375,20 +1453,7 @@ local function acquireRow(parent)
                 end
                 GameTooltip:AddLine("Giver: " .. e.giver.name .. where, 0.9, 0.8, 0.4)
             end
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Left-click: quest details", 0.5, 0.8, 1)
-            if e.questID then
-                GameTooltip:AddLine("Middle-click: track / untrack", 0.5, 0.8, 1)
-                GameTooltip:AddLine("Shift-middle-click: Wowhead link", 0.5, 0.8, 1)
-                if e.giver and e.giver.x then
-                    GameTooltip:AddLine("Right-click: map pin to giver", 0.5, 0.8, 1)
-                    if DT.TomTom and DT.TomTom:IsAvailable() then
-                        GameTooltip:AddLine("Shift-right-click: TomTom waypoint", 0.5, 0.8, 1)
-                    end
-                end
-            else
-                GameTooltip:AddLine("Not yet seen in-game; pick it up once so QuestTally can show its live status.", 0.6, 0.55, 0.7)
-            end
+            DT.UI:AppendActionHints(GameTooltip, e)
             GameTooltip:Show()
         end)
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1476,9 +1541,46 @@ local function updateRouteButton()
     mainFrame.routeBtn.label:SetTextColor(on and 1 or 0.85, on and 0.97 or 0.85, on and 0.78 or 0.82)
 end
 
+-- The content-filter toggles, in panel order. Drives the count shown on the Filters
+-- button and its tooltip.
+local FILTER_SETTINGS = {
+    "showSeasonal", "showProfessions", "showBattlePets", "showRaces", "showCompleted",
+}
+
+-- How many categories are currently ENABLED (shown). Drives the "Filters (N)" count so
+-- you can see at a glance how many of the categories are on -- e.g. "Filters (3)" out
+-- of the box (Profession + Battle Pet + completed; Seasonal + Skyriding default off).
+local function countEnabledFilters()
+    local n = 0
+    for _, key in ipairs(FILTER_SETTINGS) do
+        if DT.DB:GetSetting(key) then n = n + 1 end
+    end
+    return n
+end
+
+-- Reflect the Filters button label (with hidden-count) and the Tracked/Filters
+-- buttons' lit "open" state -- mirroring how the Route button shows it's active, so
+-- every title-bar toggle reads its on/open state at a glance. Called on each refresh
+-- and right after any click that opens/closes those panels.
+local function updateToggleButtons()
+    if not mainFrame then return end
+    if mainFrame.filtersBtn then
+        mainFrame.filtersBtn:SetText("Filters (" .. countEnabledFilters() .. ")")
+        local open = mainFrame.filters and mainFrame.filters:IsShown() or false
+        if mainFrame.filtersBtn.active then mainFrame.filtersBtn.active:SetShown(open) end
+        mainFrame.filtersBtn.label:SetTextColor(open and 1 or 0.85, open and 0.97 or 0.85, open and 0.78 or 0.82)
+    end
+    if mainFrame.pinnedBtn then
+        local open = DT.Pinned and DT.Pinned:IsShown() or false
+        if mainFrame.pinnedBtn.active then mainFrame.pinnedBtn.active:SetShown(open) end
+        mainFrame.pinnedBtn.label:SetTextColor(open and 1 or 0.85, open and 0.97 or 0.85, open and 0.78 or 0.82)
+    end
+end
+
 local function updateModeButtons()
     if not mainFrame then return end
     updateRouteButton()
+    updateToggleButtons()
     for _, b in ipairs(mainFrame.modeButtons) do
         local active = (b.mode == DT.UI.mode)
         b.bg:SetShown(active)
@@ -1535,13 +1637,18 @@ local ROUTE_TICK    = 0.5        -- seconds between position checks
 local ROUTE_MOVE_SQ = 8 * 8      -- re-route after moving ~8 yards (world coords are yards)
 local routeAccum, lastRX, lastRY, lastRInst = 0, nil, nil, nil
 
--- Which routed surfaces, if any, are currently visible. Returns (zoneView, pinnedView).
+-- Which routed surfaces, if any, are currently visible. Returns three flags:
+--   zoneView  - Current Zone tab in route mode (a full re-route: reorders + tags);
+--   groupView - Expansion/Faction tab (tag-only live update, grouping preserved);
+--   pinnedView- the Tracked panel.
 local function routeSurfacesVisible()
-    if not DT.DB:GetSetting("todaysRoute") then return false, false end
-    local zoneView = mainFrame and mainFrame:IsShown()
-        and DT.UI.mode == "ZONE" and (DT.UI.searchQuery or "") == ""
+    if not DT.DB:GetSetting("todaysRoute") then return false, false, false end
+    local mainShown  = mainFrame and mainFrame:IsShown() and not collapsed
+        and (DT.UI.searchQuery or "") == ""
+    local zoneView   = mainShown and DT.UI.mode == "ZONE"
+    local groupView  = mainShown and (DT.UI.mode == "ALL" or DT.UI.mode == "FACTION")
     local pinnedView = DT.Pinned and DT.Pinned:IsShown()
-    return zoneView, pinnedView
+    return zoneView, groupView, pinnedView
 end
 
 local routeTicker = CreateFrame("Frame")
@@ -1550,26 +1657,30 @@ routeTicker:SetScript("OnUpdate", function(_, elapsed)
     if routeAccum < ROUTE_TICK then return end
     routeAccum = 0
 
-    local zoneView, pinnedView = routeSurfacesVisible()
-    if not (zoneView or pinnedView) then return end
+    local zoneView, groupView, pinnedView = routeSurfacesVisible()
+    if not (zoneView or groupView or pinnedView) then return end
 
     local HBD = getRouteHBD()
     if not HBD then return end
     local x, y, inst = HBD:GetPlayerWorldPosition()
     if not x then return end
 
-    -- Movement gate: skip the rebuild unless we changed instance or moved enough.
+    -- Movement gate: skip the update unless we changed instance or moved enough.
     if lastRInst == inst and lastRX then
         local dx, dy = x - lastRX, y - lastRY
         if dx * dx + dy * dy < ROUTE_MOVE_SQ then return end
     end
     lastRX, lastRY, lastRInst = x, y, inst
 
-    -- A zone-view refresh rebuilds the pinned panel too; otherwise refresh only it.
+    -- Current Zone re-routes (reorders nearest-first) via a full Refresh, which also
+    -- rebuilds the pinned panel. The grouped tabs keep their layout, so they only need
+    -- the cheap in-place tag update -- NOT a whole-catalog rebuild every step (that
+    -- churn read as a memory leak). Pinned still refreshes alongside them when open.
     if zoneView then
         DT.UI:Refresh()
-    elseif pinnedView then
-        DT.Pinned:Refresh()
+    else
+        if groupView then DT.UI:UpdateRouteTags() end
+        if pinnedView then DT.Pinned:Refresh() end
     end
 end)
 
@@ -1776,6 +1887,19 @@ local function createThemedButton(parent, text, w, h)
 
     function b:SetText(t) self.label:SetText(t) end
     return b
+end
+
+-- Give a themed title-bar button the same lit "active" overlay the Route button uses,
+-- so on/open toggles share one visual language. Hidden by default; updateRouteButton /
+-- updateToggleButtons show it. Uses the zone accent so all three toggles light alike.
+local function addActiveOverlay(btn)
+    btn.active = makeStrip(btn, "ARTWORK",
+        { ZONE_ACCENT[1], ZONE_ACCENT[2], ZONE_ACCENT[3], 0.55 },
+        { ZONE_ACCENT[1] * 0.55, ZONE_ACCENT[2] * 0.55, ZONE_ACCENT[3] * 0.55, 0.55 })
+    btn.active:SetPoint("TOPLEFT", 1, -1)
+    btn.active:SetPoint("BOTTOMRIGHT", -1, 1)
+    btn.active:Hide()
+    return btn.active
 end
 
 -- Custom themed dropdown, replacing UIDropDownMenuTemplate (whose menu list is a
@@ -2247,7 +2371,11 @@ local function createInfoWindow()
             tab.label:SetTextColor(active and 0.95 or 0.58, active and 0.95 or 0.58, active and 0.92 or 0.56)
         end
     end
-    w.SetPage = setPage
+    -- Exposed as a method: DT.UI:ShowChangelog calls w:SetPage("changelog"), and the
+    -- colon passes `w` as an implicit first arg. Swallow it here so `name` is always
+    -- the page string -- otherwise setPage(name) would receive the frame and render a
+    -- blank page (the changelog popped blank on login until you clicked the tab).
+    w.SetPage = function(_, name) setPage(name) end
 
     local tabDefs = { { "guide", "Guide" }, { "about", "About" }, { "changelog", "Changelog" } }
     local prev
@@ -2447,6 +2575,7 @@ local function createMainFrame()
     end)
     f.settingsBtn:SetScript("OnClick", function()
         if f.filters then f.filters:Hide() end
+        updateToggleButtons()  -- Filters just closed -> dim its button
         local w = ensureHelpWindow()
         w:SetShown(not w:IsShown())
     end)
@@ -2454,16 +2583,21 @@ local function createMainFrame()
     -- "Filters" button toggles the content-filter panel (which KINDS of quests to
     -- show). Mirrors the gear/Settings pattern; the two overlays are mutually
     -- exclusive so only one is open at a time.
-    f.filtersBtn = createThemedButton(f, "Filters", 52, 18)
+    -- Wider than a bare "Filters" so the hidden-count fits (e.g. "Filters (2)").
+    f.filtersBtn = createThemedButton(f, "Filters", 66, 18)
     f.filtersBtn:SetPoint("RIGHT", f.settingsBtn, "LEFT", -4, 0)
+    addActiveOverlay(f.filtersBtn)  -- lit when the Filters panel is open
     f.filtersBtn:SetScript("OnClick", function()
         if helpWindow then helpWindow:Hide() end
         if f.filters then f.filters:SetShown(not f.filters:IsShown()) end
+        updateToggleButtons()
     end)
     f.filtersBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Filters", 1, 1, 1)
         GameTooltip:AddLine("Choose which kinds of quests to show.", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(countEnabledFilters() .. " of " .. #FILTER_SETTINGS .. " categories shown.",
+            0.95, 0.82, 0.40)
         GameTooltip:Show()
     end)
     f.filtersBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2473,8 +2607,10 @@ local function createMainFrame()
     -- tracked quests aren't lost; the user-facing concept is "tracked".)
     f.pinnedBtn = createThemedButton(f, "Tracked", 56, 18)
     f.pinnedBtn:SetPoint("RIGHT", f.filtersBtn, "LEFT", -4, 0)
+    addActiveOverlay(f.pinnedBtn)  -- lit when the Tracked panel is open
     f.pinnedBtn:SetScript("OnClick", function()
         if DT.Pinned then DT.Pinned:Toggle() end
+        updateToggleButtons()
     end)
     f.pinnedBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -2521,6 +2657,20 @@ local function createMainFrame()
     f.subBar:SetPoint("TOPLEFT", f.titleBar, "BOTTOMLEFT", 0, 0)
     f.subBar:SetPoint("TOPRIGHT", f.titleBar, "BOTTOMRIGHT", 0, 0)
     f.subBar:SetHeight(22)
+
+    -- Slim completion bar at the title/sub-bar seam: a dark track with a sage fill
+    -- sized to the on-screen done/total, so overall progress reads pre-attentively
+    -- (you feel it before reading the "12 / 40" counter above). Width set per refresh.
+    f.progressTrack = f:CreateTexture(nil, "OVERLAY")
+    f.progressTrack:SetColorTexture(0, 0, 0, 0.35)
+    f.progressTrack:SetHeight(2)
+    f.progressTrack:SetPoint("BOTTOMLEFT", f.subBar, "TOPLEFT", 1, 0)
+    f.progressTrack:SetPoint("BOTTOMRIGHT", f.subBar, "TOPRIGHT", -1, 0)
+    f.progressFill = f:CreateTexture(nil, "OVERLAY")
+    f.progressFill:SetColorTexture(DT.COMPLETE_GREEN[1], DT.COMPLETE_GREEN[2], DT.COMPLETE_GREEN[3], 0.95)
+    f.progressFill:SetHeight(2)
+    f.progressFill:SetPoint("BOTTOMLEFT", f.progressTrack, "BOTTOMLEFT", 0, 0)
+    f.progressFill:Hide()
 
     f.summary = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.summary:SetPoint("LEFT", f.subBar, "LEFT", 10, 0)
@@ -2668,6 +2818,12 @@ local function createMainFrame()
     fp:AddCheck("Skyriding",
         function() return DT.DB:GetSetting("showRaces") end,
         function(v) DT.DB:SetSetting("showRaces", v) end)
+    -- Completion filter. Kept in the same "checked = visible" polarity as the kind
+    -- toggles above; unchecking hides quests already done today to declutter the list
+    -- (section done/total counts still include them -- only the rows are dropped).
+    fp:AddCheck("Show completed",
+        function() return DT.DB:GetSetting("showCompleted") end,
+        function(v) DT.DB:SetSetting("showCompleted", v) end)
     -- (The "Map pins" toggle was removed with the map-pins feature; see the disabled
     -- Integrations\MapPins.lua in the .toc. Re-add it here when re-enabling pins.)
     fp:Finish()
@@ -2686,7 +2842,7 @@ local function createMainFrame()
     f.collapsibles = {
         f.title, f.progress, f.close, f.settingsBtn, f.filtersBtn, f.pinnedBtn, f.routeBtn,
         f.subBar, f.summary, f.reset, f.searchBox, f.scroll, f.scrollbar,
-        f.tabBar, f.tabHi, f.collapseAllBtn,
+        f.tabBar, f.tabHi, f.collapseAllBtn, f.progressTrack, f.progressFill,
     }
     for _, b in ipairs(f.modeButtons) do f.collapsibles[#f.collapsibles + 1] = b end
 
@@ -2704,6 +2860,29 @@ end
 -- ---------------------------------------------------------------------------
 -- Rendering
 -- ---------------------------------------------------------------------------
+-- Paint a quest row's title: Route distance tag + tracked star + name, plus colour.
+-- The tag is amber ("142 yd") while en route; once within the arrival threshold it
+-- flips to a green • + distance and a green title -- matching the Tracked panel and
+-- TomTom's arrival cue. routeDist/routeArrived are nil for rows with no comparable
+-- distance (giver not in the player's current map instance). Shared by the full
+-- render and the live tag updater (DT.UI:UpdateRouteTags) so both paint identically.
+local function applyQuestRouteTitle(row, e, routeDist, routeArrived)
+    local pin = e.pinned and "|cffffd100*|r " or ""
+    local step = ""
+    if routeDist then
+        step = routeArrived
+            and ("|cff" .. COMPLETE_GREEN_HEX .. "\226\128\162 " .. routeDist .. "|r  ")
+            or  ("|cff" .. toHex(ZONE_ACCENT) .. routeDist .. "|r  ")
+    end
+    row.title:SetText(step .. pin .. (e.title or ("Quest " .. (e.questID or "?"))))
+    if routeArrived then
+        row.title:SetTextColor(COMPLETE_GREEN[1], COMPLETE_GREEN[2], COMPLETE_GREEN[3])
+    else
+        local done = (e.status == DT.STATUS.COMPLETED)
+        row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
+    end
+end
+
 local function renderDisplay(display)
     releaseAllRows()
     local content = mainFrame.content
@@ -2765,6 +2944,7 @@ local function renderDisplay(display)
             row.headerBot:Show()
 
             row.title:SetFontObject(sub and "GameFontNormalSmall" or "GameFontNormal")
+            row.title:SetWordWrap(false)  -- single line (pooled rows may arrive wrapped)
             row.title:ClearAllPoints()
             row.title:SetPoint("LEFT", row.icon, "RIGHT", sub and 7 or 8, 0)
             row.title:SetWidth(CONTENT_WIDTH - 110 - indent)
@@ -2787,7 +2967,6 @@ local function renderDisplay(display)
             y = y + h
 
         elseif item.type == "message" then
-            row:SetSize(CONTENT_WIDTH, ROW_HEIGHT * 2)
             row.entry = nil
             row.sectionKey = nil
             row.dot:Hide(); row.accent:Hide(); row.headerBg:Hide()
@@ -2796,13 +2975,17 @@ local function renderDisplay(display)
             row.headerTop:Hide(); row.headerBot:Hide()
             row:EnableMouse(false)
             row.title:SetFontObject("GameFontDisable")
+            row.title:SetWordWrap(true)  -- empty-state copy may run to two+ lines
             row.title:ClearAllPoints()
             row.title:SetPoint("LEFT", 14, 0)
             row.title:SetWidth(CONTENT_WIDTH - 18)
             row.title:SetTextColor(0.6, 0.6, 0.6)
             row.title:SetText(item.text)
             row.status:SetText("")
-            y = y + ROW_HEIGHT * 2
+            -- Size to the (wrapped) copy so longer, explanatory empty states aren't clipped.
+            local mh = math.max(ROW_HEIGHT * 2, (row.title:GetStringHeight() or 0) + 22)
+            row:SetSize(CONTENT_WIDTH, mh)
+            y = y + mh
 
         elseif item.type == "repbar" then
             -- Live reputation bar atop a faction section: track + progress fill +
@@ -2879,7 +3062,7 @@ local function renderDisplay(display)
             row.dot:SetPoint("LEFT", 12 + qIndent, 0)
 
             local c = DT.COLORS[e.status] or DT.COLORS[DT.STATUS.UNKNOWN]
-            row.dot:SetColorTexture(c[1], c[2], c[3], 1)
+            DT.UI:StyleStatusCheckbox(row.dot, c, e.status == DT.STATUS.COMPLETED)
 
             -- Inline kind tag between the dot and the title (Prof / Pet / PvP /
             -- Incursion). The title anchors to the badge when one is present, so
@@ -2918,29 +3101,17 @@ local function renderDisplay(display)
             end
 
             local done = (e.status == DT.STATUS.COMPLETED)
-            local pin = e.pinned and "|cffffd100*|r " or ""
-            -- Today's Route distance tag ("142m") in the zone accent, ahead of the
-            -- tracked star. Only set on routed rows (Current Zone tab in route mode).
-            local step = item.routeDist
-                and ("|cff" .. toHex(ZONE_ACCENT) .. item.routeDist .. "|r  ") or ""
             row.title:SetFontObject("GameFontHighlight")
+            row.title:SetWordWrap(false)  -- single line (pooled rows may arrive wrapped)
             row.title:ClearAllPoints()
             row.title:SetPoint("LEFT", titleAnchor, "RIGHT", titleGap, 0)
             row.title:SetWidth(titleWidth)
-            row.title:SetText(step .. pin .. (e.title or ("Quest " .. (e.questID or "?"))))
-            row.title:SetTextColor(done and 0.55 or 0.92, done and 0.55 or 0.92, done and 0.52 or 0.88)
+            applyQuestRouteTitle(row, e, item.routeDist, item.routeArrived)
 
-            -- Grow the row to fit a title that word-wrapped to multiple lines.
-            -- The title has a fixed width, so long names wrap; at the default fixed
-            -- height the second line spills into the next row (cramped/overlapping).
-            -- Measure the laid-out text height and pad it so wrapped rows breathe.
-            -- Single-line titles measure under ROW_HEIGHT and keep the compact height.
-            local rowH = ROW_HEIGHT
-            local textH = row.title:GetStringHeight()
-            if textH and textH > ROW_HEIGHT then
-                rowH = math.ceil(textH) + 10
-            end
-            row:SetHeight(rowH)
+            -- Every quest row is the same height: the title is single-line (word wrap
+            -- off), so a long name truncates with an ellipsis rather than wrapping and
+            -- pushing the row taller. The full name lives in the hover tooltip.
+            row:SetHeight(ROW_HEIGHT)
 
             local hex = toHex(c)
             -- For an accepted quest, show its live objective progress ("12/20") in
@@ -2955,13 +3126,15 @@ local function renderDisplay(display)
             row.status:ClearAllPoints()
             row.status:SetPoint("RIGHT", -8, 0)
             row.status:SetText("|cff" .. hex .. statusLabel .. "|r")
-            row.dot:SetAlpha(done and 0.5 or 1)
+            -- The checkbox stays full-strength when done (the green check IS the "done"
+            -- signal); the grayed title already recedes the finished row.
+            row.dot:SetAlpha(1)
 
             -- Keep the open-detail quest highlighted as the list rebuilds.
             local sel = entryIsSelected(e)
             row.selected:SetShown(sel)
             row.selectedEdge:SetShown(sel)
-            y = y + rowH
+            y = y + ROW_HEIGHT
         end
         activeRows[#activeRows+1] = row
     end
@@ -2974,8 +3147,15 @@ local function renderDisplay(display)
         local pct = overallDone / overallTotal
         local pc = THEME.progress
         mainFrame.progress:SetTextColor(pc[1], pct >= 1 and 0.9 or pc[2], pc[3])
+        -- Size the seam bar to match. Two-anchor track, so GetWidth is the live pixel
+        -- span; fall back to the frame width if it hasn't laid out yet.
+        local w = mainFrame.progressTrack:GetWidth()
+        if not w or w <= 0 then w = mainFrame:GetWidth() - 2 end
+        mainFrame.progressFill:SetWidth(math.max(0.01, w * pct))
+        mainFrame.progressFill:SetShown(pct > 0)
     else
         mainFrame.progress:SetText("")
+        mainFrame.progressFill:Hide()
     end
 end
 
@@ -2991,6 +3171,32 @@ function DT.UI:UpdateSelectionHighlight()
     end
 end
 
+-- Live-update the Route distance tags on the rows already on screen, WITHOUT
+-- rebuilding the list. Used by the route ticker on the grouped tabs (Expansion /
+-- Faction), where a full Refresh would re-run the whole-catalog grouping every tick
+-- and churn a lot of garbage (that showed up as a memory climb). Recomputes each
+-- visible giver's distance once and repaints just the title text/colour in place;
+-- since it doesn't touch the row pool, it also can't disturb a hovered row's tooltip.
+-- Tag-only by design: it never reorders, matching "keep grouping" on these tabs.
+function DT.UI:UpdateRouteTags()
+    if not (DT.Route and DT.DB:GetSetting("todaysRoute")) then return end
+    local entries = {}
+    for _, row in ipairs(activeRows) do
+        if row.entry then entries[#entries + 1] = row.entry end
+    end
+    if #entries == 0 then return end
+    local lookup = DT.Route:DistanceLookup(entries)
+    for _, row in ipairs(activeRows) do
+        local e = row.entry
+        if e then
+            local d = lookup[e]
+            applyQuestRouteTitle(row, e,
+                d and DT.Route:FormatDistance(d) or nil,
+                d and DT.Route:IsArrived(d) or nil)
+        end
+    end
+end
+
 -- Set (or clear, with nil) the quest highlighted in the list. Driven by the
 -- DetailPanel so opening/closing the detail pane keeps the list in step.
 function DT.UI:SetSelectedQuest(entry)
@@ -3002,6 +3208,49 @@ function DT.UI:SetSelectedQuest(entry)
         DT.UI.selectedTitle = nil
     end
     DT.UI:UpdateSelectionHighlight()
+end
+
+-- Tag each quest row in `display` with its live distance to the giver + an "arrived"
+-- flag, for Today's Route mode. TAG-ONLY: it never reorders, so the Expansion/Faction
+-- grouping stays intact -- only rows whose giver is in the player's current map
+-- instance get a tag (others have no comparable distance). The row renderer turns the
+-- tag amber (en route) or green with a • (arrived).
+local function tagRouteDistances(display)
+    if not (DT.Route and DT.DB:GetSetting("todaysRoute")) then return end
+    local entries = {}
+    for _, item in ipairs(display) do
+        if item.type == "quest" and item.entry then
+            entries[#entries + 1] = item.entry
+        end
+    end
+    if #entries == 0 then return end
+    local lookup = DT.Route:DistanceLookup(entries)
+    for _, item in ipairs(display) do
+        if item.type == "quest" and item.entry then
+            local d = lookup[item.entry]
+            if d then
+                item.routeDist = DT.Route:FormatDistance(d)
+                item.routeArrived = DT.Route:IsArrived(d)
+            end
+        end
+    end
+end
+
+-- Drop already-completed quest ROWS from a built display when "Show completed" is off.
+-- Returns a filtered copy (sections/repbars/messages kept as-is). Deliberately works
+-- on the display, not the source entries, so section headers and the title-bar counter
+-- -- computed at build time -- still reflect the true done/total; only the finished
+-- rows disappear from view. The Tracked panel is exempt (pins ignore filters).
+local function stripCompleted(display)
+    if DT.DB:GetSetting("showCompleted") then return display end
+    local out = {}
+    for _, item in ipairs(display) do
+        if not (item.type == "quest" and item.entry
+                and item.entry.status == DT.STATUS.COMPLETED) then
+            out[#out + 1] = item
+        end
+    end
+    return out
 end
 
 function DT.UI:Refresh()
@@ -3034,6 +3283,15 @@ function DT.UI:Refresh()
     else
         display, summary = buildZoneMode()
     end
+
+    -- Route mode: tag routable rows with a live distance/arrival marker across every
+    -- tab (Current Zone, Expansion, Faction). Skipped on the Search tab, which is a
+    -- lookup surface, not a travel view.
+    if DT.UI.mode ~= "SEARCH" then
+        tagRouteDistances(display)
+    end
+    -- Hide finished rows if "Show completed" is off (section counts stay intact).
+    display = stripCompleted(display)
 
     mainFrame.summary:SetText(summary or "")
     local reset = DT.QuestLog:FormatCountdown(DT.QuestLog:GetSecondsUntilReset())
@@ -3129,6 +3387,14 @@ function DT.UI:Show()
     ensureFrame()
     mainFrame:Show()
     self:Refresh()
+    -- First-ever open: a one-line pointer to the controls + the Guide, so new users
+    -- discover the hover actions instead of finding them by accident. Shown once.
+    if DT.DB and not DT.DB:GetSetting("firstRunHintSeen") then
+        DT.DB:SetSetting("firstRunHintSeen", true)
+        print("|cff33ff99QuestTally|r: hover any quest to see its controls "
+            .. "(|cffffd100left-click|r = details, |cffffd100middle-click|r = track). "
+            .. "Full guide under the |cffffd100gear|r button.")
+    end
 end
 
 -- Open the Help & Settings window straight to the Changelog page. Independent of

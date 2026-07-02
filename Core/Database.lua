@@ -21,6 +21,8 @@ local ACCOUNT_DEFAULTS = {
         showProfessions = true,     -- show profession dailies (Cooking, Fishing, gathering WQs, ...)
         showBattlePets = true,      -- show battle pet dailies / pet battle world quests
         showRaces = false,          -- show skyriding/dragonriding race courses (off by default; lots of variants)
+        showCompleted = true,       -- show quests already done today (grayed); off declutters the main list
+        firstRunHintSeen = false,   -- one-time "hover a quest / see the Guide" pointer on first open
         showMapPins = true,         -- drop world-map + minimap pins at available dailies' givers in your current zone
         todaysRoute = false,        -- order the Current Zone tab + Pinned panel as a nearest-giver travel route
     },
